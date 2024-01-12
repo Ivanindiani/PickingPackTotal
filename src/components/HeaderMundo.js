@@ -1,0 +1,83 @@
+import { Text } from '@react-native-material/core';
+import { Image, StyleSheet, View } from 'react-native';
+import SelectInput from './_virtualSelect';
+import { useState } from 'react';
+
+const ipDefaults = [{
+    label: '172.16.10.78',
+    value: '172.16.10.78'
+}, {
+    label: '200.35.195.130',
+    value: '200.35.195.130'
+}, {
+    label: '201.249.133.34',
+    value: '201.249.133.34'
+}];
+
+const HeaderMundo = (props) => {
+    let count = 0;
+
+    //console.log(props);
+    const [openAdmin, setAdmin] = useState(false);
+
+    const logoAdmin = () => {
+        count++;
+        if(count === 10) {
+            count = 0;
+            setAdmin(true);
+        }
+        console.log(count);
+    }
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.text} onPress={logoAdmin}>
+                {props.title.split("\n")[0]}{"\n"}
+                <Text style={styles.text2}>{props.title.split("\n")[1]}</Text>
+                
+            </Text>
+            <Image
+                style={styles.image}
+                source={require('../assets/images/LOGO-MUT.png') }
+            />
+            {openAdmin && <SelectInput
+                data={ipDefaults}
+                value={props.ipSelect}
+                setValue={props.setIp}
+                title=""
+                buttonStyle={{with: 0, position: 'absolute', visibility: false}}
+                open={openAdmin}
+                onClose={() => setAdmin(false)}
+            />}
+        </View>
+    )
+}
+
+export default HeaderMundo;
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        flexDirection: 'row',
+        width: '100%',
+        height: 50,
+        justifyContent: 'space-between'
+    },
+    text: {
+        marginLeft: -3,
+        color: 'white',
+        fontWeight: 'bold',
+        paddingTop: 7,
+        alignSelf: 'flex-start' // Vertically center
+    },
+    text2: {
+        fontSize: 14,
+        color: 'white',
+        fontWeight: '600'
+    },  
+    image: {
+        height: 45,
+        marginEnd: 5,
+        alignSelf: 'center',
+    }
+});

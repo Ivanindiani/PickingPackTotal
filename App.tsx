@@ -1,118 +1,86 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useState } from 'react';
+import {StyleSheet, View} from 'react-native';
+import Routes from './src/Router';
+import DeviceInfo from 'react-native-device-info';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+//import LogRocket from '@logrocket/react-native';
+//LogRocket.init('mucn3o/pistoleoapp')
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+//DT40 2bffc63708fd5364
+//emulator 98ba9dece80cfa7b
+// TC21 7e90509a8dce6315
+// SQ45S b613a5c50419a713
+// Infinix 3c57580a39f97a9d
+const App = () => {
+    const [dataUser, setDataUser] = useState({});
+    const [token, setDataToken] = useState({});
+    const [ipSelect, setIp] = useState(null);
+    const [deviceInfo, setDeviceId] = useState({});
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+    useEffect(() => {
+        const init = async () => {
+            setDeviceId({
+                id: await DeviceInfo.getUniqueId(),
+                version: DeviceInfo.getVersion(),
+                systemVersion: DeviceInfo.getSystemName()+" "+DeviceInfo.getSystemVersion(),
+                mac: await DeviceInfo.getMacAddress(),
+                ip: await DeviceInfo.getIpAddress(),
+                hardware: await DeviceInfo.getHardware(),
+                model: DeviceInfo.getModel()
+            });
+            /*console.log(DeviceInfo.getSystemName(), DeviceInfo.getSystemVersion());
+            console.log(
+                DeviceInfo.getModel(), 
+                await DeviceInfo.getMacAddress(),
+                await DeviceInfo.getIpAddress(),
+                await DeviceInfo.getHardware()
+            );*/
+        }
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+      init();
+    }, []);
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+    const storeData = async (value) => {
+        try {
+          return await AsyncStorage.setItem('pistoleoapp_ipselect', value);
+        } catch (e) {
+          // saving error
+          return null;
+        }
+    };
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+    useEffect(() => {
+        console.log("Hola IP ", ipSelect)
+        if(!ipSelect) {
+            const getData = async () => {
+                try {
+                  const value = await AsyncStorage.getItem('pistoleoapp_ipselect');
+                  if(value !== null) {
+                    console.log("Guardando IP: ",value);
+                    setIp(value);
+                  } 
+                } catch (e) {
+                    console.log("Error opteniendo data ip ", e)
+                }
+            };
+            getData();
+        } else {
+            storeData(ipSelect);
+        }
+    }, [ipSelect]);
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    return (
+        <View style={styles.container}>
+            <Routes dataUser={dataUser} setDataUser={setDataUser} token={token} setDataToken={setDataToken} ipSelect={ipSelect} setIp={setIp} deviceInfo={deviceInfo}/>
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+    );
+};
 
 export default App;
+
+const styles = StyleSheet.create({
+    container : {
+        flex: 1,
+    }
+});
