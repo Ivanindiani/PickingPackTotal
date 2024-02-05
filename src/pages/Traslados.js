@@ -181,7 +181,7 @@ const Traslados = (props) => {
         .then(({data}) => {
             console.log("Traslado creado: ", data.data);
             data.data.CreadoPor = {
-                IDUSRentity: props.dataUser.IDUSRentity,
+                IDUSR: props.dataUser.IDUSR,
                 USLAS: props.dataUser.USLAS,
                 USNAM: props.dataUser.USNAM,
                 USNAA: props.dataUser.USNAA,

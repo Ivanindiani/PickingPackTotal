@@ -1,4 +1,4 @@
-import { View, useWindowDimensions, StyleSheet, ToastAndroid, Alert } from 'react-native';
+import { View, useWindowDimensions, StyleSheet, ToastAndroid, Alert, ScrollView } from 'react-native';
 import { TabView, TabBar } from 'react-native-tab-view';
 import FindProducts from './Almacen/FindProducts';
 import ManagerProducts from './Almacen/ManagerProducts';
@@ -83,7 +83,7 @@ const AlmacenInv = (props) => {
             .then(({data}) => {
                 console.log(data.extra);
                 if(!data.data.length) {
-                    return Alert.alert("La bodega seleccionada aún no está estructurada, por favor contacta a sistemas.")
+                    return Alert.alert("Error", "La bodega seleccionada aún no está estructurada, por favor contacta a sistemas.")
                 }
                 setBodega(data);
             }).catch(({status, error}) => {
@@ -100,7 +100,7 @@ const AlmacenInv = (props) => {
     }, [almacenId]);
 
     return (
-        <View style={{flex: 1}}>
+        <ScrollView contentContainerStyle={{flex: 1}} nestedScrollEnabled={true}>
             <View style={styles.centros}>
                 <Text style={{fontWeight: '500'}}>Sucursal: </Text>
                 <SelectInput
@@ -134,7 +134,7 @@ const AlmacenInv = (props) => {
                 initialLayout={{ width: layout.width }}
                 renderTabBar={props => <TabBar {...props} style={{backgroundColor: Global.colorMundoTotal}} labelStyle={{fontSize: 12}}/>} // <-- add this line
             />
-        </View>
+        </ScrollView>
     );
 }
 
@@ -149,7 +149,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        marginBottom: 3
+        marginBottom: 3,
+        padding: 1
     },
 });
 

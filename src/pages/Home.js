@@ -29,11 +29,13 @@ const Home = (props) => {
             <ScrollView style={styles.scrollView}>
                 <Image source={require('../assets/images/PistoleoAppIcon.png') } style={styles.icon} resizeMode="center"/>
                 <Text>Menú Inicio</Text>
-                {props.dataUser.USSCO?.indexOf('NEWREG') !== -1 && !props.dataUser.CAMIONERO ?
+                {(props.dataUser.USSCO?.indexOf('RECEPCION_FIND') !== -1 || props.dataUser.USSCO?.indexOf('ADMIN_RECEPCION') !== -1) 
+                    && !props.dataUser.CAMIONERO ?
                 <ListItem
-                    title="Registro de Productos"
+                    title="Recepción de Productos"
                     leading={<FontAwesome name="registered" size={24} />}
                     trailing={props2 => <FontAwesome name="chevron-right" {...props2} />}
+                    onPress={() => props.navigation.navigate('Recepcion')}
                 />:''
                 }
                 {/*props.dataUser.USSCO?.indexOf('SCAN') !== -1 && 

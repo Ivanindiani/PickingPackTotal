@@ -1,11 +1,12 @@
 import { ActivityIndicator, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useRef, useState, useEffect } from "react";
-import { StyleSheet, Alert, ToastAndroid, Dimensions } from "react-native";
+import { StyleSheet, Alert, ToastAndroid, Dimensions, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import { useCallback } from "react";
 import ListaPerform from "../../components/_virtualList";
 import fetchIvan from "../../components/_fetch";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import ImagesAsync from "../../components/_imagesAsync";
 const Global = require('../../../app.json');
 
 const dimensionesScreen = Dimensions.get('screen');
@@ -42,6 +43,21 @@ const MoveProducts = (props) => {
             }
         }
     }
+
+    useEffect(() => {
+        let before = props.navigation.addListener('beforeRemove', (e) => {
+            console.log("Mount listener info")
+            if(dialogVisible > -1) {
+                e.preventDefault();
+                setDialogVisible(-1);
+            }
+        })
+
+        return () => {
+            console.log("Remove listener info");
+            before();
+        }
+    }, [props.navigation, dialogVisible]);
 
     useEffect(() => { // Efecto de montura del componente
         if(props.tabActive && props.almacenId && dialogVisible === -1) {
@@ -100,6 +116,7 @@ const MoveProducts = (props) => {
     }
 
     const scanQR = (text) => {
+        if(!text) return;
         let codigo = text.split(',')[0].match(/([0-9])/g);
         codigo = codigo?.join("") || "";
         for(let space of bodega.data) {
@@ -115,7 +132,7 @@ const MoveProducts = (props) => {
     const RowProducts = (item, index) => {
         return (
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey'}} 
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 290}} 
                 spacing={0}
                 p={1}
                 key={index}>
@@ -127,6 +144,10 @@ const MoveProducts = (props) => {
                 <HStack style={styles.row}>
                     <Text style={styles.th}>LOTE:</Text>
                     <Text style={[styles.td, {color: 'black'}]}>{item.LOTEA || '-'}</Text>
+                </HStack>
+                <HStack style={styles.row}>
+                    <Text style={styles.th}>CANTIDAD:</Text>
+                    <Text style={[styles.td, {color: 'black'}]}>{item.QUANT} Unidad{item.QUANT != 1 ? 'es':''}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>PISO/NIVEL:</Text>
@@ -144,14 +165,22 @@ const MoveProducts = (props) => {
                     <Text style={styles.th}>RACK:</Text>
                     <Text style={[styles.td, {color: 'red'}]}>{item.Bodega?.RACKS}</Text>
                 </HStack>
+                <HStack style={styles.row}>
+                    <Text style={styles.th}>PALETA:</Text>
+                    <Text style={[styles.td, {color: 'blue'}]}>{item.Bodega?.PALET}</Text>
+                </HStack>
                 <HStack style={[styles.row, {alignItems: 'center'}]}>
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>
                     <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center'}]}>{item.IDDWA}</Text>
                     <Button title="Mover" color="white" tintColor="primary" trailing={<Ionicons name="move"/>} onPress={() => setDialogVisible(index)}/>
                 </HStack>
+                <View style={styles.imagenPosition}>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
+                </View>
             </VStack>
         )
     }
+
     const memoRows = useCallback((item, index) => RowProducts(item, index), [findProduct])
 
     return (
@@ -177,15 +206,15 @@ const MoveProducts = (props) => {
                 <ListaPerform
                     items={findProduct} 
                     renderItems={memoRows} 
-                    heightRemove={dimensionesScreen.height < 600 ? 330:370}
+                    heightRemove={dimensionesScreen.height < 600 ? 335:380}
                     height={186}
                     />
                 {bodega.data && dialogVisible > -1 ?
-                <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 100}}>
+                <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 1000, elevation: 100}}>
                     <DialogHeader title="Ingresa o escanea el identificador nuevo" />
                     <DialogContent>
                         <Stack spacing={2}>
-                            <Text style={styles.subtitle}>Identificador de RACK: </Text>
+                            <Text style={styles.subtitle}>Identificador de la nueva paleta: </Text>
                             
                             <TextInput 
                                 autoFocus={true}
@@ -195,7 +224,12 @@ const MoveProducts = (props) => {
                                 onEndEditing={(e) => scanQR(e.nativeEvent.text)} 
                                 placeholder="Pulsa y escanea o escribe el identificador"
                                 onFocus={() => setMoveCode(null)}
+                                showSoftInputOnFocus={showKeyBoard}
                                />
+                            <HStack style={{alignItems:'center', alignSelf: 'center'}}>
+                                <Text style={styles.small2}>Activar teclado</Text>
+                                <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
+                            </HStack>
                             {moveCode ? <VStack>
                                 <HStack style={styles.row}>
                                     <Text style={styles.th}>PISO/NIVEL:</Text>
@@ -212,6 +246,10 @@ const MoveProducts = (props) => {
                                 <HStack style={styles.row}>
                                     <Text style={styles.th}>RACK:</Text>
                                     <Text style={[styles.td, {color: 'red'}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.RACKS}</Text>
+                                </HStack>
+                                <HStack style={styles.row}>
+                                    <Text style={styles.th}>PALETA:</Text>
+                                    <Text style={[styles.td, {color: 'blue'}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.PALET}</Text>
                                 </HStack>
                             </VStack>:''}
                         </Stack>
@@ -292,6 +330,12 @@ const styles = StyleSheet.create({
     row: {
         justifyContent: 'space-between',
         width: '100%'
+    },
+    imagenPosition: {
+        flex: 1,
+        position: 'fixed',
+        start: 100,
+        bottom: 150
     }
 });
 

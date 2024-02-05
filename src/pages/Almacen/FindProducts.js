@@ -1,11 +1,12 @@
 import { ActivityIndicator, Button, HStack, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useRef, useState, useEffect } from "react";
-import { StyleSheet, Alert, ToastAndroid, Dimensions } from "react-native";
+import { StyleSheet, Alert, ToastAndroid, Dimensions, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import { useCallback } from "react";
 import ListaPerform from "../../components/_virtualList";
 import fetchIvan from "../../components/_fetch";
 import AntDesign from "react-native-vector-icons/AntDesign";
+import ImagesAsync from "../../components/_imagesAsync";
 const Global = require('../../../app.json');
 
 const dimensionesScreen = Dimensions.get('screen');
@@ -133,10 +134,14 @@ const FindProducts = (props) => {
         ]);
     }
 
+    const getConcatItem = (item) => {
+        return `${item.Bodega?.FLOOR ?? ''}${item.Bodega?.AISLE ?? ''}${item.Bodega?.COLUM ?? ''}${item.Bodega?.RACKS ?? ''}${item.Bodega?.PALET ?? ''}`;
+    }
+
     const RowProducts = (item, index) => {
         return (
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey'}} 
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 290}} 
                 spacing={1}
                 p={2}
                 key={index}>
@@ -148,6 +153,10 @@ const FindProducts = (props) => {
                 <HStack style={styles.row}>
                     <Text style={styles.th}>LOTE:</Text>
                     <Text style={[styles.td, {color: 'black'}]}>{item.LOTEA}</Text>
+                </HStack>
+                <HStack style={styles.row}>
+                    <Text style={styles.th}>CANTIDAD:</Text>
+                    <Text style={[styles.td, {color: 'black'}]}>{item.QUANT} Unidad{item.QUANT != 1 ? 'es':''}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>PISO/NIVEL:</Text>
@@ -165,13 +174,20 @@ const FindProducts = (props) => {
                     <Text style={styles.th}>RACK:</Text>
                     <Text style={[styles.td, {color: 'red'}]}>{item.Bodega?.RACKS}</Text>
                 </HStack>
+                <HStack style={styles.row}>
+                    <Text style={styles.th}>PALETA:</Text>
+                    <Text style={[styles.td, {color: 'blue'}]}>{item.Bodega?.PALET}</Text>
+                </HStack>
                 <HStack style={[styles.row, {alignItems: 'center'}]}>
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>
-                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center'}]}>{item.IDDWA}</Text>
+                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center'}]}>{item.IDDWA} ({getConcatItem(item)})</Text>
                     {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
                 </HStack>
+                <View style={styles.imagenPosition}>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
+                </View>
             </VStack>
         )
     }
@@ -201,8 +217,8 @@ const FindProducts = (props) => {
                 <ListaPerform
                     items={findProduct} 
                     renderItems={memoRows} 
-                    heightRemove={dimensionesScreen.height < 600 ? 330:370}
-                    height={186}
+                    heightRemove={dimensionesScreen.height < 600 ? 330:375}
+                    height={190}
                     />
             </Stack>
         </Provider>
@@ -236,6 +252,12 @@ const styles = StyleSheet.create({
     row: {
         justifyContent: 'space-between',
         width: '100%'
+    },
+    imagenPosition: {
+        flex: 1,
+        position: 'fixed',
+        start: 100,
+        bottom: 150
     }
 });
 

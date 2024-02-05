@@ -29,7 +29,7 @@ const SelectInput = memo((props) => {
                 </ScrollView>
             </View>
         </Modal>:
-        <Button color="white" title={props.value ? props.data.filter(f => f.value == props.value)[0]?.label:props.title} 
+        <Button color="white" title={props.value ? props.data.filter(f => f.value == props.value)[0]?.label:props.title} titleStyle={props.titleStyle}
             onPress={()=>setOpen(true)} trailing={props2 => <FontAwesome name="chevron-down" {...props2} size={14}/>} style={props.buttonStyle} disabled={props.disabled}/>
     )
 },(prevProps, nextProps) => {

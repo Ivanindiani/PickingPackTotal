@@ -123,6 +123,8 @@ dependencies {
         implementation jscFlavor
     }
     implementation project(':react-native-vector-icons')
+    implementation project(':react-native-keyevent')
+
 }
 
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

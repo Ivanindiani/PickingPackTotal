@@ -83,65 +83,6 @@ const Scaneo = (props) => {
             //DeviceEventEmitter.removeListener('ScannerBroadcastReceiver'); 
         }
     },[]);*/
-
-     // Evento alternativo para detectar el escaneo
-    const evento = (keyEvent) => { 
-        /*if(keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) { // Nos llaman con enter
-            //if(verItems)
-                setVerItems(false);
-        }*/
-        console.log(`Key: ${keyEvent.pressedKey}`);
-        console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
-        //console.log("FOCUS?",otroInput.current?.isFocused());
-        if(!inputScan.current?.isFocused() && !otroInput.current?.isFocused() && !inputCant1.current?.isFocused()) {
-            //console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
-            //console.log(`Action: ${keyEvent.action}`);
-            //console.log(`Key: ${keyEvent.pressedKey}`);
-            
-            if((keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) || keyEvent.keyCode === 103 || keyEvent.keyCode === 10036) { // Nos llaman con enter
-                console.log("Activamos ")
-                inputScan.current?.focus();
-                scrollShow.current?.scrollTo({y: 20, animated: true});
-            }
-
-            if(keyEvent.keyCode >= 29 && keyEvent.keyCode <= 54) { // A-Z
-                if(inputScan.current) {
-                    inputScan.current.focus();
-                    inputScan.current.setNativeProps({ text: keyEvent.pressedKey })
-                    scrollShow.current?.scrollTo({y: 20, animated: true});
-                }
-            } else if(keyEvent.keyCode >= 7 && keyEvent.keyCode <= 16) { // 0-9
-                if(inputScan.current) {
-                    inputScan.current.focus();
-                    inputScan.current.setNativeProps({ text: keyEvent.pressedKey })
-                    scrollShow.current?.scrollTo({y: 20, animated: true});
-                }
-            }
-        }
-    }
-
-    useEffect(() => {// Efecto para detectar si va para atras
-        let before = props.navigation.addListener('beforeRemove', (e) => {
-            //console.log("Mount listener info")
-            e.preventDefault();
-            if(!showInfo) {
-                Alert.alert('Escaneo de productos', '¿Deseas realmente salir de la ventana de escaneo de productos?',
-                [{
-                    text: 'No', style: 'cancel'
-                },{
-                    text: 'Si', style: 'destructive', onPress: () => props.navigation.dispatch(e.data.action)
-                }])
-            } else {
-                //console.log("Hola");
-                setShowInfo(false)
-            }
-        });
-
-        return () => {
-            //console.log("Remove listener info");
-            before();
-        }
-    }, [props.navigation, showInfo]);
     
     useEffect(() => { // Efecto de montura del componente
         getItems();
@@ -488,7 +429,7 @@ const Scaneo = (props) => {
                         
                         lotes = lotico;
                         if(!lotico.length && autosumar) {
-                            if(item.noBase) { // No es unidad base
+                            //if(item.noBase) { // No es unidad base
                                 if(parseInt(item.maxQuantity-item.TCANT) >= parseInt(und.UMREZ)) {
                                     item.TCANT = parseInt(und.UMREZ)+parseInt(item.TCANT);
                                 } else {
@@ -498,7 +439,7 @@ const Scaneo = (props) => {
                                     RNBeep.PlaySysSound(RNBeep.AndroidSoundIDs.TONE_CDMA_PIP);
                                     ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
                                 }
-                            } else {
+                            /*} else {
                                 if(parseInt(item.maxQuantity-item.TCANT) > 0) {
                                     item.TCANT = parseInt(item.TCANT)+1;
                                 } else {
@@ -509,7 +450,7 @@ const Scaneo = (props) => {
                                     fullItems = true;
                                     ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
                                 }
-                            }
+                            }*/
                             //item.quantity_usar = parseInt(item.TCANT).toString();
                             RNBeep.beep(true);
                             // Sonido de join
@@ -519,7 +460,7 @@ const Scaneo = (props) => {
                                 lote: null
                             }
                             //console.log(mode);
-                            if(!lotico.length && !fullItems && autoinsert && item.TCANT > 0) {
+                            if(!fullItems && autoinsert && item.TCANT > 0) {
                                 setTimeout(() => saveProduct(item), 10);
                             }
                             setCant1(item.TCANT)
@@ -1186,7 +1127,7 @@ const Scaneo = (props) => {
                         height: 45
                     }}
                     inputStyle={((item.maxQuantityLote && item.quantity_usar > item.maxQuantityLote[item.CHARG]) 
-                        || (!item.maxQuantityLote && item.quantity_usar > item.maxQuantity)) ? {color: 'red'}:{}}
+                        || (!item.maxQuantityLote && item.quantity_usar > item.maxQuantity)) ? {color: 'red', paddingEnd: 0, paddingStart: 0}:{paddingEnd: 0, paddingStart: 0}}
                     editable={!loadingSave}
                     pointerEvents="none"
                     //onBlur={(e) => updateProduct(item) }
@@ -1269,7 +1210,7 @@ const Scaneo = (props) => {
                                     onEndEditing={(e) => codeFind(e.nativeEvent.text) }
                                     //onBlur={(e) => codeFind(e.nativeEvent.text) }
                                     showSoftInputOnFocus={showKeyBoard}
-                                    keyboardType={!showKeyBoard ? "numeric":"default"}
+                                    //keyboardType={!showKeyBoard ? "numeric":"default"}
                                     ref={inputScan}
                                     maxLength={18}
                                 />
