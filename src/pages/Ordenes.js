@@ -99,7 +99,7 @@ const Ordenes = (props) => {
                 <Text style={{fontWeight: '500'}}>Sucursal: </Text>
                 
                 <SelectInput
-                    searchable={true}
+                    searchable={false}
                     data={centrosUser}
                     value={centroId}
                     setValue={setCentroId}
@@ -113,7 +113,7 @@ const Ordenes = (props) => {
             <View style={styles.centros}>
                 <Text style={{fontWeight: '500'}}>División: </Text>
                 <SelectInput
-                    searchable={true}
+                    searchable={false}
                     data={almacenes}
                     value={almacenId}
                     setValue={setAlmacenId}

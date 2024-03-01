@@ -59,7 +59,7 @@ export default ImagesAsync;
 const styles = StyleSheet.create({
     image: {
         width: 'auto',
-        height: 100,
+        height: 110,
         transform: [{scale: 1}],
     }
 })

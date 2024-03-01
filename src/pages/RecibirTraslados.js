@@ -99,7 +99,7 @@ const RecibirTraslados = (props) => {
             <View style={styles.centros}>
                 <Text style={{fontWeight: '500'}}>División: </Text>
                 <SelectInput
-                    searchable={true}
+                    searchable={false}
                     data={almacenes}
                     value={almacenId}
                     setValue={setAlmacenId}

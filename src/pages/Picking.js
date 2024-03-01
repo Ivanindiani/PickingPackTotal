@@ -785,7 +785,7 @@ const ManagerProducts = (props) => {
                             <VStack style={{alignItems: 'center'}}>
                                 <Text>Lote:</Text>
                                 <SelectInput
-                                    searchable={true}
+                                    searchable={false}
                                     data={preProduct.ProdConLotes?.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG}],[{value: 'NEWLOTE', label: 'NUEVO LOTE'}])}
                                     value={lote}
                                     setValue={setLote}
@@ -830,7 +830,7 @@ const ManagerProducts = (props) => {
                         }
 
                         <Button title="Cargar" onPress={() => mode?.mode === 'update' ? updateProduct(preProduct, cantidad):addProduct()} color={Global.colorMundoTotal} loading={loading}
-                            disabled={!cantidad || !Object.keys(preProduct).length || (preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' && !dateLote) ? true:false} 
+                            disabled={!cantidad || !Object.keys(preProduct).length || (preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' && !dateLote && !loteName) ? true:false} 
                             style={{marginTop: 10}}/>
                     </View>
                     :''}

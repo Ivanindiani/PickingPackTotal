@@ -83,7 +83,46 @@ const Scaneo = (props) => {
             //DeviceEventEmitter.removeListener('ScannerBroadcastReceiver'); 
         }
     },[]);*/
-    
+    // Evento alternativo para detectar el escaneo
+    const evento = (keyEvent) => { 
+        /*if(keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) { // Nos llaman con enter
+            //if(verItems)
+                setVerItems(false);
+        }*/
+        console.log(`Key: ${keyEvent.pressedKey}`);
+        console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
+        //console.log("FOCUS?",otroInput.current?.isFocused());
+        try {
+            if(!inputScan.current?.isFocused() && !otroInput.current?.isFocused() && !inputCant1.current?.isFocused()) {
+                //console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
+                //console.log(`Action: ${keyEvent.action}`);
+                //console.log(`Key: ${keyEvent.pressedKey}`);
+                
+                if((keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) || keyEvent.keyCode === 103 || keyEvent.keyCode === 10036) { // Nos llaman con enter
+                    console.log("Activamos ")
+                    inputScan.current?.focus();
+                    scrollShow.current?.scrollTo({y: 20, animated: true});
+                }
+
+                if(keyEvent.keyCode >= 29 && keyEvent.keyCode <= 54) { // A-Z
+                    if(inputScan.current) {
+                        inputScan.current.focus();
+                        inputScan.current.setNativeProps({ text: keyEvent.pressedKey })
+                        scrollShow.current?.scrollTo({y: 20, animated: true});
+                    }
+                } else if(keyEvent.keyCode >= 7 && keyEvent.keyCode <= 16) { // 0-9
+                    if(inputScan.current) {
+                        inputScan.current.focus();
+                        inputScan.current.setNativeProps({ text: keyEvent.pressedKey })
+                        scrollShow.current?.scrollTo({y: 20, animated: true});
+                    }
+                }
+            }
+        } catch(e) {
+            console.log(e);
+        }
+    }
+
     useEffect(() => { // Efecto de montura del componente
         getItems();
         
@@ -933,73 +972,6 @@ const Scaneo = (props) => {
         });
     }
 
-    const deleteItem = (name, id) => {
-        //console.log("Delete items")
-        
-        Alert.alert('Confirmar', `¿Deseas eliminar el ítem (${name}) realmente?`, [
-            {
-              text: 'Si deseo eliminar',
-              style: 'destructive',
-              onPress: () => {
-                let datos = {
-                    id: id
-                };
-                setLoading(true);
-                
-                fetchIvan(props.ipSelect).delete('/crudTrasladoItems', datos, props.token.token)
-                .then(({data}) => {
-                    console.log("Productos borrados: ", data.data);
-                    setItems(items.filter(f => f.IDTRI !== id));
-                    //items = items.filter(f => f.IDTRI !== id);
-                    if(scanSelect.IDTRI == id) {
-                        /*setMode({
-                            mode: 'insert',
-                            lote: null,
-                            noPush: true
-                        })*/
-                        //cantidadInput1 = 0;
-                        mode = {
-                            mode: 'insert',
-                            lote: mode.lote
-                        };
-                    }
-                    ToastAndroid.show(
-                        "Producto eliminado con éxito",
-                        ToastAndroid.SHORT
-                    );
-                })
-                .catch(({status, error}) => {
-                    //console.log(status, error);
-                    if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
-                        setMsgConex("¡Ups! Parece que no hay conexión a internet");
-                    }
-                    if(status === 406) {
-                        setTraslado({...traslado, TRSTS: error.status});
-                        props.route.params.updateTras({...traslado, TRSTS: error.status});
-                        props.navigation.goBack();
-                        
-                        return ToastAndroid.show(
-                            error?.text || "Solicitud no aceptada, por el servidor",
-                            ToastAndroid.LONG
-                        );
-                    }
-                    return ToastAndroid.show(
-                        error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
-                    );
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-            },
-        },
-        {
-          text: 'No cancelar',
-          style: 'cancel',
-        }
-    ]);
-    }
-
     const finalizarTraslado = async () => {
         Alert.alert('Confirmar', `Antes de finalizar la carga de traslado por favor verifica los artículos en la lista con su cantidad.`, [
             {
@@ -1203,7 +1175,7 @@ const Scaneo = (props) => {
                     {traslado.TRSTS === 1 ? 
                         <View> 
                             <VStack spacing={-8}>
-                                <TextInput placeholder="Pulsa y escanea o escribe manualmente" 
+                                <TextInput placeholder="Pulsa y escanea o tipea el código de barras" 
                                     //value={scancode}
                                     //autoFocus = {true} 
                                     //onChangeText={codeFind} 

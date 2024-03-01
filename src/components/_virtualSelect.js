@@ -1,12 +1,13 @@
 import { Button, ListItem, Text } from "@react-native-material/core";
 import { useState, memo } from "react";
-import { Modal, ScrollView, StyleSheet, View } from "react-native";
+import { FlatList, Modal, TextInput, StyleSheet, View } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 
 import _ from 'lodash';
 
 const SelectInput = memo((props) => {
     const [open, setOpen] = useState(props.open || false);
+    const [find, setFind] = useState(null);
 
     return (
         open ? <Modal
@@ -20,16 +21,22 @@ const SelectInput = memo((props) => {
                     props.onClose();
             }}>
             <View style={styles.centeredView}>
-                <ScrollView style={styles.modalView}>
+                <View style={styles.modalView}>
                     {props.title ? <Text style={styles.modalText}>{props.title}</Text>:''}
-                    {props.data.map((d, k) =>
-                        <ListItem key={k} title={d.label} secondaryText={d.subLabel} onPress={() => { props.setValue(d.value); setOpen(false); if(props.onClose) {props.onClose();}}} style={styles.list}
-                            trailing={props2 => <FontAwesome name="chevron-right" {...props2} size={14} />}/>
-                    )}
-                </ScrollView>
+                    {props.searchable && <TextInput placeholder="Buscar" 
+                        onChangeText={(text) => setFind(text) }
+                        style={{margin: 10, marginTop: 2, borderBottomWidth: 1}}
+                        autoFocus={true}
+                    />}
+                    <FlatList
+                        data={find && props.searchable ? props.data.filter(f => f.value.toUpperCase().indexOf(find.toUpperCase()) !== -1 || f.label.toUpperCase().indexOf(find.toUpperCase()) !== -1):props.data}
+                        renderItem={({item, index}) => <ListItem key={index} title={item.label} secondaryText={item.subLabel} onPress={() => { props.setValue(item.value); setOpen(false); if(props.onClose) {props.onClose();}}} style={styles.list}
+                        trailing={props2 => <FontAwesome name="chevron-right" {...props2} size={14} />}/>}
+                    />
+                </View>
             </View>
         </Modal>:
-        <Button color="white" title={props.value ? props.data.filter(f => f.value == props.value)[0]?.label:props.title} titleStyle={props.titleStyle}
+        <Button color="white" title={props.value !== null ? props.data.filter(f => f.value === props.value)[0]?.label:props.title} titleStyle={props.titleStyle}
             onPress={()=>setOpen(true)} trailing={props2 => <FontAwesome name="chevron-down" {...props2} size={14}/>} style={props.buttonStyle} disabled={props.disabled}/>
     )
 },(prevProps, nextProps) => {
@@ -46,9 +53,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         alignSelf: 'center',
-        marginTop: 40,
+        marginTop: 20,
         width: '75%',
-        maxHeight: '80%'
+        maxHeight: '60%'
     },
     modalView: {
         margin: 20,
@@ -73,7 +80,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     modalText: {
-        marginBottom: 15,
+        marginBottom: 5,
         textAlign: 'center',
         fontWeight: 'bold'
     },

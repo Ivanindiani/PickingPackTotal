@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import fetchIvan from "../components/_fetch";
-import { ActivityIndicator, Box, Button, Divider, HStack, IconButton, ListItem, Provider, Stack, Text } from "@react-native-material/core";
-import { Alert, Linking, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text } from "@react-native-material/core";
+import { Alert, FlatList, Linking, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import MI from "react-native-vector-icons/MaterialCommunityIcons";
 import AntDesign from "react-native-vector-icons/AntDesign";
@@ -207,10 +207,10 @@ const Paletas = (props) => {
     }, [Orden]);
 
     const Paleta = () => 
-        <View>
+        <View style={styles.view}>
             {loading && <ActivityIndicator />}
-            <ScrollView nestedScrollEnabled={true} style={styles.scrollView}>
-                <HStack style={{justifyContent: 'flex-end', alignItems: 'center', padding: 1, paddingBottom: 3}}>
+            <FlatList
+                ListHeaderComponent={<HStack style={{justifyContent: 'flex-end', alignItems: 'center', padding: 1, paddingBottom: 3}}>
                     {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && Orden.STSOR === 1 ?
                     <Button title="Agregar paleta" color="secondary" 
                         leading={p2 => <FontAwesome5 name="pallet" {...p2} size={14}/>} 
@@ -224,21 +224,24 @@ const Paletas = (props) => {
                         uppercase={false}
                         loading={loading}
                     />:''}
-                </HStack>
-                {Orden.Paletas.map((paleta, i) =>
+                </HStack>}
+                data={Orden.Paletas}
+                renderItem={({item, index}) =>
                     <ListItem
-                        key={i}
+                        key={index}
                         leading={<FontAwesome5 name="pallet" size={24}/>}
-                        overline={"ID: "+paleta.IDPAL}
-                        title={"Paleta "+paleta.IDPAL.substr(-3).padStart(3, '0')}
-                        secondaryText={"Creada el: "+paleta.DATEC.split("T")[0]+" "+paleta.DATEC.split("T")[1].substring(0,5)}
-                        trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && Orden.STSOR === 1 ? <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2} color="red"/> } onPress={() => delPalet(paleta.IDPAL)}/>:''}
+                        overline={"ID: "+item.IDPAL}
+                        title={"Paleta "+item.IDPAL.substr(-3).padStart(3, '0')}
+                        secondaryText={"Creada el: "+item.DATEC.split("T")[0]+" "+item.DATEC.split("T")[1].substring(0,5)}
+                        trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && Orden.STSOR === 1 ? <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2} color="red"/> } onPress={() => delPalet(item.IDPAL)}/>:''}
                         onPress={() => props.dataUser.USSCO.indexOf('TRASLADOS_FIND') !== -1 ? props.navigation.navigate(props.dataUser.CAMIONERO ? 'RecibirTraslados':'Traslados', {
                             type_tras: 'crear_tras',
                             centroId: props.route.params.centroId,
                             almacenId: props.route.params.almacenId,
+                            centroName: Centro.NAME1,
+                            almacenName: Almacen.LGOBE,
                             IDTRG: Orden.IDTRG,
-                            IDPAL: paleta.IDPAL,
+                            IDPAL: item.IDPAL,
                             STSOR: Orden.STSOR,
                             Paletas: Orden.Paletas,
                             setPaletas: (json) => {
@@ -247,30 +250,31 @@ const Paletas = (props) => {
                             }
                         }):''}
                     />
-                )}
-                <View style={{ width: 200, height: 40 }}></View>
-            </ScrollView>
+                }
+                ListEmptyComponent={<Text>No hay paletas aún</Text>}
+            />
         </View>;
     
     const Rutas = () => 
-        <View>
-            <ScrollView nestedScrollEnabled={true} style={styles.scrollView}>
-                {Orden.Rutas.map((ruta, i) =>
+        <View style={styles.view}>
+            <FlatList
+                data={Orden.Rutas}
+                renderItem={({item, index}) =>
                     <ListItem
-                        key={i}
-                        leading={<FontAwesome5 name="route" size={24} color={rutaColor[ruta.DROUT]}/>}
-                        title={"Destino "+ruta.Centro.NAME1}
-                        overline={"Actualizado el: "+ruta.DATEU.split("T")[0]+" "+ruta.DATEU.split("T")[1].substring(0,5)}
-                        secondaryText={ruta.DROUT+"\n"+ruta.Centro.STRAS}
+                        key={index}
+                        leading={<FontAwesome5 name="route" size={24} color={rutaColor[item.DROUT]}/>}
+                        title={"Destino "+item.Centro.NAME1}
+                        overline={"Actualizado el: "+item.DATEU.split("T")[0]+" "+item.DATEU.split("T")[1].substring(0,5)}
+                        secondaryText={item.DROUT+"\n"+item.Centro.STRAS}
                         trailing={props.dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
                             //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
-                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${ruta.Centro.TLATI},${ruta.Centro.TLONG}`);
+                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Centro.TLATI},${item.Centro.TLONG}`);
                         }}/>}
                         onPress={() => changeStatusRuta(ruta, i)}
                     />
-                )}
-                <View style={{ width: 200, height: 40 }}></View>
-            </ScrollView>
+                }
+                ListEmptyComponent={<Text>No hay rutas registradas</Text>}
+            />
         </View>;
 
     const _renderScene = ({ route }) => {
@@ -444,7 +448,7 @@ const Paletas = (props) => {
 
 
 const styles = StyleSheet.create({
-    scrollView: {
+    view: {
         marginTop: 2,
         zIndex: 9
     }, 

@@ -216,7 +216,7 @@ const Recepcion = (props) => {
                 <View style={styles.centros}>
                     <Text style={{fontWeight: '500'}}>Sucursal: </Text>
                     <SelectInput
-                        searchable={true}
+                        searchable={false}
                         data={centrosUser}
                         value={centroId}
                         setValue={setCentroId}
@@ -229,7 +229,7 @@ const Recepcion = (props) => {
                 {centroId && almacenes.length ?<View style={styles.centros}>
                     <Text style={{fontWeight: '500'}}>División: </Text>
                     <SelectInput
-                        searchable={true}
+                        searchable={false}
                         data={almacenes}
                         value={almacenId}
                         setValue={setAlmacenId}
@@ -253,14 +253,14 @@ const Recepcion = (props) => {
                             maxLength={50}></TextInput>
                         <HStack style={{gap: 2, maxWidth: '100%', justifyContent: 'space-between'}} ms={-7}>
                             <SelectInput
-                                searchable={true}
+                                searchable={false}
                                 data={tipoProveedor}
                                 value={tipo_proveedor_id}
                                 setValue={setTipoProveedorID}
                                 titleStyle={{fontSize: 9}}
                                 title="Tipo Proveedor"/>
                             <SelectInput
-                                searchable={true}
+                                searchable={false}
                                 data={grupoProveedor}
                                 value={grupo_proveedor_id}
                                 setValue={setGrupoProveedorID}

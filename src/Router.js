@@ -18,6 +18,7 @@ import TabOrdenes from './pages/TabOrdenes';
 import Traslados from './pages/Traslados';
 import Recepcion from './pages/Recepcion';
 import Picking from './pages/Picking';
+import TabScaneo from './pages/TabScaneo';
 
 const Stack = createNativeStackNavigator();
 
@@ -63,6 +64,9 @@ const Router = (props) => {
                 </Stack.Screen>*/}
                 <Stack.Screen name="Paletas" options={() => optionsBar(Global.name+"\n Órden de traslado", props)}>
                     {(p2) =><Paletas {...props} {...p2}/>}
+                </Stack.Screen>
+                <Stack.Screen name="TabScaneo" options={() => optionsBar(Global.name+"\n Escaneo de productos", props)}>
+                    {(p2) =><TabScaneo {...props} {...p2}/>}
                 </Stack.Screen>
             </Stack.Navigator>
         </NavigationContainer>

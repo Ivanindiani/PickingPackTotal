@@ -78,7 +78,7 @@ const ManagerProducts = (props) => {
                 } else {
                     prod.noBase = true;
                 }
-                prod.cantidadDisp = prod.ProdSinLotes[0].LABST;
+                prod.cantidadDisp = prod.ProdSinLotes[0]?.LABST ?? 0;
                 for(let p in prod.ArticulosBodegas) {
                     prod.cantidadDisp -= prod.ArticulosBodegas[p].QUANT;
                 }
@@ -156,13 +156,13 @@ const ManagerProducts = (props) => {
     const scanQR = () => {
         if(codeID) {
             for(let space of bodega.data) {
-                if(space.IDDWA === codeID) {
+                if(space.IDDWA == codeID) {
                     setEstructura({
-                        nivel: space.FLOOR.toString(),
-                        pasillo: space.AISLE.toString(),
-                        columna: space.COLUM,
-                        rack: space.RACKS,
-                        paleta: space.PALET
+                        nivel: space.FLOOR,
+                        pasillo: space.AISLE,
+                        columna: space.COLUM.toString(),
+                        rack: space.RACKS.toString(),
+                        paleta: space.PALET.toString()
                     });
                     return;
                 }
