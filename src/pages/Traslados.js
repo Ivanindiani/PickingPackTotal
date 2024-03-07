@@ -103,7 +103,7 @@ const Traslados = (props) => {
         let datos = [
             `IDPAL=${props.route.params.IDPAL}`,
             `find={"FWERK": "${centroId}", "FLGOR": "${almacenId}", "TRSTS": "[1,2,3,5]"}`,
-            `pending=true`
+            `users_scan=true`
         ];
         if(filtrado !== -1) {
             datos.push(`limit=${filtrado}`);
@@ -373,7 +373,7 @@ const Traslados = (props) => {
                     overline={trasladosStatus[item.TRSTS]}
                     title={item.TRCON}
                     secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")+
-                        "\nPedido Nº: "+(item.NPED ?? "Traslado MANUAL")}
+                        "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                     //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
                             //+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")
                             //+"\nAmpliado en: "+(item.Paletas.reduce((pr, pl) => (pr.length ? (pr+","):pr)+pl.IDPAL?.padStart(3, "0"), ""))
@@ -388,7 +388,7 @@ const Traslados = (props) => {
                         </View>
                     }
                     onPress={() => props.dataUser.USSCO.indexOf('SCAN') !== -1 ? 
-                    props.navigation.navigate(item.NPED ? 'TabScaneo':'Scaneo', {
+                    props.navigation.navigate(item.IDPED ? 'TabScaneo':'Scaneo', {
                         IDPAL: props.route.params.IDPAL,
                         traslado: item,
                         updateTras: updateTras
@@ -417,7 +417,7 @@ const Traslados = (props) => {
                 overline={trasladosStatus[item.TRSTS]}
                 title={item.TRCON}
                 secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")+
-                            "\nPedido Nº: "+(item.NPED ?? "Traslado MANUAL")}
+                            "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                 leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                 trailing={(p2) => 
                     <View>

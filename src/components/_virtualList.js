@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { Dimensions, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 
 import {
     RecyclerListView,
@@ -8,20 +8,20 @@ import {
 } from 'recyclerlistview'; // Version can be specified in package.json
 import _ from 'lodash';
 
-const dimensionesScreen = Dimensions.get('screen');
+const dimensionesScreen = Dimensions.get('window');
 
 const createDataProvider = () => {
     return new DataProvider((r1, r2) => r1 !== r2);
 };
 
-const ListaPerform = memo(({items, renderItems, heightRemove, refreshGet, height = null}) => {
+const ListaPerform = memo(({items, renderItems, heightRemove=null, refreshGet, height = 90, refreshControl = null, forceHeight=true}) => {
     const [dataProvider, setDataProvider] = useState(createDataProvider());
 
     const _layoutProvider = new LayoutProvider(
         index => 0,
         (type, dim) => {
             dim.width = dimensionesScreen.width,
-            dim.height = height ? height:90
+            dim.height = height
         }
     )
 
@@ -32,23 +32,18 @@ const ListaPerform = memo(({items, renderItems, heightRemove, refreshGet, height
     }, [items])
 
     return (
-        <View style={{marginTop: 5, width: dimensionesScreen.width, height: dimensionesScreen.height-heightRemove}}>
+        <View style={{marginTop: 5, minHeight: 1, flex: 2, width: dimensionesScreen.width}}>
             {!items?.length ? <Text style={styles.subtitle}>...</Text>:
             <RecyclerListView
                 layoutProvider={_layoutProvider}
                 dataProvider={dataProvider}
                 rowRenderer={(type, data, index) => renderItems(data, index)}
                 scrollViewProps={{
-                    /*refreshControl: (
-                        <RefreshControl
-                        refreshing={false}
-                        onRefresh={()=> refreshGet(true)}
-                        />
-                    ),*/
+                    refreshControl: refreshControl,
                     nestedScrollEnabled: true
                   }}
-                forceNonDeterministicRendering={true} 
-                //canChangeSize={true}
+                forceNonDeterministicRendering={forceHeight} 
+                canChangeSize={true}
             />}            
         </View>
     )

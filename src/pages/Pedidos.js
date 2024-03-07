@@ -2,6 +2,7 @@ import { ListItem, Provider, Stack, Text } from "@react-native-material/core";
 import { useEffect, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
+import ListaPerform from "../components/_virtualList";
 
 const Pedidos = (props) => {
     const traslado = props.route.params.traslado;
@@ -16,10 +17,11 @@ const Pedidos = (props) => {
 
     const getItems = () => {
         let datos = [
-            `IDPED=${traslado.NPED}`,
+            `IDPED=${traslado.IDPED}`,
             `IDTRA=${traslado.IDTRA}`,
             `WERKS=${traslado.FWERK}`,
             `LGORT=${traslado.FLGOR}`,
+            `IDPAL=${IDPAL}`,
             `simpleData=true`
         ];
         
@@ -54,9 +56,9 @@ const Pedidos = (props) => {
         let text = ``;
         for(let art of item.ArticulosBodegas) {
             if(text.length)
-                text += " | ["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+art.QUANT;
+                text += " | ["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+(art.QUANT-(art.RESERVADOS??0));
             else
-                text += "["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+art.QUANT;
+                text += "["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+(art.QUANT-(art.RESERVADOS??0));
         }
         if(!text.length) {
             return <Text style={styles.ubicaciones}>No encontramos ubicación registrada del artículo</Text>;
@@ -64,8 +66,9 @@ const Pedidos = (props) => {
         return <Text style={styles.ubicaciones2}>{text}</Text>;
     }
 
-    const rows = ({item, index}) => 
+    const rows = (item, index) => 
     <ListItem
+        style={{backgroundColor:'black'}}
         key={index}
         overline={<Text style={styles.overlay}>Cant. Requerida: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.CANTP}</Text> | Total Escaneado: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.ESCANEADO ?? 0}</Text>
                     {"\n"}Usuario: {item.UsuarioAsignado.USNAM+" "+item.UsuarioAsignado.USLAS}</Text>}
@@ -77,12 +80,14 @@ const Pedidos = (props) => {
 
     return (
         <Provider>
-            <View style={{margin: 2, flex: 1 }}>
+            <View style={{margin: 2, flex: 1, width: '100%' }}>
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
-                <FlatList
-                    data={pedido}
-                    renderItem={rows}
+                <ListaPerform
+                    items={pedido}
+                    renderItems={rows}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={getItems}/>}
+                    height={106}
+                    forceHeight={false}
                 />
             </View>
         </Provider>)

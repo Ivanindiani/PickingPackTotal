@@ -1,4 +1,4 @@
-import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Box, Pressable, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, LogBox, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
@@ -34,6 +34,8 @@ const ScaneoPedido = (props) => {
     const [msgConexion, setMsgConex] = useState('');
     const [showInfo, setShowInfo] = useState('');
     const [cronometro, setCronometro] = useState({});
+    const [openSheet, setOpenSheet] = useState(false);
+    const [comentario, setComentario] = useState(-2);
 
     /** CONFIG **/
     const [showKeyBoard, setShowKeyBoard] = useState(false);
@@ -53,14 +55,15 @@ const ScaneoPedido = (props) => {
     const inputScan = useRef(null); // Input principal
     const inputCant1 = useRef(null); // Input cantidad escaneo
     const inputCantList = useRef(null); // Input cantidad escaneo
+    const inputComentario = useRef(null); // Input comentario dialog
     /** Referencias a componentes **/
 
     /* EVENTO KEYBOARD */
     const evento = (keyEvent) => { 
-        console.log(`Key: ${keyEvent.pressedKey}`);
-        console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
         try {
-            if(!inputScan.current?.isFocused() && !inputCantList.current?.isFocused() && !inputCant1.current?.isFocused()) {
+            if(!inputScan.current?.isFocused() && !inputCantList.current?.isFocused() && !inputCant1.current?.isFocused() && !inputComentario.current?.isFocused()) {
+                console.log(`Key: ${keyEvent.pressedKey}`);
+                console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
                 if((keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) || keyEvent.keyCode === 103 || keyEvent.keyCode === 10036) { // Nos llaman con enter
                     console.log("Activamos ")
                     inputScan.current?.focus();
@@ -85,6 +88,7 @@ const ScaneoPedido = (props) => {
             console.log(e);
         }
     }
+
 
     /* Efecto montura componente */
     useEffect(() => {
@@ -115,8 +119,10 @@ const ScaneoPedido = (props) => {
 
     /* Efecto al seleccionar ubicacion reiniciamos cantidad */
     useEffect(() => {
-        if(rackSel !== null && scanCurrent.MATNR){
-            setScanCurrent({...scanCurrent, TCANT: 0});
+        if(rackSel !== null && scanCurrent.MATNR && !scanCurrent.force){
+            let existe = trasladoItems.filter(f => (scanCurrent.force && f.IDTRI === scanCurrent.IDTRI) || (!scanCurrent.force && f.MATNR === scanCurrent.MATNR 
+                && f.CHARG === scanCurrent.CHARG && scanCurrent.ubicaciones[rackSel].UBI == f.IDADW && props.dataUser.IDUSR === f.UCRID && IDPAL === f.IDPAL));
+            setScanCurrent({...scanCurrent, TCANT: existe.length ? existe[0].TCANT:0});
         }
     }, [rackSel]);
 
@@ -188,6 +194,7 @@ const ScaneoPedido = (props) => {
             `find={"IDTRA": ${traslado.IDTRA}}`,
             `fromWERKS=${traslado.FWERK}`,
             `fromLGORT=${traslado.FLGOR}`,
+            //`IDPAL=${IDPAL}`,
             `checkProducts=${traslado.TRSTS === 1}`,
             `simpleData=true`
         ];
@@ -198,23 +205,23 @@ const ScaneoPedido = (props) => {
             fetchIvan(props.ipSelect).get('/crudTrasladoItems', datos.join('&'), props.token.token, undefined, undefined, 60000) // 1 minuto para probar
             .then(({data}) => {
                 if(data.data.length) passed = true;
-                if(traslado.TRSTS === 1) {
+                if(traslado.TRSTS == 1) {
                     for(let producto of data.data) {
-                        const unidadBase = producto.Producto.UnidadBase?.MEINS || "ST";
                         try {
-                            if(producto.Producto.UnidadBase?.XCHPF === 'X') { // CON LOTES
+                            if(producto.CHARG) { // CON LOTES
                                 producto.maxQuantityLote = {};
                                 for(let lote of producto.Producto.ProdConLote) {
                                     producto.maxQuantityLote[lote.CHARG] = parseInt(lote.CLABS)-parseInt(lote.RESERVADOS ?? 0);
                                 }
                             } else {
-                                producto.maxQuantity = parseInt(producto.Producto.ProdSinLote[0]?.LABST || 0)-parseInt(producto.Producto.ProdSinLote[0]?.RESERVADOS ?? 0);
+                                producto.maxQuantity = parseInt(producto.Producto.ProdSinLotes[0]?.LABST ?? 0)-parseInt(producto.Producto.ProdSinLotes[0]?.RESERVADOS ?? 0);
                             }
                             producto.unidad_index = producto.Producto.UnidadBase;
                             producto.noBase = false;
                             
                             if(forceCheck) {
                                 if(producto.CHARG) {//Lote
+                                    
                                     if(producto.TCANT > producto.maxQuantityLote[producto.CHARG]) {
                                         Alert.alert("Exceso de cantidad", "El producto: "+producto.MAKTG+". Lote: "+producto.CHARG+"\nExcede la cantidad disponible, por favor chequea la lista.");
                                         passed = false;
@@ -227,7 +234,7 @@ const ScaneoPedido = (props) => {
                                 }
                             }
                         } catch (e) {
-                            console.log(e);
+                            console.log("ERRORES");
                         }
                     }
                 }
@@ -257,9 +264,11 @@ const ScaneoPedido = (props) => {
     const findCode = (text) => {
         let scancode = text?.split(',')[0]?.match(/([A-Z|a-z|0-9])/g) ?? null;
         scancode = scancode?.join('') ?? null;
+        console.log(scancode);
         if(!scancode) return;
 
         inputScan.current?.clear(); // Limpiamos el input
+        inputScan.current?.focus(); // Limpiamos el input
         
         if(scanCurrent && scancode === scanCurrent.unidad_index?.EAN11) { // Si el escaneado es el mismo 
             if(autosumar && rackSel !== null) {
@@ -284,7 +293,8 @@ const ScaneoPedido = (props) => {
                 if(producto.TCANT > maximoPosible) {
                     producto.TCANT = maximoPosible;
                 }
-                setScanCurrent(producto);
+                producto.force = false;
+                setScanCurrent({...producto});
                 if(autoinsert) {
                     setTimeout(() => saveProduct(producto),10);
                 }
@@ -305,9 +315,11 @@ const ScaneoPedido = (props) => {
                     if(unidad.EAN11 !== scancode) continue;
                     producto = ped;
                     producto.unidad_index = unidad;
+                    producto.force = false;
+                    producto.TCANT = 0;
                     try {  
                         const unidadBase = producto.UnidadBase?.MEINS || "ST";
-                        if(unidadBase.XCHPF === 'X') { // Con lote
+                        if(producto.UnidadBase.XCHPF === 'X') { // Con lote
                             producto.maxQuantityLote = {
                                 [producto.CHARG]: parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0)
                             };
@@ -333,41 +345,12 @@ const ScaneoPedido = (props) => {
                                 producto.noBase = false;
                             }
                         }
+                        producto.ubicaciones = getUbicaciones(producto);
 
-                        let contar = 0, idx = 0;
-                        let ubicaciones = [];
-                        console.log("Hola");
-                        for(const ubi of producto.ArticulosBodegas) {
-                            let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0);
-                            ubicaciones.push({
-                                label: "Paleta ID: "+ubi.IDDWA,
-                                subLabel: `${ubi.Bodega.FLOOR}-${ubi.Bodega.AISLE}-${ubi.Bodega.COLUM}-${ubi.Bodega.RACKS}-${ubi.Bodega.PALET} - (Cant. ${cantDisp})`,
-                                value: idx,
-                                MAX: cantDisp,
-                                VALOR: ubi.IDDWA,
-                                UBI: ubi.IDADW
-                            });
-                            contar += cantDisp;
-                            idx++;
-                        }
-                        console.log(ubicaciones);
-                        let diff = (unidadBase.XCHPF !== 'X' ? producto.maxQuantity:producto.maxQuantityLote[producto.CHARG])-contar;
-                        if(diff > 0) {
-                            ubicaciones.push({
-                                label: 'S/N Ubicación',
-                                subLabel: 'Cant. '+diff,
-                                value: idx,
-                                MAX: diff,
-                                VALOR: 'sap',
-                                UBI: null
-                            });
-                        }
-                        producto.ubicaciones = ubicaciones;
-
-                        return setScanCurrent(producto);
+                        return setScanCurrent({...producto});
                         
                         // No podemos sumar porque necesita la ubicación ajuro.
-                        /*if(unidadBase.XCHPF !== 'X') { 
+                        /*if(producto.UnidadBase.XCHPF !== 'X') { 
                             if(producto.noBase) { // No es es la BASE si no otra unidad
                                 producto.TCANT = producto.max_paquete == 0 ? producto.maxQuantity:parseInt(producto.unidad_index.UMREZ);
                             } else {
@@ -398,6 +381,52 @@ const ScaneoPedido = (props) => {
         ToastAndroid.show("No hemos encontrado el artículo en la lista del pedido", ToastAndroid.SHORT);
     }
 
+    const editarProducto = (find) => {
+        //setRackSel(null);
+        for(let producto of pedido) {
+            if(producto.MATNR === find.MATNR && producto.CHARG === find.CHARG) {
+                try {  
+                    const unidad = producto.UnidadBase;
+                    producto.unidad_index = unidad;
+                    producto.noBase = false;
+                    if(producto.UnidadBase.XCHPF === 'X') { // Con lote
+                        producto.maxQuantityLote = {
+                            [producto.CHARG]: parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0)
+                        };
+                        producto.lotes = [{
+                            label: producto.CHARG,
+                            value: producto.CHARG,
+                            subLabel: producto.ProdConLote.LAEDA+" - (Cant. "+producto.maxQuantityLote[producto.CHARG]+")"
+                        }];
+                    } else {
+                        producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
+                    }
+                    producto.ubicaciones = getUbicaciones(producto, find.UCRID);
+                    producto.TCANT = find.TCANT;
+                    producto.IDTRI = find.IDTRI;
+                    producto.force = true;
+                    setScanCurrent({...scanCurrent, ...producto});
+                    if(find.IDADW === null) {
+                        let index = producto.ubicaciones.length-1;
+                        if(index < 0) index = 0;
+                        if(index !== rackSel)
+                            setRackSel(producto.ubicaciones.length-1);
+                    } else {
+                        for(let u=0;u < producto.ubicaciones.length;u++) {
+                            if(producto.ubicaciones[u].UBI == find.IDADW) {
+                                setRackSel(u);
+                                break;
+                            }
+                        }
+                    }
+                    return;
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+        }
+    }
+
     const changeQuantity = (cantidad) => {
         if(rackSel === null) return;
         let cant = '';
@@ -407,6 +436,7 @@ const ScaneoPedido = (props) => {
                 cant = cant.substring(1,cant.length);
         } catch {
         }
+        console.log("CAMBIAR CANTIDAD");
         let producto = JSON.parse(JSON.stringify(scanCurrent));
         if(!cant) {
             setScanCurrent({...producto, TCANT: 0});
@@ -429,10 +459,10 @@ const ScaneoPedido = (props) => {
         }
     }
 
-    function saveProduct(producto, fromButton) {
-        console.log(producto);
-        if(rackSel === null || !producto.TCANT || producto.TCANT <= 0 || 
-            producto.TCANT > producto.ubicaciones[rackSel].MAX || producto.TCANT > producto.ubicaciones[rackSel].MAX || 
+    function saveProduct(producto) {
+        console.log(producto.TCANT);
+        if((!producto.IDTRI && rackSel === null) || !producto.TCANT || producto.TCANT <= 0 || 
+            (!producto.IDTRI && producto.TCANT > producto.ubicaciones[rackSel].MAX) || 
             (producto.maxQuantityLote && producto.TCANT > producto.maxQuantityLote[producto.CHARG]) || (producto.maxQuantity && producto.TCANT > producto.maxQuantity)) {
             RNBeep.beep(false);
             return ToastAndroid.show(
@@ -440,26 +470,72 @@ const ScaneoPedido = (props) => {
                 ToastAndroid.SHORT
             );
         }
-        let existe = trasladoItems.filter(f => f.MATNR === producto.MATNR && f.CHARG === producto.CHARG && f.IDADW === producto.ubicaciones[rackSel].UBI);
-        console.log("Existe ", existe.length);
-        let sumado = parseInt(producto.TCANT);
-        for(let item of trasladoItems) {
-            if(item.id !== producto.IDTRI) {
-                if(item.MATNR === producto.MATNR && item.CHARG == producto.CHARG) {
-                    sumado += item.CANTP;
-                }
-            }
-        }
-        if(sumado > producto?.CANTP) {
+        let existe = trasladoItems.filter(f => (producto.force && f.IDTRI === producto.IDTRI) || (!producto.force && f.MATNR === producto.MATNR 
+            && f.CHARG === producto.CHARG && producto.ubicaciones[rackSel].UBI === f.IDADW && props.dataUser.IDUSR === f.UCRID && IDPAL === producto.IDPAL));
+
+        let sumado = trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG && (existe[0]?.IDTRI !== tra.IDTRI) ? (prev+tra.TCANT):prev,producto.TCANT);
+        let maxCantP = pedido.reduce((prev, ped) => ped.MATNR === producto.MATNR && ped.CHARG === producto.CHARG ? (prev+ped.CANTP):prev, 0);
+
+        console.log(sumado, maxCantP);
+        if(sumado > maxCantP) {
             RNBeep.beep(false);
             return ToastAndroid.show(
                 "La cantidad colocada es mayor a la cantidad requerida.",
                 ToastAndroid.SHORT
             );
         }
-
+        console.log(existe);
+        if(rackSel !== null)
+            producto.IDADW = producto.ubicaciones[rackSel].UBI;
+        
         setLoadingSave(true);
-        if(!existe.length) {
+        if(existe.length) {
+            let datos = {
+                id: existe[0].IDTRI,
+                update: {
+                    TCANT: parseInt(producto.TCANT),
+                    UMOID: props.dataUser.IDUSR
+                }
+            };
+            if(producto.COMNT) {
+                datos.update.COMNT = producto.COMNT;
+            }
+            fetchIvan(props.ipSelect).put('/crudTrasladoItems', datos, props.token.token)
+            .then(({data}) => {
+                console.log("Productos actualizado: ", data.data);
+                let prod = JSON.parse(JSON.stringify(trasladoItems));
+                for(let i=0;i < prod.length;i++) {
+                    if(prod[i].IDTRI === existe[0].IDTRI) {
+                        let aux = {...prod[i], ...producto, ActualizadoPor: props.dataUser};
+                        prod[i] = JSON.parse(JSON.stringify(aux));
+                        console.log(prod[i]);
+                        break;
+                    }
+                }
+                setTrasladoItems([...prod]);
+                ToastAndroid.show(
+                    "Producto actualizado con éxito",
+                    ToastAndroid.SHORT
+                );
+            })
+            .catch(({status, error}) => {
+                console.log(error);
+                if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
+                    setMsgConex("¡Ups! Parece que no hay conexión a internet");
+                }
+                if(error.text?.indexOf("Validation error") !== -1 || error.text?.indexOf("No reconozco ese ID") !== -1) {
+                    setScanCurrent({});
+                    getItems(true);
+                }
+                return ToastAndroid.show(
+                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                    ToastAndroid.SHORT
+                );
+            })
+            .finally(() => {
+                setLoadingSave(false);
+            });
+        } else {
             let datos = {
                 create: {
                     IDTRA: traslado.IDTRA,
@@ -478,7 +554,7 @@ const ScaneoPedido = (props) => {
             .then(({data}) => {
                 console.log("Producto insertado", data.data);
                 setTrasladoItems([{...producto, ...data.data, CreadoPor: props.dataUser, ActualizadoPor: props.dataUser, Ubicacion: producto.ArticulosBodegas[rackSel]}, ...trasladoItems]);
-                //setScanCurrent({...producto, ...data.data, CreadoPor: props.dataUser, ActualizadoPor: props.dataUser});
+                setScanCurrent({...producto, ...data.data, CreadoPor: props.dataUser, ActualizadoPor: props.dataUser});
 
                 ToastAndroid.show(
                     "Producto creado con éxito",
@@ -511,52 +587,48 @@ const ScaneoPedido = (props) => {
             .finally(() => {
                 setLoadingSave(false);
             });
-        } else {
-            let datos = {
-                id: producto.IDTRI,
-                update: {
-                    TCANT: parseInt(producto.TCANT),
-                    UMOID: props.dataUser.IDUSR
-                }
-            };
-            fetchIvan(props.ipSelect).put('/crudTrasladoItems', datos, props.token.token)
-            .then(({data}) => {
-                console.log("Productos actualizado: ", data.data);
-                let prod = JSON.parse(JSON.stringify(trasladoItems));
-                for(let i=0;i < prod.length;i++) {
-                    if(prod[i].IDTRI == producto.IDTRI) {
-                        let aux = {...producto, ...datos.update, ActualizadoPor: props.dataUser};
-                        prod[i] = JSON.parse(JSON.stringify(aux));
-                        if(fromButton || scanCurrent.IDTRI === producto.IDTRI) // llamado desde el boton
-                            setScanCurrent(prod[i]);
-                        break;
-                    }
-                }
-                setTrasladoItems(prod);
-                ToastAndroid.show(
-                    "Cantidad actualizada con éxito",
-                    ToastAndroid.SHORT
-                );
-            })
-            .catch(({status, error}) => {
-                //console.log(error);
-                if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
-                    setMsgConex("¡Ups! Parece que no hay conexión a internet");
-                }
-                if(error.text?.indexOf("Validation error") !== -1 || error.text?.indexOf("No reconozco ese ID") !== -1) {
-                    setScan({});
-                    getItems(true);
-                }
-                return ToastAndroid.show(
-                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
-                );
-            })
-            .finally(() => {
-                setLoadingSave(false);
-            });
+            
         }
     }
+
+    const getUbi = (producto, ucrid = props.dataUser.IDUSR) => {
+        if(!producto?.MATNR) return [];
+        let contar = 0, idx = 0;
+        let ubicaciones = [];
+        console.log("Get ubi update");
+        if(producto.ArticulosBodegas) {
+            for(const ubi of producto.ArticulosBodegas) {
+                const escaneados = props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 ? 
+                    trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG &&
+                        tra.IDADW === ubi.IDADW && (tra.IDPAL !== IDPAL || tra.UCRID !== ucrid) ? (prev+tra.TCANT):prev, 0):0;
+                let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0)-parseInt(escaneados);
+                ubicaciones.push({
+                    label: "Paleta ID: "+ubi.IDDWA,
+                    subLabel: `${ubi.Bodega.FLOOR}-${ubi.Bodega.AISLE}-${ubi.Bodega.COLUM}-${ubi.Bodega.RACKS}-${ubi.Bodega.PALET} - (Cant. ${cantDisp})`,
+                    value: idx,
+                    MAX: cantDisp,
+                    VALOR: ubi.IDDWA,
+                    UBI: ubi.IDADW
+                });
+                contar += cantDisp;
+                idx++;
+            }
+        }
+        let diff = (!producto.CHARG ? producto.maxQuantity:producto.maxQuantityLote[producto.CHARG])-contar;
+        if(diff > 0) {
+            ubicaciones.push({
+                label: 'S/N Ubicación',
+                subLabel: 'Cant. '+diff,
+                value: idx,
+                MAX: diff,
+                VALOR: 'sap',
+                UBI: null
+            });
+        }
+        return ubicaciones;
+    }
+
+    const getUbicaciones = useCallback((producto, ucrid) => getUbi(producto, ucrid), [props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 ? trasladoItems:undefined]);
     /* Funciones Scan */
     
     /* Componente Información */
@@ -564,26 +636,33 @@ const ScaneoPedido = (props) => {
         <Dialog visible={showInfo} onDismiss={() => setShowInfo(false)}>
             <DialogHeader title={traslado.TRCON}/>
             <DialogContent>
-                <HStack spacing={4}>
-                    <Text style={styles.title2}>Creado Por:</Text>
+                <Text style={styles.title2}>Paleta ID: {IDPAL}</Text>
+                <Text>
+                    <Text style={styles.title2}>Creado Por: </Text>
                     <Text style={styles.subtitle}>{`${traslado.CreadoPor?.USNAM||""} ${traslado.CreadoPor?.USLAS||""}`}</Text>
-                </HStack>
-                {traslado.ActualizadoPor ? <HStack spacing={4}>
-                    <Text style={styles.title2}>Actualizado Por:</Text>
+                </Text>
+                {traslado.ActualizadoPor ? <Text>
+                    <Text style={styles.title2}>Actualizado Por: </Text>
                     <Text style={styles.subtitle}>{`${traslado.ActualizadoPor?.USNAM||""} ${traslado.ActualizadoPor?.USLAS||""}`}</Text>
-                </HStack>:''}
-                <HStack spacing={4}>
-                    <Text style={styles.title2}>Fecha:</Text>
+                </Text>:''}
+                <Text style={{textAlign: 'justify'}}>
+                    <Text style={styles.title2}>Fecha: </Text>
                     <Text style={styles.subtitle}>{traslado.TRACR.split("T")[0]+" "+traslado.TRACR.split("T")[1].substring(0,5)}</Text>
-                </HStack>
-                <HStack spacing={4}>
-                    <Text style={styles.title2}>Origen:</Text>
+                </Text>
+                <Text style={{textAlign: 'justify'}}>
+                    <Text style={styles.title2}>Origen: </Text>
                     <Text style={styles.subtitle}>{traslado.DesdeCentro?.NAME1}{"\n"}({traslado.DesdeCentro?.Almacenes[0]?.LGOBE})</Text>
-                </HStack>
-                <HStack spacing={4}>
-                    <Text style={styles.title2}>Destino:</Text>
+                </Text>
+                <Text style={{textAlign: 'justify'}}>
+                    <Text style={styles.title2}>Destino: </Text>
                     <Text style={styles.subtitle}>{traslado.HaciaCentro?.NAME1}{"\n"}({traslado.HaciaCentro?.Almacenes[0]?.LGOBE})</Text>
+                </Text>
+                <Text style={[styles.title1, {marginTop: 5, alignSelf: 'flex-start'}]}>Usuarios asignados: </Text>
+                {traslado.Paletas[0]?.UsuariosAsignados?.map((user, index) =>
+                <HStack key={index}>
+                    <Text style={styles.small2}>{`· ${user.USNAM||""} ${user.USLAS||""} - ${!user.FINIC && !user.FFEND ? '(No iniciado)':(user.FINIC && !user.FFEND ? '(Escaneando...) '+timeDiff(user.FINIC):'(Finalizado)')} "${user.COMNT??''}"`}</Text>
                 </HStack>
+                )}
             </DialogContent>
             <DialogActions>
                 <Button
@@ -595,88 +674,143 @@ const ScaneoPedido = (props) => {
             </DialogActions>
         </Dialog>
     ;
-    
+
+    const DialogoButtons = () =>
+        <Dialog visible={openSheet} onDismiss={() => setOpenSheet(false)} style={{width: '100%'}}>
+            <DialogContent>
+                <VStack spacing={10} mt={20}>
+                    {cronometro.FINIC && !cronometro.FFEND &&
+                    <Button
+                        variant="outlined"
+                        color="#000"
+                        onPress={() => {setOpenSheet(false); cerrarScan()}}
+                        title="Finalizar Escaneo"
+                        containerStyle={{marginTop: 10}}/>
+                    }
+                    {props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
+                    <Button
+                        variant="outlined"
+                        color="#000"
+                        onPress={() => {setOpenSheet(false); finalizarTraslado()}}
+                        title="Finalizar Traslado"/>
+                    }
+                    <Button
+                        color={Global.colorMundoTotal}
+                        onPress={() => setOpenSheet(false)}
+                        title="Cancelar"/>
+                </VStack>
+            </DialogContent>
+        </Dialog>
+    ;
+
+    const DialogoComentario = () =>
+        <Dialog visible={comentario !== -2}>
+            <DialogHeader title="Agrega un comentario"/>
+            <DialogContent>
+                <TextInput placeholder="Comenta todos los detalles posibles" 
+                    autoFocus
+                    ref={inputComentario}
+                    maxLength={1000}
+                    onChangeText={(text) => inputComentario.current ? inputComentario.current.value = text:''}
+                    multiline
+                />
+            </DialogContent>
+            <DialogActions>
+                <HStack spacing={10}>
+                    <Button
+                        variant="outlined"
+                        color="#000"
+                        onPress={() => setComentario(-2)}
+                        title="Cancelar"/>
+                    <Button
+                        loading={loadingSave}
+                        disabled={loadingSave}
+                        color={Global.colorMundoTotal}
+                        onPress={() => {
+                            let comentarioText = inputComentario.current?.value ?? '';
+                            if(comentarioText.length < 10) {
+                                return ToastAndroid.show("Tu comentario debe contener al menos 10 carácteres", ToastAndroid.SHORT);
+                            }
+                            setComentario(-2);
+                            if(comentario === -1) {
+                                cerrarScanFinal(comentarioText);
+                            } else if(comentario >= 0) {
+                                saveProduct({...trasladoItems[comentario], COMNT: comentarioText, force: true});
+                            }
+                        }}
+                        title="Ok"/>
+                </HStack>
+            </DialogActions>
+        </Dialog>
+    ;
     /* Componente Información */
 
     /* Componente de lista */
     const RowProducts = (item, index) => 
-        item.TCANT > 0 &&
-        <HStack
-            key={index}
-            spacing={4}
-            style={[styles.items,(scanCurrent.Producto?.MATNR === item.MATNR ? {backgroundColor: 'lightgreen'}:{}), {width: '100%'}]}
-        >
-            <VStack w="55%">
-                <Text style={styles.title2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
-                <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.unidad_index?.EAN11 || item.MATNR}</Text>
-                {item.CHARG && traslado.TRSTS === 1 && <Text style={styles.subtitle} color="primary">Lote: {item.CHARG}</Text>}
-                <Text style={styles.subtitle}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
-                <Text style={styles.subtitle} color="secondary">Ubicación: {item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET}</Text>
-            </VStack>
+        <Pressable onPress={() => item.COMNT ? Alert.alert("Comentario", item.COMNT):''} key={index}>
+            <HStack
+                spacing={4}
+                style={[styles.items,(
+                    (scanCurrent.IDTRI === item.IDTRI && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW && scanCurrent.force) || 
+                    (rackSel !== null && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && IDPAL === item.IDPAL
+                        && scanCurrent.ubicaciones[rackSel].UBI === item.IDADW && props.dataUser.IDUSR === item.UCRID && !scanCurrent.force) 
+                    ? {backgroundColor: '#5dff803d'}:{}), {width: '100%'}]}
+            >
+                <VStack w="55%">
+                    <Text style={styles.title2} numberOfLines={2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
+                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.unidad_index?.EAN11 || item.MATNR}</Text>
+                    {item.CHARG && traslado.TRSTS === 1 && <Text style={styles.subtitle} color="primary" numberOfLines={1}>Lote: {item.CHARG}</Text>}
+                    <Text style={styles.subtitle} numberOfLines={1}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
+                    <Text style={[styles.small3, {fontWeight: 'bold'}]} color="primary" numberOfLines={1}>Ubicación: {!item.Ubicacion ? 'S/N':(item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET)}</Text>
+                    <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL}</Text>
+                </VStack>
 
-            {traslado.TRSTS === 1 ? <VStack w="25%" style={{alignSelf: 'flex-end'}}>
-                <Text style={[styles.small2,((item.maxQuantityLote && item.TCANT > item.maxQuantityLote[item.CHARG]) 
-                                                || (!item.maxQuantityLote && item.TCANT > item.maxQuantity)) ? {color: 'red'}:{}]}>
-                    Max: {item.maxQuantityLote ? item.maxQuantityLote[item.CHARG]:item.maxQuantity}
-                </Text>
-                <TextInput
-                    containerStyle={{fontSize: 5, padding: 0}} 
-                    defaultValue={item.TCANT.toString()} 
-                    numeric
-                    textAlign={'center'}
-                    //onChangeText={(text) => changeQuantity2(item, text)} 
-                    keyboardType="numeric" 
-                    inputContainerStyle={{
-                        width: 75,
-                        height: 45
-                    }}
-                    inputStyle={((item.maxQuantityLote && item.TCANT > item.maxQuantityLote[item.CHARG]) 
-                        || (!item.maxQuantityLote && item.TCANT > item.maxQuantity)) ? {color: 'red', paddingEnd: 0, paddingStart: 0}:{paddingEnd: 0, paddingStart: 0}}
-                    editable={!loadingSave}
-                    pointerEvents="none"
-                    //onBlur={(e) => updateProduct(item) }
-                    onEndEditing={(e) => saveProduct({...item, TCANT: parseInt(e.nativeEvent.text ?? 0)}) }
-                    ref={inputCantList}
-                    maxLength={10}
-                    />
-                {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
-            </VStack>:
-            <VStack w="30%">
-                <Text style={styles.subtitle}>Cantidad:</Text>
-                <Text style={styles.quantity}>{parseInt(item.TCANT)}</Text>
-                {item.CHARG && <Text style={styles.subtitle}>Lote:</Text> }
-                {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
-                {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
-            </VStack>}
-            {traslado.TRSTS === 1 && props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 ?
-                <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item.MAKTG, item.IDTRI)} style={{alignSelf: 'center'}}/>:''
-            }
-        </HStack>
+                {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
+                    <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
+                    <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal}
+                        variant="outlined" title="Comentario" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
+                    <Button onPress={() => editarProducto(item)} buttonStyle={{padding: 0}} containerStyle={{padding: 0}} contentContainerStyle={{padding: 0}}
+                        variant="outlined" title="Editar" compact={true} loading={loadingSave} style={{marginBottom: 5, padding: 0}} titleStyle={{fontSize: 11}}/>
+                </VStack>:
+                <VStack w="30%">
+                    <Text style={styles.subtitle}>Cantidad:</Text>
+                    <Text style={styles.quantity}>{item.TCANT}</Text>
+                    {item.CHARG && <Text style={styles.subtitle}>Lote:</Text> }
+                    {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
+                    {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
+                </VStack>}
+                {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ?
+                    <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item)} style={{alignSelf: 'center'}}/>:''
+                }
+            </HStack>
+        </Pressable>
     ;
 
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [trasladoItems, scanCurrent?.Producto ? scanCurrent.Producto.MATNR:undefined, loadingSave, traslado])
+    const memoRows = useCallback((item, index) => RowProducts(item, index), [trasladoItems, scanCurrent, loadingSave, traslado, rackSel, cronometro?.FFEND])
     /* Componente de lista */
 
     /* Otras funciones */
     const finalizarTraslado = async () => {
-
     };
-    const deleteItem = (name, id) => {
+
+    const deleteItem = (producto) => {
         //console.log("Delete items")
-        Alert.alert('Confirmar', `¿Deseas eliminar el ítem (${name}) realmente?`, [
+        Alert.alert('Confirmar', `¿Deseas eliminar el ítem (${producto.MAKTG}) realmente?`, [
             {
               text: 'Si deseo eliminar',
               style: 'destructive',
               onPress: () => {
                 let datos = {
-                    id: id
+                    id: producto.IDTRI
                 };
                 setLoading(true);
                 fetchIvan(props.ipSelect).delete('/crudTrasladoItems', datos, props.token.token)
                 .then(({data}) => {
                     console.log("Productos borrados: ", data.data);
-                    setTrasladoItems(trasladoItems.filter(f => f.IDTRI !== id));
-            
+                    setTrasladoItems(trasladoItems.filter(f => f.IDTRI !== producto.IDTRI));
+                    setScanCurrent({});
+                    setRackSel(null);
+                    
                     ToastAndroid.show(
                         "Producto eliminado con éxito",
                         ToastAndroid.SHORT
@@ -712,6 +846,83 @@ const ScaneoPedido = (props) => {
         }
     ]);
     }
+
+    const cerrarScanFinal = (message=null) => {
+        const datos = {
+            IDTRA: traslado.IDTRA,
+            IDPAL: IDPAL
+        };
+        if(message) {
+            datos.COMNT = message;
+        }
+
+        fetchIvan(props.ipSelect).put('/sesionScan', datos, props.token.token, undefined, undefined, 60000) // 1 minuto para probar
+        .then(({data}) => {
+            console.log(data);
+            if(data.update[0] === 1) {
+                setCronometro({
+                    ...cronometro, FFEND: new Date()
+                })
+            }
+        })
+        .catch(({status, error}) => {
+            if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
+                setMsgConex("¡Ups! Parece que no hay conexión a internet");
+            }
+            ToastAndroid.show(
+                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.SHORT
+            );
+        });
+    }
+
+    const cerrarScan = () => {
+        console.log("Cerrando scan");
+        Alert.alert('Confirmar', `¿Deseas finalizar tu sesión de escaneo?`, [
+            {
+              text: 'Si deseo finalizar',
+              style: 'destructive',
+              onPress: () => {
+                let checkPedido = false;
+                for(let ped of pedido) {
+                    let sumar = 0;
+                    for(let tra of trasladoItems) {
+                        if(ped.MATNR === tra.MATNR && ped.CHARG === tra.CHARG) {
+                            sumar += tra.TCANT;
+                        }
+                    }
+                    if(sumar < ped.CANTP) {
+                        checkPedido = true;
+                        break;
+                    } else if(sumar > ped.CANTP) {
+                        return ToastAndroid.show('Hay productos mayores a los solicitados por favor verifica', ToastAndroid.LONG);
+                    }
+                }
+                if(checkPedido) {
+                    ToastAndroid.show('Faltan productos por escanear', ToastAndroid.LONG);
+                    Alert.alert('Confirmar', `Faltan productos por escanear\n¿Deseas cerrar igualmente?`, [
+                        {
+                            text: 'Si deseo finalizar',
+                            style: 'destructive',
+                            onPress: () => setComentario(-1) // Debemos obligar un comentario
+                        },
+                        {
+                        text: 'No',
+                        style: 'cancel',
+                        }
+                    ]);
+                } else {
+                    cerrarScanFinal();
+                }
+            }
+                
+        },
+        {
+          text: 'No cancelar',
+          style: 'cancel',
+        }
+    ]);
+    }
     /* Otras funciones */
 
     return (
@@ -723,12 +934,12 @@ const ScaneoPedido = (props) => {
 
                     <HStack style={{justifyContent: 'space-between'}}>
                         <Crono cronometro={cronometro}/>
-                        <Text style={[styles.subtitle]} onPress={() => setShowInfo(!showInfo)}><Entypo name="info-with-circle" size={16} color={Global.colorMundoTotal}/> Info Traslado</Text>
+                        <Text style={[styles.subtitle]} onPress={() => setShowInfo(!showInfo)}><Entypo name="info-with-circle" size={18} color={Global.colorMundoTotal}/> Información</Text>
                     </HStack>
                     <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
 
                     {traslado.TRSTS === 1 ? 
-                        cronometro.FINIC ?
+                        cronometro.FINIC && !cronometro.FFEND ?
                         <View> 
                             <VStack spacing={-8}>
                                 <TextInput placeholder="Pulsa y escanea o tipea el código de barras" 
@@ -756,7 +967,7 @@ const ScaneoPedido = (props) => {
                             </VStack>
 
                             <Box style={styles.box1}>
-                                {scanCurrent && scanCurrent.MATNR ? 
+                                {scanCurrent?.MATNR ? 
                                 <Stack spacing={0}>
                                     <HStack style={{justifyContent: 'space-between'}} spacing={4}>
                                         <VStack spacing={0} w={"65%"}>
@@ -767,7 +978,7 @@ const ScaneoPedido = (props) => {
                                             <HStack spacing={4}>
                                                 <Text style={styles.title2}>Und. de escaneo:</Text>
                                                 <Text style={styles.subtitle}>{scanCurrent.unidad_index?.UnidadDescripcion?.MSEHL || ""}</Text>
-                                                {scanCurrent.noBase && <Text style={styles.small3}>({scanCurrent.maxQuantityLote ? scanCurrent.max_paquete[0]:scanCurrent.max_paquete} completos)</Text>}
+                                                {scanCurrent.noBase && <Text style={styles.small3}>({scanCurrent.maxQuantityLote ? scanCurrent.max_paquete[scanCurrent.CHARG]:scanCurrent.max_paquete} completos)</Text>}
                                             </HStack>
                                             {scanCurrent.noBase && <Text style={styles.small3}>{parseInt(scanCurrent.unidad_index.UMREZ)+" "+scanCurrent.UnidadBase?.UnidadDescripcion?.MSEHL+". Por "+(scanCurrent.unidad_index?.UnidadDescripcion?.MSEHL || "")}</Text>}
                                             <HStack spacing={4} style={{width: '80%', flexWrap: 'nowrap'}}>
@@ -783,19 +994,19 @@ const ScaneoPedido = (props) => {
 
                                     <HStack style={{justifyContent: 'space-between', alignItems: 'flex-end'}}>
                                         <Text style={styles.title1}>{getCantUnidades(scanCurrent)}</Text>
-                                        {scanCurrent.ubicaciones.length &&
                                         <VStack style={{ alignItems: 'flex-end'}}>
                                                 <Text style={[styles.small2]}>Ubicación:</Text>
                                                 <SelectInput
                                                 searchable={true}
                                                 data={scanCurrent.ubicaciones}
                                                 value={rackSel}
-                                                setValue={setRackSel}
+                                                setValue={(val) => {if(scanCurrent.force) {setScanCurrent({...scanCurrent, force: false});} setRackSel(val);}}
                                                 title="Ubicación"
                                                 buttonStyle={{minWidth: 120, height: 'auto'}}
                                                 titleStyle={{fontSize: 11}}
+                                                disabled={scanCurrent.force}
                                             />
-                                        </VStack>}
+                                        </VStack>
                                     </HStack>
                                     <HStack spacing={5} mt={0} style={{justifyContent: 'space-between'}}>
                                         {scanCurrent.CHARG && 
@@ -804,7 +1015,7 @@ const ScaneoPedido = (props) => {
                                                 <SelectInput
                                                 searchable={false}
                                                 data={scanCurrent.lotes}
-                                                value={0}
+                                                value={scanCurrent.CHARG}
                                                 setValue={() => console.log("Selecciona lote")}
                                                 title="Lotes"
                                                 buttonStyle={{minWidth: 120}}
@@ -817,7 +1028,7 @@ const ScaneoPedido = (props) => {
                                             </HStack>
                                             <HStack m={0} spacing={1} style={styles.cantText}>
                                                 <Text style={styles.small3}>Cant. Disp Máx:</Text>
-                                                <Text style={styles.title2}>{scanCurrent.maxQuantityLote ? scanCurrent.maxQuantityLote[0]:scanCurrent.maxQuantity}</Text>
+                                                <Text style={styles.title2}>{scanCurrent.maxQuantityLote ? scanCurrent.maxQuantityLote[scanCurrent.CHARG]:scanCurrent.maxQuantity}</Text>
                                             </HStack>
                                             <HStack m={0} spacing={1} style={styles.cantText}>
                                                 <Text style={styles.small3}>Cant. Disp. Ubi:</Text>
@@ -825,12 +1036,13 @@ const ScaneoPedido = (props) => {
                                             </HStack>
                                             <TextInput
                                                 ref={inputCant1}
+                                                //defaultValue={scanCurrent.TCANT?.toString()} 
                                                 value={scanCurrent.TCANT?.toString()} 
                                                 onChangeText={(text) => changeQuantity(text)} 
-                                                //onEndEditing={(e) => changeQuantityPost(e.nativeEvent.text)}
+                                                //onEndEditing={(e) => inputCant1.current?.focus()}
                                                 numeric
                                                 keyboardType="numeric"
-                                                editable={((scanCurrent.maxQuantityLote && scanCurrent.maxQuantityLote[0] > 0) || scanCurrent.maxQuantity > 0) && rackSel !== null ? true:false}
+                                                editable={((scanCurrent.maxQuantityLote && scanCurrent.maxQuantityLote[scanCurrent.CHARG] > 0) || scanCurrent.maxQuantity > 0) && rackSel !== null ? true:false}
                                                 placeholder="10"
                                                 textAlign={'center'}
                                                 inputStyle={{marginTop: -18}}
@@ -847,7 +1059,7 @@ const ScaneoPedido = (props) => {
                                         title="Cargar"
                                         trailing={props => <MaterialCommunityIcons name="send" {...props} size={20}/>} 
                                         style={{marginTop: 5}} 
-                                        onPress={() => saveProduct(JSON.parse(JSON.stringify(scanCurrent)), true)} 
+                                        onPress={() => saveProduct(JSON.parse(JSON.stringify(scanCurrent)))} 
                                         disabled={loadingSave || !scanCurrent.TCANT || rackSel === null}/>
                                 </Stack>
                                 :''}
@@ -856,7 +1068,7 @@ const ScaneoPedido = (props) => {
                         <View>
                             <VStack m={10}>
                                 <Text style={{textAlign: 'justify', fontSize: 12}}>Para comenzar el escaneo presiona el siguiente botón. Recuerda que al comenzar se debe culminar en el menor tiempo posible para ir mejorando tus estadisticas.</Text>
-                                <Button title="Iniciar Escaneo" color={Global.colorMundoTotal} onPress={() => !loading && pedido.length ? iniciarEscaneo():''} disabled={loading || !pedido.length ? true:false}/>
+                                <Button title="Iniciar Escaneo" color={Global.colorMundoTotal} onPress={() => !loading && pedido.length ? iniciarEscaneo():''} disabled={loading || (!pedido.length ? true:false) || cronometro.FFEND ? true:false}/>
                             </VStack>
                         </View>
                     :''}
@@ -864,17 +1076,27 @@ const ScaneoPedido = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({trasladoItems?.filter(f => f.TCANT > 0).length}):</Text>
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length && <Button compact={true} title="Finalizar" onPress={finalizarTraslado} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
+                            {(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
+                            (cronometro.FINIC && !cronometro.FFEND) ? 
+                                <Button compact={true} variant="text" color="secondary" onPress={() => setOpenSheet(true)} 
+                                    disabled={loading || loadingSave} loading={loading || loadingSave} 
+                                    leading={<Entypo name="menu" size={24}/>}/>:
+                                ''
+                            }
                         </HStack>
                         <ListaPerform 
-                            items={cronometro.FINIC ? trasladoItems:[]} 
+                            items={cronometro.FINIC || props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
-                            heightRemove={traslado.TRSTS === 1 ? ((scanCurrent && scanCurrent.MATNR ) ? 125:280):160}
+                            heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 125:280):160}
+                            height={122}
+                            forceHeight={false}
                             />
                     </Stack>
                     <View style={{ width: 200, height: 10 }}></View>
                 </ScrollView>
             </Stack>
+            <DialogoButtons/>
+            <DialogoComentario/>
         </Provider>
     )
 }
@@ -961,15 +1183,17 @@ const Crono = ({cronometro}) => {
             return () => {
                 clearInterval(interval);
             }
+        } else if(cronometro.FINIC && cronometro.FFEND) {
+            setDiff(timeDiff(cronometro.FINIC,cronometro.FFEND))
         }
     }, [cronometro]);
 
     return <Text style={[styles.subtitle]}>{cronometro.FINIC ? "Tiempo escaneo: "+diff:""}</Text>
 };
 
-function timeDiff(timeStart) {
+function timeDiff(timeStart, timeEnd=null) {
     if(!timeStart) return '';
-    let dateNow = new Date();
+    let dateNow = timeEnd ? new Date(timeEnd.replace("Z","")):new Date();
 
     let seconds = Math.floor((dateNow - (new Date(timeStart.replace("Z",""))))/1000);
     let minutes = Math.floor(seconds/60);
