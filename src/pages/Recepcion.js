@@ -1,8 +1,9 @@
-import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, ListItem, Provider, Stack, Switch, Text, TextInput } from "@react-native-material/core";
+import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text, TextInput, VStack } from "@react-native-material/core";
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
 import Entypo from "react-native-vector-icons/Entypo";
+import Feather from "react-native-vector-icons/Feather";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import SelectInput from "../components/_virtualSelect";
@@ -22,6 +23,10 @@ const Recepcion = (props) => {
     const [almacenes, setAlmacenes] = useState([]);
     const [almacenId, setAlmacenId] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const [modalRif, setModalRif] = useState(false);
+    const [rif_input, setRifInput] = useState('');
+    const [lista, setLista] = useState([]);
 
     const [recepciones, setRecepciones] = useState([]);
     const [descripcion, setDescripcion] = useState('');
@@ -96,6 +101,37 @@ const Recepcion = (props) => {
         .then(({data}) => {
             console.log(data);
             setRecepciones(data.data);
+        })
+        .catch(({status, error}) => {
+            console.log(status, error);
+            return ToastAndroid.show(
+                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.SHORT
+            );
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+    }
+
+    const getRif = () => {
+        if(rif_input?.length < 3) {
+            return ToastAndroid.show('Ingresa al menos 3 carácteres', ToastAndroid.SHORT);
+        }
+        let datos = [
+            `RIF=${rif_input}`,
+        ];
+        setLoading(true);
+        setLista([]);
+        setProveedorID(null); 
+        fetchIvan(props.ipSelect).get('/administrative/getProveedores', datos.join('&'), props.token.token)
+        .then(({data}) => {
+            console.log(data);
+            if(data.data.length)
+                setLista(data.data.reduce((prev, val) => [...prev, {value: val.LIFNR, label: val.Proveedor.NAME1, subLabel: "RIF: "+val.Proveedor.STCD1+"\nID: "+val.LIFNR+"\nMoneda: "+val.WAERS}], []));
+            else {
+                ToastAndroid.show('No hay resultados con esa búsqueda', ToastAndroid.SHORT);
+            }
         })
         .catch(({status, error}) => {
             console.log(status, error);
@@ -210,6 +246,7 @@ const Recepcion = (props) => {
         console.log("Recepciones actualizados");
     }
     
+    
     return (
         <Provider>
             <Stack spacing={1} style={{ margin: 5 }}>
@@ -267,13 +304,25 @@ const Recepcion = (props) => {
                                 titleStyle={{fontSize: 9}}
                                 title="Grupo Proveedor"/>
                         </HStack>
-                        <TextInput 
-                            variant="standard" 
-                            placeholder="ID PROVEEDOR"
-                            value={proveedor_id}
-                            onChangeText={(text) => setProveedorID(text)}
-                            onEndEditing={(e) => e.nativeEvent.text.length && setProveedorID(e.nativeEvent.text.padStart(10, "0"))}
-                            maxLength={10}></TextInput>
+                        <HStack style={{width: '100%', justifyContent: 'space-between'}} mt={5}>
+                            <TextInput 
+                                variant="standard" 
+                                placeholder="ID PROVEEDOR"
+                                value={proveedor_id}
+                                onChangeText={(text) => setProveedorID(text)}
+                                onEndEditing={(e) => e.nativeEvent.text.length && setProveedorID(e.nativeEvent.text.padStart(10, "0"))}
+                                maxLength={10}
+                                style={{width: '70%'}}></TextInput>
+                            <VStack style={{width: '25%', alignItems: 'center'}}>
+                                <Text style={styles.subtitle}>Buscar por RIF</Text>
+                                <Button style={{width: 54}} color={Global.colorMundoTotal} onPress={() => {
+                                    setModalRif(true);
+                                    setLista([]); 
+                                    setProveedorID(null); 
+                                    setRifInput(null);
+                                }} leading={props => <Feather name="search" {...props} />}/>
+                            </VStack>
+                        </HStack>
                         <Button loading={loading}
                             title="Crear" 
                             color="secondary" 
@@ -318,6 +367,43 @@ const Recepcion = (props) => {
                     <View style={{ width: 200, height: 80 }}></View>
                 </ScrollView>
                 {loading && <ActivityIndicator />}
+                <View style={styles.centeredView}>
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={modalRif}
+                        onRequestClose={() => {
+                            setModalRif(false);
+                        }}>
+                        <View style={styles.centeredView}>
+                            <View style={styles.modalView} gap={20}>
+                                <HStack style={{justifyContent: 'space-between', alignItems: 'flex-end'}} gap={5}>
+                                    <TextInput 
+                                        variant="standard" 
+                                        placeholder="INGRESE RIF"
+                                        value={rif_input}
+                                        onChangeText={(text) => setRifInput(text)}
+                                        keyboardType="numeric"
+                                        maxLength={16} style={{width: '63%'}}>
+                                    </TextInput>
+                                    <Stack><Button title="Buscar" color="lightgray" onPress={getRif} disabled={rif_input?.length < 3}/></Stack>
+                                </HStack>
+                                {lista.length ?
+                                <SelectInput 
+                                    data={lista}
+                                    value={proveedor_id || null}
+                                    setValue={setProveedorID}
+                                    title="Seleccione proveedor"
+                                    buttonStyle={{backgroundColor: Global.colorMundoTotal}}
+                                />:''}
+                                <HStack style={{justifyContent: 'space-between'}}>
+                                    <Button title="Cancelar" color="lightgray" onPress={() => setModalRif(false)}/>
+                                    <Button title="Aceptar" color="secondary" onPress={() => setModalRif(false)}/>
+                                </HStack>
+                            </View>
+                        </View>
+                    </Modal>
+                </View>
             </Stack>
         </Provider>
 
@@ -354,5 +440,26 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 5,
         borderTopLeftRadius: 5,
         borderTopRightRadius: 5
+    },
+    // MODAL
+    centeredView: {
+        flex: 1,
+        alignItems: 'center',
+        marginTop: 50,
+    },
+    modalView: {
+        margin: 20,
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
     }
 })

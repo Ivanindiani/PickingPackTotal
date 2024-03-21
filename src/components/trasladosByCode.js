@@ -109,7 +109,7 @@ const TrasladosByCode = (props) => {
 
     return (
         <Provider>
-            <Stack spacing={10} m={4}> 
+            <Stack spacing={10} m={4} style={{flex: 1}}> 
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
                 
                 <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
@@ -129,35 +129,20 @@ const TrasladosByCode = (props) => {
                 </HStack>
 
                 {loading && <ActivityIndicator />}
-                {traslado.IDTRA && (
-                    props.type === 'crear_tras' ?
+                {traslado.IDTRA && 
                 <ListItem
-                    key={1}
-                    overline={trasladosStatus[traslado.TRSTS]}
                     title={traslado.TRCON}
-                    secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+traslado.TRAUP?.substr(0,16).replace("T"," ")+
-                        "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
+                    overline={trasladosStatus[traslado.TRSTS]}
+                    secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+traslado.DATEU?.substr(0,16).replace("T"," ")+
+                        "\nPedido Nº: "+(traslado.IDPED ?? "Traslado MANUAL")}
                     leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[traslado.TRSTS]} color={trasStatusColor[traslado.TRSTS]} style={{borderRadius: 12}} />}
-                    trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
-                    onPress={() => props.dataUser.USSCO.indexOf('SCAN') !== -1 ? props.navigation.navigate('Scaneo', {
+                    //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
+                    onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
                         traslado: traslado,
                         updateTras: updateTras
                     }):''}
-                />:
-                <ListItem
-                    key={1}
-                        title={traslado.TRCON}
-                        overline={trasladosStatus[traslado.TRSTS]}
-                        secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+traslado.TRAUP?.substr(0,16).replace("T"," ")+
-                            "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
-                        leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[traslado.TRSTS]} color={trasStatusColor[traslado.TRSTS]} style={{borderRadius: 12}} />}
-                        //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
-                        onPress={() => props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
-                            traslado: traslado,
-                            updateTras: updateTras
-                        }):''}
-                    />
-                )}
+                />
+                }
                 <View style={{width: 100, height: 150}}/>
             </Stack>
         </Provider>

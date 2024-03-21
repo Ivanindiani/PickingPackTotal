@@ -26,7 +26,7 @@ LogBox.ignoreLogs([
 ]);
 
 const ScaneoPedido = (props) => {
-    const traslado = props.route.params.traslado;
+    const [traslado, setTraslado] = useState(props.route.params.traslado);
     const IDPAL = props.route.params.IDPAL;
 
     const [loading, setLoading] = useState(true);
@@ -189,7 +189,7 @@ const ScaneoPedido = (props) => {
         })
     }
 
-    function getTrasladoItems(forceCheck = false) { // El force check es para avisar al usuario si hay productos con stock sobre pasados
+    function getTrasladoItems(forceCheck = false, show = true) { // El force check es para avisar al usuario si hay productos con stock sobre pasados
         let datos = [
             `find={"IDTRA": ${traslado.IDTRA}}`,
             `fromWERKS=${traslado.FWERK}`,
@@ -201,10 +201,8 @@ const ScaneoPedido = (props) => {
         
         setLoading(true);
         return new Promise((resolve) => {
-            let passed = 0;
             fetchIvan(props.ipSelect).get('/crudTrasladoItems', datos.join('&'), props.token.token, undefined, undefined, 60000) // 1 minuto para probar
             .then(({data}) => {
-                if(data.data.length) passed = true;
                 if(traslado.TRSTS == 1) {
                     for(let producto of data.data) {
                         try {
@@ -224,22 +222,24 @@ const ScaneoPedido = (props) => {
                                     
                                     if(producto.TCANT > producto.maxQuantityLote[producto.CHARG]) {
                                         Alert.alert("Exceso de cantidad", "El producto: "+producto.MAKTG+". Lote: "+producto.CHARG+"\nExcede la cantidad disponible, por favor chequea la lista.");
-                                        passed = false;
+                                        return resolve(false)
                                     }
                                 } else {
                                     if(producto.TCANT > producto.maxQuantity) {
                                         Alert.alert("Exceso de cantidad", "El producto: "+producto.MAKTG+". Excede la cantidad disponible, por favor chequea la lista.");
-                                        passed = false;
+                                        return resolve(false)
                                     }
                                 }
                             }
                         } catch (e) {
-                            console.log("ERRORES");
+                            console.log(e);
                         }
                     }
                 }
+                resolve(data.data);
                 setTrasladoItems(data.data);
-                ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.SHORT)
+                if(show)
+                    ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.SHORT)
             })
             .catch(({status, error}) => {
                 //console.log(error);
@@ -250,11 +250,10 @@ const ScaneoPedido = (props) => {
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
                     ToastAndroid.SHORT
                 );
-                passed = false;
+                resolve(false);
             })
             .finally(() => {
                 setLoading(false);
-                resolve(passed);
             });
         })
     }
@@ -401,7 +400,7 @@ const ScaneoPedido = (props) => {
                     } else {
                         producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
                     }
-                    producto.ubicaciones = getUbicaciones(producto, find.UCRID);
+                    producto.ubicaciones = getUbicaciones(producto, find.UCRID, true);
                     producto.TCANT = find.TCANT;
                     producto.IDTRI = find.IDTRI;
                     producto.force = true;
@@ -485,7 +484,7 @@ const ScaneoPedido = (props) => {
             );
         }
         console.log(existe);
-        if(rackSel !== null)
+        if(rackSel !== null && producto.ubicaciones?.length)
             producto.IDADW = producto.ubicaciones[rackSel].UBI;
         
         setLoadingSave(true);
@@ -568,6 +567,7 @@ const ScaneoPedido = (props) => {
                     setMsgConex("¡Ups! Parece que no hay conexión a internet");
                 }
                 if(status === 406) {
+                    setTraslado({...traslado, TRSTS: error.status});
                     props.route.params.updateTras({...traslado, TRSTS: error.status});
                     props.navigation.goBack();
                     return ToastAndroid.show(
@@ -591,17 +591,18 @@ const ScaneoPedido = (props) => {
         }
     }
 
-    const getUbi = (producto, ucrid = props.dataUser.IDUSR) => {
+    const getUbi = (producto, ucrid = props.dataUser.IDUSR, force=false) => {
         if(!producto?.MATNR) return [];
         let contar = 0, idx = 0;
         let ubicaciones = [];
         console.log("Get ubi update");
         if(producto.ArticulosBodegas) {
             for(const ubi of producto.ArticulosBodegas) {
-                const escaneados = props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 ? 
+                const escaneados = props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && !force ? 
                     trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG &&
                         tra.IDADW === ubi.IDADW && (tra.IDPAL !== IDPAL || tra.UCRID !== ucrid) ? (prev+tra.TCANT):prev, 0):0;
                 let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0)-parseInt(escaneados);
+                console.log(ubi.QUANT, ubi.RESERVADOS, escaneados, cantDisp, props.dataUser.USSCO.indexOf('ADMIN_SCAN'))
                 ubicaciones.push({
                     label: "Paleta ID: "+ubi.IDDWA,
                     subLabel: `${ubi.Bodega.FLOOR}-${ubi.Bodega.AISLE}-${ubi.Bodega.COLUM}-${ubi.Bodega.RACKS}-${ubi.Bodega.PALET} - (Cant. ${cantDisp})`,
@@ -628,7 +629,7 @@ const ScaneoPedido = (props) => {
         return ubicaciones;
     }
 
-    const getUbicaciones = useCallback((producto, ucrid) => getUbi(producto, ucrid), [props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 ? trasladoItems:undefined]);
+    const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined]);
     /* Funciones Scan */
     
     /* Componente Información */
@@ -647,7 +648,7 @@ const ScaneoPedido = (props) => {
                 </Text>:''}
                 <Text style={{textAlign: 'justify'}}>
                     <Text style={styles.title2}>Fecha: </Text>
-                    <Text style={styles.subtitle}>{traslado.TRACR.split("T")[0]+" "+traslado.TRACR.split("T")[1].substring(0,5)}</Text>
+                    <Text style={styles.subtitle}>{traslado.DATEC.split("T")[0]+" "+traslado.DATEC.split("T")[1].substring(0,5)}</Text>
                 </Text>
                 <Text style={{textAlign: 'justify'}}>
                     <Text style={styles.title2}>Origen: </Text>
@@ -658,7 +659,7 @@ const ScaneoPedido = (props) => {
                     <Text style={styles.subtitle}>{traslado.HaciaCentro?.NAME1}{"\n"}({traslado.HaciaCentro?.Almacenes[0]?.LGOBE})</Text>
                 </Text>
                 <Text style={[styles.title1, {marginTop: 5, alignSelf: 'flex-start'}]}>Usuarios asignados: </Text>
-                {traslado.Paletas[0]?.UsuariosAsignados?.map((user, index) =>
+                {traslado?.Paletas?.length && traslado?.Paletas[0]?.UsuariosAsignados?.map((user, index) =>
                 <HStack key={index}>
                     <Text style={styles.small2}>{`· ${user.USNAM||""} ${user.USLAS||""} - ${!user.FINIC && !user.FFEND ? '(No iniciado)':(user.FINIC && !user.FFEND ? '(Escaneando...) '+timeDiff(user.FINIC):'(Finalizado)')} "${user.COMNT??''}"`}</Text>
                 </HStack>
@@ -687,7 +688,7 @@ const ScaneoPedido = (props) => {
                         title="Finalizar Escaneo"
                         containerStyle={{marginTop: 10}}/>
                     }
-                    {props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
+                    {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
                     <Button
                         variant="outlined"
                         color="#000"
@@ -791,7 +792,106 @@ const ScaneoPedido = (props) => {
 
     /* Otras funciones */
     const finalizarTraslado = async () => {
-    };
+        //if(!cronometro.FFEND) return Alert.alert('Error', 'Finaliza tu sesión antes de cerrar el escaneo');
+        Alert.alert('Confirmar', `¿Deseas finalizar la carga de productos del traslado?`, [
+            {
+              text: 'Si deseo finalizar',
+              style: 'destructive',
+              onPress: async () => {
+                let result = await getTrasladoItems(true, false);
+                if(!result) return;
+    
+                let result2 = await props.updatePedido(false);
+                if(!result2) return;
+
+                let checkPedido = false;
+                for(const ped of result2) {
+                    let sumar = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.LOTEA === tri.CHARG ? (prev+tri.TCANT):prev, 0);
+                    let cantp_total = result2.reduce((prev, it) => it.MATNR===ped.MATNR && it.CHARG === ped.CHARG ? (prev+it.CANTP):prev,0);
+                    if(sumar < cantp_total) {
+                        checkPedido = true;
+                        //break;
+                    } else if(sumar > cantp_total) {
+                        return ToastAndroid.show('Hay productos mayores a los solicitados por favor verifica', ToastAndroid.LONG);
+                    }
+                    //console.log(ped.ArticulosBodegas);
+                    for(const ubi of ped.ArticulosBodegas) { // Verificar cantidades en ubicacion
+                        let sumaTra = result.reduce((prev, tri) => ubi.MATNR === tri.MATNR && ubi.LOTEA === tri.CHARG && ubi.IDADW === tri.IDADW ? (prev+tri.TCANT):prev, 0);
+                        console.log(sumaTra, ubi.QUANT, ubi.MATNR);
+                        if(sumaTra > ubi.QUANT) {
+                            return Alert.alert(`Error en ubicación ${ubi.IDADW}`, `El artículo ${ped.Producto.MAKTG} (${ubi.MATNR}), sobre pasa la cantidad disponible de la ubicación por favor verifica`);
+                        }
+                    }
+                }
+                if(checkPedido) {
+                    ToastAndroid.show('Faltan productos por escanear', ToastAndroid.LONG);
+                    Alert.alert('Confirmar', `Faltan productos por escanear\n¿Deseas cerrar igualmente?`, [
+                        {
+                            text: 'Si deseo finalizar',
+                            style: 'destructive',
+                            onPress: () => finalizarPost() // Debemos obligar un comentario
+                        },
+                        {
+                        text: 'No',
+                        style: 'cancel',
+                        }
+                    ]);
+                } else {
+                    finalizarPost();
+                }
+            }
+                
+        },
+        {
+          text: 'No cancelar',
+          style: 'cancel',
+        }]);
+    }
+
+    const finalizarPost = () => {
+        setLoading(true);
+        let datos = {
+            id: traslado.IDTRA,
+            update: {
+                TRSTS: 2
+            }
+        }
+        //console.log(scanSelect, datos);
+        fetchIvan(props.ipSelect).put('/crudTraslados', datos, props.token.token)
+        .then(({data}) => {
+            //console.log(data);
+            setTraslado({...traslado, TRSTS: 2});
+            props.route.params.updateTras({...traslado, TRSTS: 2});
+
+            ToastAndroid.show(
+                "Carga de traslado finalizado con éxito",
+                ToastAndroid.SHORT
+            );
+        })
+        .catch(({status, error}) => {
+            //console.log(status, error);
+            if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
+                setMsgConex("¡Ups! Parece que no hay conexión a internet");
+            }
+            if(status === 406) {
+                setTraslado({...traslado, TRSTS: error.status});
+                props.route.params.updateTras({...traslado, TRSTS: error.status});
+                props.navigation.goBack();
+                
+                return ToastAndroid.show(
+                    error?.text || "Solicitud no aceptada, por el servidor",
+                    ToastAndroid.LONG
+                );
+            }
+            return ToastAndroid.show(
+                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.SHORT
+            );
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+    }
 
     const deleteItem = (producto) => {
         //console.log("Delete items")
@@ -822,6 +922,7 @@ const ScaneoPedido = (props) => {
                         setMsgConex("¡Ups! Parece que no hay conexión a internet");
                     }
                     if(status === 406) {
+                        setTraslado({...traslado, TRSTS: error.status});
                         props.route.params.updateTras({...traslado, TRSTS: error.status});
                         props.navigation.goBack();
                         
@@ -861,7 +962,7 @@ const ScaneoPedido = (props) => {
             console.log(data);
             if(data.update[0] === 1) {
                 setCronometro({
-                    ...cronometro, FFEND: new Date()
+                    ...cronometro, FFEND: (new Date()).toString()
                 })
             }
         })
@@ -891,10 +992,11 @@ const ScaneoPedido = (props) => {
                             sumar += tra.TCANT;
                         }
                     }
-                    if(sumar < ped.CANTP) {
+                    let cantp_total = pedido.reduce((prev, it) => it.MATNR===ped.MATNR && it.CHARG === ped.CHARG ? (prev+it.CANTP):prev,0);
+                    if(sumar < cantp_total) {
                         checkPedido = true;
                         break;
-                    } else if(sumar > ped.CANTP) {
+                    } else if(sumar > cantp_total) {
                         return ToastAndroid.show('Hay productos mayores a los solicitados por favor verifica', ToastAndroid.LONG);
                     }
                 }
@@ -1076,7 +1178,7 @@ const ScaneoPedido = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({trasladoItems?.filter(f => f.TCANT > 0).length}):</Text>
-                            {(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
+                            {(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
                             (cronometro.FINIC && !cronometro.FFEND) ? 
                                 <Button compact={true} variant="text" color="secondary" onPress={() => setOpenSheet(true)} 
                                     disabled={loading || loadingSave} loading={loading || loadingSave} 
@@ -1085,10 +1187,10 @@ const ScaneoPedido = (props) => {
                             }
                         </HStack>
                         <ListaPerform 
-                            items={cronometro.FINIC || props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:[]} 
+                            items={props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
                             heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 125:280):160}
-                            height={122}
+                            height={125}
                             forceHeight={false}
                             />
                     </Stack>

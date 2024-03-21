@@ -1,6 +1,6 @@
 import { useWindowDimensions } from 'react-native';
 import { TabView, TabBar } from 'react-native-tab-view';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import ScaneoPedido from './ScaneoPedido';
 import Pedidos from './Pedidos';
 const Global = require('../../app.json');
@@ -16,6 +16,8 @@ const TabScaneo = (props) => {
     ]);
 
     const [pedido, setPedido] = useState([]);
+
+    const pedidoRef = useRef(null);
     
     /*const _renderScene = useCallback(SceneMap({
         normal: FirstRoute,
@@ -25,9 +27,9 @@ const TabScaneo = (props) => {
     const _renderScene = ({ route }) => {
         switch(route.key) {
             case 'pedido':
-                return <Pedidos {...props} pedido={pedido} setPedido={setPedido}/>;
+                return <Pedidos {...props} pedido={pedido} setPedido={setPedido} ref={pedidoRef}/>;
             case 'scan':
-                return <ScaneoPedido {...props} pedido={pedido} setPedido={setPedido}/>;
+                return <ScaneoPedido {...props} pedido={pedido} setPedido={setPedido} updatePedido={(show=true) => pedidoRef.current?.getItems(show)}/>;
         }
     }
 

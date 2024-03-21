@@ -64,6 +64,7 @@ const FindProducts = (props) => {
         codigo = codigo?.join("") || "";
         if(codigo) {
             inputScan.current?.clear();
+            inputScan.current?.focus();
             if(props.almacenId === null) {
                 return Alert.alert("Selecciona el almácen primero");
             }
@@ -135,17 +136,17 @@ const FindProducts = (props) => {
     }
 
     const getConcatItem = (item) => {
-        return `${item.Bodega?.FLOOR ?? ''}${item.Bodega?.AISLE ?? ''}${item.Bodega?.COLUM ?? ''}${item.Bodega?.RACKS ?? ''}${item.Bodega?.PALET ?? ''}`;
+        return `${item.Bodega?.FLOOR ?? ''}-${item.Bodega?.AISLE ?? ''}-${item.Bodega?.COLUM ?? ''}-${item.Bodega?.RACKS ?? ''}-${item.Bodega?.PALET ?? ''}`;
     }
 
     const RowProducts = (item, index) => {
         return (
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 290}} 
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 265}} 
                 spacing={1}
                 p={2}
                 key={index}>
-                <Text style={[styles.title2, {borderBottomWidth: 0.2}]}>{item.Producto?.MAKTG}</Text>
+                <Text style={[styles.title2, {borderBottomWidth: 0.2}]} numberOfLines={1}>{item.Producto?.MAKTG}</Text>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>CÓDIGO MATERIAL:</Text>
                     <Text style={[styles.td, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
@@ -157,6 +158,10 @@ const FindProducts = (props) => {
                 <HStack style={styles.row}>
                     <Text style={styles.th}>CANTIDAD:</Text>
                     <Text style={[styles.td, {color: 'black'}]}>{item.QUANT} Unidad{item.QUANT != 1 ? 'es':''}</Text>
+                </HStack>
+                <HStack style={styles.row}>
+                    <Text style={styles.th}>RESERVADOS:</Text>
+                    <Text style={[styles.td, {color: 'red'}]} numberOfLines={1}>{item.RESERVADOS ?? 0} Unidad{item.RESERVADOS != 1 ? 'es':''}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>PISO/NIVEL:</Text>
@@ -180,13 +185,13 @@ const FindProducts = (props) => {
                 </HStack>
                 <HStack style={[styles.row, {alignItems: 'center'}]}>
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>
-                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center'}]}>{item.IDDWA} ({getConcatItem(item)})</Text>
-                    {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 ?
+                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center', fontSize: 13}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
+                    {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 && item.RESERVADOS <= 0 ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
                 </HStack>
                 <View style={styles.imagenPosition}>
-                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}}/>
                 </View>
             </VStack>
         )
@@ -194,49 +199,48 @@ const FindProducts = (props) => {
     const memoRows = useCallback((item, index) => RowProducts(item, index), [findProduct])
 
     return (
-        <Provider>
-            <Stack spacing={2} m={4}> 
-            
-                {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
+        <Stack spacing={2} m={4} style={{flex: 1}}> 
+        
+            {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
 
-                <TextInput placeholder={props.almacenId !== null ? "Pulsa y escanea o busca por nombre/código":"Selecciona el almacén"}
-                    autoFocus = {true} 
-                    onEndEditing={(e) => codeFind(e.nativeEvent.text) }
-                    showSoftInputOnFocus={showKeyBoard}
-                    ref={inputScan}
-                    //editable={props.almacenId ? true:false}
+            <TextInput placeholder={props.almacenId !== null ? "Pulsa y escanea o busca por nombre/código":"Selecciona el almacén"}
+                autoFocus = {true} 
+                onEndEditing={(e) => codeFind(e.nativeEvent.text) }
+                showSoftInputOnFocus={showKeyBoard}
+                ref={inputScan}
+                //editable={props.almacenId ? true:false}
+            />
+
+            <HStack style={{alignItems:'center', alignSelf: 'center'}}>
+                <Text style={styles.small2}>Activar teclado</Text>
+                <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
+            </HStack>
+
+            {loading && <ActivityIndicator />}
+                
+            <ListaPerform
+                items={findProduct} 
+                renderItems={memoRows} 
+                //heightRemove={dimensionesScreen.height < 600 ? 330:375}
+                //height={190}
                 />
-
-                <HStack style={{alignItems:'center', alignSelf: 'center'}}>
-                    <Text style={styles.small2}>Activar teclado</Text>
-                    <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
-                </HStack>
-
-                {loading && <ActivityIndicator />}
-                    
-                <ListaPerform
-                    items={findProduct} 
-                    renderItems={memoRows} 
-                    heightRemove={dimensionesScreen.height < 600 ? 330:375}
-                    height={190}
-                    />
-            </Stack>
-        </Provider>
+        </Stack>
     )
 }
 
 const styles = StyleSheet.create({
     title2: {
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: 'bold',
         padding: 4,
-        alignSelf: 'center'
+        alignSelf: 'center',
+        textAlign: 'justify'
     },
     small2: {
         fontSize: 11,
     },
     th: {
-        fontSize: 14,
+        fontSize: 12,
         //borderWidth: 0.2,
         width: '40%',
         fontWeight: '500',
@@ -244,20 +248,19 @@ const styles = StyleSheet.create({
     },
     td: {
         fontFamily: 'Cochin',
-        fontSize: 17,
+        fontSize: 14,
         width: '50%',
         fontWeight: '600',
         textAlign: 'left'
     },
     row: {
-        justifyContent: 'space-between',
+        justifyContent: 'space-around',
         width: '100%'
     },
     imagenPosition: {
-        flex: 1,
-        position: 'fixed',
-        start: 100,
-        bottom: 150
+        position: 'absolute',
+        end: 5,
+        top: 100,
     }
 });
 

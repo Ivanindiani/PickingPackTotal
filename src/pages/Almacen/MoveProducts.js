@@ -83,6 +83,7 @@ const MoveProducts = (props) => {
         codigo = codigo?.join("") || "";
         if(codigo) {
             inputScan2.current?.clear();
+            inputScan2.current?.focus();
             if(props.almacenId === null) {
                 return Alert.alert("Selecciona el almácen primero");
             }
@@ -129,14 +130,18 @@ const MoveProducts = (props) => {
         setMoveCode("");
     }
 
+    const getConcatItem = (item) => {
+        return `${item.Bodega?.FLOOR ?? ''}-${item.Bodega?.AISLE ?? ''}-${item.Bodega?.COLUM ?? ''}-${item.Bodega?.RACKS ?? ''}-${item.Bodega?.PALET ?? ''}`;
+    }
+    
     const RowProducts = (item, index) => {
         return (
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 290}} 
-                spacing={0}
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 265}} 
+                spacing={1}
                 p={1}
                 key={index}>
-                <Text style={[styles.title2, {borderBottomWidth: 0.2}]}>{item.Producto?.MAKTG}</Text>
+                <Text style={[styles.title2, {borderBottomWidth: 0.2}]} numberOfLines={1}>{item.Producto?.MAKTG}</Text>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>CÓDIGO MATERIAL:</Text>
                     <Text style={[styles.td, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
@@ -148,6 +153,10 @@ const MoveProducts = (props) => {
                 <HStack style={styles.row}>
                     <Text style={styles.th}>CANTIDAD:</Text>
                     <Text style={[styles.td, {color: 'black'}]}>{item.QUANT} Unidad{item.QUANT != 1 ? 'es':''}</Text>
+                </HStack>
+                <HStack style={styles.row}>
+                    <Text style={styles.th}>RESERVADOS:</Text>
+                    <Text style={[styles.td, {color: 'red'}]} numberOfLines={1}>{item.RESERVADOS ?? 0} Unidad{item.RESERVADOS != 1 ? 'es':''}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>PISO/NIVEL:</Text>
@@ -171,11 +180,12 @@ const MoveProducts = (props) => {
                 </HStack>
                 <HStack style={[styles.row, {alignItems: 'center'}]}>
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>
-                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center'}]}>{item.IDDWA}</Text>
-                    <Button title="Mover" color="white" tintColor="primary" trailing={<Ionicons name="move"/>} onPress={() => setDialogVisible(index)}/>
+                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center', fontSize: 13}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
+                    {item.RESERVADOS <= 0 &&
+                    <Button title="Mover" color="white" compact={true} tintColor="primary" trailing={<Ionicons name="move"/>} onPress={() => setDialogVisible(index)}/>}
                 </HStack>
                 <View style={styles.imagenPosition}>
-                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}}/>
                 </View>
             </VStack>
         )
@@ -185,7 +195,7 @@ const MoveProducts = (props) => {
 
     return (
         <Provider>
-            <Stack spacing={2} m={4}> 
+            <Stack spacing={2} m={4} style={{flex: 1}}> 
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
 
                 <TextInput placeholder={props.almacenId !== null ? "Pulsa y escanea o busca por nombre/código":"Selecciona el almacén"}
@@ -206,16 +216,14 @@ const MoveProducts = (props) => {
                 <ListaPerform
                     items={findProduct} 
                     renderItems={memoRows} 
-                    heightRemove={dimensionesScreen.height < 600 ? 335:380}
-                    height={186}
+                    //heightRemove={dimensionesScreen.height < 600 ? 335:380}
+                    //height={186}
                     />
                 {bodega.data && dialogVisible > -1 ?
-                <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 1000, elevation: 100}}>
-                    <DialogHeader title="Ingresa o escanea el identificador nuevo" />
+                <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 100000, elevation: 100}}>
                     <DialogContent>
-                        <Stack spacing={2}>
-                            <Text style={styles.subtitle}>Identificador de la nueva paleta: </Text>
-                            
+                        <Stack spacing={1} mt={4}>
+                            <Text style={styles.title2}>Identificador de la nueva paleta: </Text>
                             <TextInput 
                                 autoFocus={true}
                                 variant="outlined"
@@ -305,7 +313,7 @@ const MoveProducts = (props) => {
 
 const styles = StyleSheet.create({
     title2: {
-        fontSize: 17,
+        fontSize: 15,
         fontWeight: 'bold',
         padding: 4,
         alignSelf: 'center'
@@ -314,7 +322,7 @@ const styles = StyleSheet.create({
         fontSize: 11,
     },
     th: {
-        fontSize: 14,
+        fontSize: 12,
         //borderWidth: 0.2,
         width: '40%',
         fontWeight: '500',
@@ -322,7 +330,7 @@ const styles = StyleSheet.create({
     },
     td: {
         fontFamily: 'Cochin',
-        fontSize: 17,
+        fontSize: 15,
         width: '50%',
         fontWeight: '600',
         textAlign: 'left'
@@ -332,10 +340,9 @@ const styles = StyleSheet.create({
         width: '100%'
     },
     imagenPosition: {
-        flex: 1,
-        position: 'fixed',
-        start: 100,
-        bottom: 150
+        position: 'absolute',
+        end: 5,
+        top: 100,
     }
 });
 

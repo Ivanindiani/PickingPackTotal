@@ -78,11 +78,11 @@ const ManagerProducts = (props) => {
                 } else {
                     prod.noBase = true;
                 }
-                prod.cantidadDisp = prod.ProdSinLotes[0]?.LABST ?? 0;
+                prod.cantidadDisp = parseInt(prod.ProdSinLotes[0]?.LABST ?? 0)-parseInt(prod.ProdSinLotes[0]?.RESERVADOS ?? 0);
                 for(let p in prod.ArticulosBodegas) {
                     prod.cantidadDisp -= prod.ArticulosBodegas[p].QUANT;
                 }
-                if(prod.ProdConLotes.length) {
+                if(prod.ProdConLotes?.length) {
                     prod.cantidadDispLote = {};
                     for(let f in prod.ProdConLotes) {
                         let restar = 0;
@@ -91,7 +91,7 @@ const ManagerProducts = (props) => {
                                 restar += prod.ArticulosBodegas[p].QUANT;
                             }
                         }
-                        prod.cantidadDispLote[prod.ProdConLotes[f].CHARG] = prod.ProdConLotes[f].CLABS - restar;
+                        prod.cantidadDispLote[prod.ProdConLotes[f].CHARG] = prod.ProdConLotes[f].CLABS - (prod.ProdConLotes[f].RESERVADOS ?? 0) - restar;
                     }
                 }
                 console.log(prod);
@@ -137,7 +137,7 @@ const ManagerProducts = (props) => {
             setPreProduct({});
             setEstructura({});
             setCantidad(0);
-            setProducto({...data.data, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: estructura.paleta, MAKTG: preProduct.MAKTG});
+            setProducto({...datos.create, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: estructura.paleta, MAKTG: preProduct.MAKTG, ...data.data});
         }).catch(({status, error}) => {
             console.log(error);
             if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
@@ -234,35 +234,35 @@ const ManagerProducts = (props) => {
     return (
         <Provider>
             {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
-            <ScrollView>
+            <ScrollView nestedScrollEnabled={true}>
             {props.almacenId && bodega.data ?
-                <VStack>
+                <VStack style={{width: '100%', flexWrap: 'nowrap'}}>
                     <HStack style={{alignSelf: 'center', alignItems: 'center'}}>
                         <Text style={styles.small2}>Activar teclado</Text>
                         <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
                     </HStack>
                     {loading && <ActivityIndicator />}
                     {preProduct.MATNR ?
-                    <HStack style={{justifyContent: 'space-between'}} mt={-10}>
+                    <HStack style={{justifyContent: 'space-between'}} mt={-25} spacing={5}>
                         <VStack style={[styles.row, {alignSelf: 'center'}]}>
-                            <Text style={styles.small2}>{preProduct.MAKTG} </Text>
+                            <Text style={styles.small2}>{preProduct.MAKTG}</Text>
                             <HStack>
-                                <Text style={[styles.small2, {fontWeight: '600'}]}>Unidad escaneada: </Text>
+                                <Text style={[styles.small2, {fontWeight: '600'}]}>Und. escaneada: </Text>
                                 <Text style={styles.small2}>{preProduct.unidad_index.UnidadDescripcion.MSEHL}</Text>
-                                {preProduct.noBase && <Text style={[styles.small2, {fontWeight: '600'}]}> | Unidades por {preProduct.unidad_index.UnidadDescripcion.MSEHL}: {preProduct.unidad_index.UMREZ}</Text>}
+                                {preProduct.noBase && <Text style={[styles.small2, {fontWeight: '600'}]}> | Unds. por {preProduct.unidad_index.UnidadDescripcion.MSEHL}: {preProduct.unidad_index.UMREZ}</Text>}
                             </HStack>
                             <HStack>
-                                <Text style={[styles.small2, {fontWeight: '600'}]}>Unidad base: </Text>
+                                <Text style={[styles.small2, {fontWeight: '600'}]}>Und. base: </Text>
                                 <Text style={styles.small2}>{preProduct.UnidadBase.UnidadDescripcion.MSEHL}</Text>
                             </HStack>
                         </VStack>
-                        <View style={{flex: 1}}>
+                        <View style={{flex: 11}}>
                             <ImagesAsync ipSelect={props.ipSelect} imageCode={preProduct.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
                         </View>
                     </HStack>:''}
                     
-                    <HStack style={styles.row}>
-                        <Text style={{maxWidth: 140}}>Código de barrás:</Text>
+                    <HStack style={styles.row} mt={-10}>
+                        <Text style={[styles.small3, {maxWidth: 140}]}>Código de barrás:</Text>
                         <TextInput placeholder={"Pulsa y escanea"}
                             autoFocus = {true} 
                             onEndEditing={(e) => findCode(e.nativeEvent.text) }
@@ -277,7 +277,7 @@ const ManagerProducts = (props) => {
                     <HStack style={[styles.row, {justifyContent: 'space-between'}]}>
                         {preProduct?.ProdConLotes?.length ? 
                         <VStack style={{alignItems: 'center'}}>
-                            <Text>Lote:</Text>
+                            <Text style={styles.small3}>Lote:</Text>
                             <SelectInput
                                 searchable={true}
                                 data={preProduct.ProdConLotes.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG}],[])}
@@ -287,13 +287,11 @@ const ManagerProducts = (props) => {
                                 buttonStyle={{marginLeft: 5}}
                             />
                         </VStack>:''}
-                        <VStack style={{justifyContent: 'flex-end', alignItems: 'flex-end'}}>
-                            <Text style={styles.title2}>{getCantUnidades(preProduct)}</Text>
-                        </VStack>
                         <VStack mt={-4} spacing={4} style={{justifyContent: 'flex-end'}}>
+                            <Text style={styles.title2}>{getCantUnidades(preProduct)}</Text>
                             <HStack m={0} spacing={2} style={{alignItems: 'flex-end', flexWrap: 'nowrap', height: 'auto'}}>
                                 <Text style={styles.small2}>Cant. Disp:</Text>
-                                <Text style={styles.title3}>{preProduct.cantidadDispLote ? (lote && preProduct.cantidadDispLote[lote]):(preProduct.cantidadDisp < 0 ? 0:preProduct.cantidadDisp)}</Text>
+                                <Text style={styles.title3}>{preProduct?.ProdConLotes?.length ? (lote && preProduct.cantidadDispLote[lote]):(preProduct.cantidadDisp < 0 ? 0:preProduct.cantidadDisp)}</Text>
                             </HStack>
                             <TextInput
                                 ref={inputCantidad}
@@ -302,7 +300,7 @@ const ManagerProducts = (props) => {
                                 onEndEditing={(e) => changeQuantityPost(e.nativeEvent.text)}
                                 numeric
                                 keyboardType="numeric"
-                                editable={((preProduct.cantidadDispLote && lote && preProduct.cantidadDispLote[lote] > 0) || preProduct.cantidadDisp > 0) ? true:false}
+                                editable={((preProduct?.ProdConLotes?.length && lote && preProduct.cantidadDispLote[lote] > 0) || preProduct.cantidadDisp > 0) ? true:false}
                                 placeholder="10"
                                 textAlign={'center'}
                                 inputStyle={{marginTop: -18}}
@@ -316,7 +314,7 @@ const ManagerProducts = (props) => {
                     </HStack>}
 
                     <HStack style={[styles.row]}>
-                        <Text style={{maxWidth: 150}}>Identificación de la paleta:</Text>
+                        <Text style={[styles.small3, {maxWidth: 150}]}>Identificación de la paleta:</Text>
                         <TextInput placeholder={"Pulsa y escanea"}
                             autoFocus = {true} 
                             onChangeText={codeFind2}
@@ -334,7 +332,7 @@ const ManagerProducts = (props) => {
 
 
                     <HStack style={styles.row}>
-                        <Text style={{maxWidth: 120}}>Piso/Nivel:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>Piso/Nivel:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra ? []:Object.keys(bodega.extra.Niveles).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
@@ -343,7 +341,7 @@ const ManagerProducts = (props) => {
                             title="Nivel"
                             disabled={Object.keys(preProduct).length ? false:true}
                         />
-                        <Text style={{maxWidth: 120}}>Pasillo:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>Pasillo:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel ? 
@@ -355,7 +353,7 @@ const ManagerProducts = (props) => {
                         />
                     </HStack>
                     <HStack style={styles.row}>
-                        <Text style={{maxWidth: 120}}>Columna:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>Columna:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo ? 
@@ -365,7 +363,7 @@ const ManagerProducts = (props) => {
                             title="Columna"
                             disabled={!estructura.pasillo || !Object.keys(preProduct).length}
                         />
-                        <Text style={{maxWidth: 120}}>Rack:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>Rack:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !estructura.columna ? 
@@ -377,7 +375,7 @@ const ManagerProducts = (props) => {
                         />
                     </HStack>
                     <HStack style={[styles.row, {justifyContent: 'space-around'}]}>
-                        <Text style={{maxWidth: 120}}>Paleta:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>Paleta:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !estructura.columna  || !estructura.rack ? 
@@ -400,10 +398,10 @@ const ManagerProducts = (props) => {
 
             {Object.keys(producto).length ?
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey'}} 
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 250}} 
                 spacing={1}
                 p={2}>
-                <Text style={[styles.title2, {borderBottomWidth: 0.2}]}>{producto.MAKTG}</Text>
+                <Text style={[styles.title2, {borderBottomWidth: 0.2}]} numberOfLines={1}>{producto.MAKTG}</Text>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>CÓDIGO MATERIAL:</Text>
                     <Text style={[styles.td, {backgroundColor: 'yellow'}]}>{producto.MATNR}</Text>
@@ -440,6 +438,9 @@ const ManagerProducts = (props) => {
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>
                     <Text style={[styles.td, {backgroundColor: 'lightgreen'}]}>{producto.IDDWA}</Text>
                 </HStack>
+                <View style={styles.imagenPosition}>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={producto.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}}/>
+                </View>
             </VStack>:''}
             </ScrollView>
         </Provider>
@@ -460,13 +461,16 @@ const styles = StyleSheet.create({
     small2: {
         fontSize: 12,
     },
+    small3: {
+        fontSize: 13,
+    },
     row: {
         justifyContent: 'space-between', 
         alignItems: 'center',
         marginTop: 2
     },
     th: {
-        fontSize: 14,
+        fontSize: 12,
         //borderWidth: 0.2,
         width: '40%',
         fontWeight: '500',
@@ -474,11 +478,16 @@ const styles = StyleSheet.create({
     },
     td: {
         fontFamily: 'Cochin',
-        fontSize: 17,
+        fontSize: 15,
         width: '50%',
         fontWeight: '600',
         textAlign: 'left'
     },
+    imagenPosition: {
+        position: 'absolute',
+        end: 5,
+        top: 100
+    }
 });
 
 function getPrural(texto) {

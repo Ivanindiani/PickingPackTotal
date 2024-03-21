@@ -118,7 +118,7 @@ const PaletasByCode = (props) => {
 
     return (
         <Provider>
-            <Stack spacing={10} m={4}> 
+            <Stack spacing={10} m={4} style={{flex: 1}}> 
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
                 
                 <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
@@ -142,34 +142,19 @@ const PaletasByCode = (props) => {
                 <FlatList
                     data={traslados}
                     renderItem={({item, index}) => 
-                        props.type === 'crear_tras' && !props.dataUser.CAMIONERO ?
                         <ListItem
                             key={index}
-                            overline={trasladosStatus[item.TRSTS]}
                             title={item.TRCON}
-                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")+
+                            overline={trasladosStatus[item.TRSTS]}
+                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
                             "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                             leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
-                            trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
-                            onPress={() => props.dataUser.USSCO.indexOf('SCAN') !== -1 ? props.navigation.navigate('Scaneo', {
+                            //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
+                            onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
                                 traslado: item,
                                 updateTras: updateTras
                             }):''}
-                        />:
-                        <ListItem
-                            key={index}
-                                title={item.TRCON}
-                                overline={trasladosStatus[item.TRSTS]}
-                                secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")+
-                                "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
-                                leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
-                                //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
-                                onPress={() => props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
-                                    traslado: item,
-                                    updateTras: updateTras
-                                }):''}
-                            />
-                        
+                        />
                     }
                 />
             </Stack>

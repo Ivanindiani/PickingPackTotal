@@ -101,39 +101,39 @@ const AlmacenInv = (props) => {
 
     return (
         <ScrollView contentContainerStyle={{flex: 1}} nestedScrollEnabled={true}>
-            <View style={styles.centros}>
-                <Text style={{fontWeight: '500'}}>Sucursal: </Text>
-                <SelectInput
-                    searchable={false}
-                    data={centrosUser}
-                    value={centroId}
-                    setValue={setCentroId}
-                    title="Sucursal Origen"
-                    buttonStyle={{maxWidth: '70%', padding: 3}}
-                />
-                {!centrosUser.length && <Text style={{fontWeight: '500'}}>No tienes centros asignados</Text>}
-            </View>
-        
-            {centroId && almacenes.length ?
-            <View style={styles.centros}>
-                <Text style={{fontWeight: '500'}}>División: </Text>
-                <SelectInput
-                    searchable={false}
-                    data={almacenes}
-                    value={almacenId}
-                    setValue={setAlmacenId}
-                    title="División origen"
-                    buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
-                />
-            </View>:''}
+                <View style={styles.centros}>
+                    <Text style={{fontWeight: '500'}}>Sucursal: </Text>
+                    <SelectInput
+                        searchable={false}
+                        data={centrosUser}
+                        value={centroId}
+                        setValue={setCentroId}
+                        title="Sucursal Origen"
+                        buttonStyle={{maxWidth: '70%', padding: 3}}
+                    />
+                    {!centrosUser.length && <Text style={{fontWeight: '500'}}>No tienes centros asignados</Text>}
+                </View>
             
-            <TabView
-                navigationState={{ index, routes }}
-                renderScene={_renderScene}
-                onIndexChange={setIndex}
-                initialLayout={{ width: layout.width }}
-                renderTabBar={props => <TabBar {...props} style={{backgroundColor: Global.colorMundoTotal}} labelStyle={{fontSize: 12}}/>} // <-- add this line
-            />
+                {centroId && almacenes.length ?
+                <View style={styles.centros}>
+                    <Text style={{fontWeight: '500'}}>División: </Text>
+                    <SelectInput
+                        searchable={false}
+                        data={almacenes}
+                        value={almacenId}
+                        setValue={setAlmacenId}
+                        title="División origen"
+                        buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
+                    />
+                </View>:''}
+                
+                <TabView
+                    navigationState={{ index, routes }}
+                    renderScene={_renderScene}
+                    onIndexChange={setIndex}
+                    initialLayout={{ width: layout.width }}
+                    renderTabBar={props => <TabBar {...props} style={{backgroundColor: Global.colorMundoTotal}} labelStyle={{fontSize: 12}}/>} // <-- add this line
+                />
         </ScrollView>
     );
 }

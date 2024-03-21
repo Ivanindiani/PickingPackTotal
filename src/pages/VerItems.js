@@ -334,11 +334,12 @@ const VerItems = (props) => {
             }}>
             <HStack
                 spacing={4}
-                style={[styles.items,(scanSelect.Producto?.MATNR === item.MATNR ? {backgroundColor: 'lightgreen'}:{}), {width: '100%'}]}
+                style={[styles.items,(scanSelect.Producto?.MATNR === item.MATNR ? {backgroundColor: 'lightgreen'}:{}), {width: '100%', minHeight: 110}]}
             >
                 <VStack w={traslado.TRSTS >= 3 ? "50%":"65%"}>
                     <Text style={styles.title2}>{item.MAKTG || ""}</Text>
                     <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
+                    <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL}</Text>
                     {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3 ? <Text style={styles.small2}>Pulse para confirmar la cantidad real del producto:</Text>:''}
                 </VStack>
 
@@ -371,7 +372,7 @@ const VerItems = (props) => {
             </HStack>:''}
             <HStack spacing={4}>
                 <Text style={styles.title2}>Fecha:</Text>
-                <Text style={styles.subtitle}>{traslado.TRACR.split("T")[0]+" "+traslado.TRACR.split("T")[1].substring(0,5)}</Text>
+                <Text style={styles.subtitle}>{traslado.DATEC.split("T")[0]+" "+traslado.DATEC.split("T")[1].substring(0,5)}</Text>
             </HStack>
             <HStack spacing={4}>
                 <Text style={styles.title2}>Origen:</Text>
@@ -527,30 +528,7 @@ const VerItems = (props) => {
                                         <Text style={styles.title2}>Código:</Text>
                                         <Text style={styles.subtitle}>{scanSelect.unidad_index?.EAN11}</Text>
                                     </HStack>
-                                    {!scanSelect.CHARG ?
-                                    <TouchableHighlight
-                                        activeOpacity={0.6}
-                                        underlayColor="#DDDDDD"
-                                        onPress={() => {
-                                            if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3) {
-                                                console.log(scanSelect)
-                                                setDialogItem({...scanSelect, CANTR: scanSelect.CANTR || scanSelect.TCANT})
-                                                setDialogVisible(true);
-                                            }
-                                        }}>
-                                        <VStack>
-                                            <HStack spacing={6} style={{alignItems: 'center'}}>
-                                                <Text style={styles.title2}>Cant. Esperada ({scanSelect.Producto.UnidadBase?.UnidadDescripcion?.MSEHL}):</Text>
-                                                <Text style={styles.quantity}>{scanSelect.TCANT}</Text>
-                                            </HStack>
-                                            <HStack spacing={6} style={{alignItems: 'center'}}>
-                                                <Text style={styles.title2}>Cant. Confirmada ({scanSelect.Producto.UnidadBase?.UnidadDescripcion?.MSEHL}):</Text>
-                                                <Text style={[styles.quantity,{color: scanSelect.CANTR != null && scanSelect.CANTR !== scanSelect.TCANT ? 'red':'green'}]}>{scanSelect.CANTR == null ? '-':scanSelect.CANTR}</Text>
-
-                                                <FontAwesome name="dropbox" size={32} color="purple" style={{position: "absolute", right: 5, top: -15}}/>
-                                            </HStack>
-                                        </VStack>
-                                    </TouchableHighlight>:
+                                    {
                                     items.map((item, i) => 
                                         item.MATNR === scanSelect.MATNR && 
                                         <VStack spacing={2} key={i} style={{borderBottomWidth: 0.4}} p={2}>
@@ -565,15 +543,23 @@ const VerItems = (props) => {
                                                     }
                                                 }}>
                                                 <HStack spacing={6}>
-                                                    <Text style={styles.title2}>Lote:</Text>
-                                                    <Text style={styles.subtitle} color="primary">{item.CHARG}</Text>
+                                                    <VStack>
+                                                        {item.CHARG &&<HStack>
+                                                            <Text style={styles.title2}>Lote:</Text>
+                                                            <Text style={styles.subtitle} color="primary">{item.CHARG} | </Text>
+                                                        </HStack>}
+                                                        <HStack spacing={5} style={{alignItems: 'center'}}>
+                                                            <Text style={styles.subtitle}>Paleta:</Text>
+                                                            <Text style={styles.subtitle}>{item.IDPAL}</Text>
+                                                        </HStack>
+                                                    </VStack>
                                                     <VStack >
                                                         <HStack spacing={5} style={{alignItems: 'center'}}>
-                                                            <Text style={styles.subtitle}>| Cant Esperada:</Text>
+                                                            <Text style={styles.subtitle}>Cant Esperada:</Text>
                                                             <Text style={styles.quantity}>{item.TCANT}</Text>
                                                         </HStack>
                                                         <HStack spacing={5} style={{alignItems: 'center'}}>
-                                                            <Text style={styles.subtitle}>| Cant Confirmada:</Text>
+                                                            <Text style={styles.subtitle}>Cant Confirmada:</Text>
                                                             <Text style={[styles.quantity,{color: item.CANTR != null && item.CANTR !== item.TCANT ? 'red':'green'}]}>{item.CANTR == null ? '-':item.CANTR}</Text>
                                                         </HStack>
                                                     </VStack>

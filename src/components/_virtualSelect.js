@@ -26,17 +26,17 @@ const SelectInput = memo((props) => {
                     {props.searchable && <TextInput placeholder="Buscar" 
                         onChangeText={(text) => setFind(text) }
                         style={{margin: 10, marginTop: 2, borderBottomWidth: 1}}
-                        autoFocus={true}
+                        autoFocus={false}
                     />}
                     <FlatList
-                        data={find && props.searchable ? props.data.filter(f => f.value.toUpperCase().indexOf(find.toUpperCase()) !== -1 || f.label.toUpperCase().indexOf(find.toUpperCase()) !== -1):props.data}
+                        data={find && props.searchable ? props.data.filter(f => f.value?.toString()?.toUpperCase().indexOf(find.toUpperCase()) !== -1 || f.label.toUpperCase().indexOf(find.toUpperCase()) !== -1):props.data}
                         renderItem={({item, index}) => <ListItem key={index} title={item.label} secondaryText={item.subLabel} onPress={() => { props.setValue(item.value); setOpen(false); if(props.onClose) {props.onClose();}}} style={styles.list}
                         trailing={props2 => <FontAwesome name="chevron-right" {...props2} size={14} />}/>}
                     />
                 </View>
             </View>
         </Modal>:
-        <Button color="white" title={props.value !== null ? props.data.filter(f => f.value === props.value)[0]?.label:props.title} titleStyle={props.titleStyle}
+        <Button autoFocus={false} color="white" title={props.value !== null ? props.data.filter(f => f.value === props.value)[0]?.label:props.title} titleStyle={props.titleStyle}
             onPress={()=>setOpen(true)} trailing={props2 => <FontAwesome name="chevron-down" {...props2} size={14}/>} style={props.buttonStyle} disabled={props.disabled}/>
     )
 },(prevProps, nextProps) => {

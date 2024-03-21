@@ -372,10 +372,10 @@ const Traslados = (props) => {
                     key={index}
                     overline={trasladosStatus[item.TRSTS]}
                     title={item.TRCON}
-                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")+
+                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
                         "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                     //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
-                            //+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")
+                            //+")\n"+item.DATEU?.substr(0,16).replace("T"," ")
                             //+"\nAmpliado en: "+(item.Paletas.reduce((pr, pl) => (pr.length ? (pr+","):pr)+pl.IDPAL?.padStart(3, "0"), ""))
                         //}
                     leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
@@ -383,7 +383,7 @@ const Traslados = (props) => {
                         <View>
                             {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
                             <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ?
+                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
                             <IconButton icon={p2=p2 => <MaterialCommunityIcons name="folder-move" {...p2}/> } onPress={() => setModalPallet(item)} />:''}
                         </View>
                     }
@@ -416,7 +416,7 @@ const Traslados = (props) => {
                 key={index}
                 overline={trasladosStatus[item.TRSTS]}
                 title={item.TRCON}
-                secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.TRAUP?.substr(0,16).replace("T"," ")+
+                secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
                             "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                 leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                 trailing={(p2) => 

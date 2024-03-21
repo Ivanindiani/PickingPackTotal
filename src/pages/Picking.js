@@ -179,32 +179,36 @@ const ManagerProducts = (props) => {
     }, [loteName]);
 
     async function getProductos() {
-        let datos = [
-            `IDREC=${recepcion.IDREC}`,
-            `find={"IDREC": "${recepcion.IDREC}"}`,
-            `orderBy=[["DATEC", "DESC"]]`,
-            `simpletData=true`
-        ];
-        setLoading(true);
-        fetchIvan(props.ipSelect).get('/administrative/crudRecepcionItems', datos.join('&'), props.token.token)
-        .then(({data}) => {
-            let prods = data.data;
-            for(let i=0;i < prods.length;i++) {
-                prods[i].unidad_index = prods[i].UnidadBase;
-                prods[i].noBase = false;
-            }
-            console.log(prods);
-            setProductos(prods);
-        })
-        .catch(({status, error}) => {
-            console.log(status, error);
-            return ToastAndroid.show(
-                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
-            );
-        })
-        .finally(() => {
-            setLoading(false);
+        return new Promise((resolve, reject) =>{
+            let datos = [
+                `IDREC=${recepcion.IDREC}`,
+                `find={"IDREC": "${recepcion.IDREC}"}`,
+                `orderBy=[["DATEC", "DESC"]]`,
+                `simpletData=true`
+            ];
+            setLoading(true);
+            fetchIvan(props.ipSelect).get('/administrative/crudRecepcionItems', datos.join('&'), props.token.token)
+            .then(({data}) => {
+                let prods = data.data;
+                for(let i=0;i < prods.length;i++) {
+                    prods[i].unidad_index = prods[i].UnidadBase;
+                    prods[i].noBase = false;
+                }
+                console.log(prods);
+                setProductos(prods);
+                resolve(prods);
+            })
+            .catch(({status, error}) => {
+                console.log(status, error);
+                reject(error);
+                return ToastAndroid.show(
+                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                    ToastAndroid.SHORT
+                );
+            })
+            .finally(() => {
+                setLoading(false);
+            });
         });
     }
 
@@ -438,11 +442,20 @@ const ManagerProducts = (props) => {
 
     const changeQuantityPost = (text) => {
         console.log("Hola soy change cantidad ",text);
-        if(!text) {
+        
+        let cant = '';
+        try {
+            cant = text.match(/^[0-9]*$/g)[0];
+            if(cant && cant[0] === '0') 
+                cant = cant.substring(1,cant.length);
+        } catch {
+        }
+
+        if(!cant) {
             setCantidad(0);
             return inputCantidad.current?.setNativeProps({text: ""});
         }
-        setCantidad(parseInt(text));
+        setCantidad(parseInt(cant));
     }
 
     const getCantUnidades = (producto, cant = cantidad) => {
@@ -474,52 +487,58 @@ const ManagerProducts = (props) => {
         setLoteName(name);
     }
 
-    const finalizarRecepcion = () => {
+    const finalizarRecepcion = async () => {
+        
         Alert.alert('Confirmar', `¿Deseas confirmar la recepción (${recepcion.DESCR}) realmente?`, [
         {
           text: 'Sí, deseo completar',
           style: 'destructive',
           onPress: () => {
-            for(let prod of productos) {
-                if(parseFloat(prod.MONTO) < 0.01) {
-                    return Alert.alert('Error', 'Hay artículos sin costo por favor verifique');
-                }
-                if(parseFloat(prod.QUANT) <= 0) {
-                    return Alert.alert('Error', 'Hay artículos con la cantidad inválida  por favor verifique');
-                }
-                for(let prod2 of productos) {
-                    if(prod.MATNR === prod2.MATNR) {
-                        if(prod.MONTO !== prod2.MONTO && prod.LOTEA === prod2.LOTEA) {
-                            return Alert.alert('Error', 'Hay artículos iguales con monto diferente por favor verifique');
+            getProductos()
+            .then((prods) => {
+                for(let prod of prods) {
+                    if(parseFloat(prod.MONTO) < 0.01) {
+                        return Alert.alert('Error', 'Hay artículos sin costo por favor verifique');
+                    }
+                    if(parseFloat(prod.QUANT) <= 0) {
+                        return Alert.alert('Error', 'Hay artículos con la cantidad inválida  por favor verifique');
+                    }
+                    for(let prod2 of prods) {
+                        if(prod.MATNR === prod2.MATNR && prod.LOTEA === prod2.LOTEA) {
+                            if(prod.MONTO !== prod2.MONTO) {
+                                return Alert.alert('Error', 'Hay artículos iguales con monto diferente por favor verifique');
+                            }
                         }
                     }
                 }
-            }
-            let datos = {
-                id: recepcion.IDREC,
-                update: {
-                    RESTS: 'RECIBIDO'
-                }
-            };
+                let datos = {
+                    id: recepcion.IDREC,
+                    update: {
+                        RESTS: 'RECIBIDO'
+                    }
+                };
 
-            setLoading(true);
-            fetchIvan(props.ipSelect).put('/administrative/crudRecepcion', datos, props.token.token)
-            .then(({data}) => {
-                console.log("Recepcion confirmada: ", data.data);
-                setPreProduct({});
-                recepcion.RESTS = 'RECIBIDO';
-                props.route.params.updateRecepcion(recepcion);
+                setLoading(true);
+                fetchIvan(props.ipSelect).put('/administrative/crudRecepcion', datos, props.token.token)
+                .then(({data}) => {
+                    console.log("Recepcion confirmada: ", data.data);
+                    setPreProduct({});
+                    recepcion.RESTS = 'RECIBIDO';
+                    props.route.params.updateRecepcion(recepcion);
+                })
+                .catch(({status, error}) => {
+                    console.log(error);
+                    return ToastAndroid.show(
+                        error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                        ToastAndroid.SHORT
+                    );
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+            }).catch((error) => {
+
             })
-            .catch(({status, error}) => {
-                console.log(error);
-                return ToastAndroid.show(
-                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
-                );
-            })
-            .finally(() => {
-                setLoading(false);
-            });
           },
         },
         {
@@ -537,9 +556,11 @@ const ManagerProducts = (props) => {
                 QUANT: parseInt(cantidad)
             }
         }
+        
         if(monto) {
             datos.update.MONTO = parseFloat(monto);
         }
+        
         setLoadingSave(true);
         console.log(datos);
         fetchIvan(props.ipSelect).put('/administrative/crudRecepcionItems', datos, props.token.token)
@@ -677,7 +698,21 @@ const ManagerProducts = (props) => {
                     inputStyle={{paddingEnd: 0, paddingStart: 0}}
                     editable={!loadingSave}
                     pointerEvents="none"
-                    onEndEditing={(e) => updateProduct(item, item.QUANT, parseFloat(e.nativeEvent.text ?? 0)) }
+                    onEndEditing={(e) => {
+                        let cant = '';
+                        try {
+                            cant = e.nativeEvent.text?.match(/(^\d+(?:\.\d+)?)/g)[0];
+                            if(cant && cant[0] === '0') 
+                                cant = cant.substring(1,cant.length);
+                        } catch {
+                        }
+                        console.log(cant);
+                        if(!cant || parseFloat(cant) <= 0) {
+                            return otroInput1.current?.setNativeProps({text: item.MONTO.toString()});
+                        }
+                        otroInput1.current?.setNativeProps({text: cant})
+                        updateProduct(item, item.QUANT, parseFloat(cant)) 
+                    }}
                     ref={otroInput1}
                     maxLength={10}
                 />}
@@ -697,7 +732,21 @@ const ManagerProducts = (props) => {
                     inputStyle={{paddingEnd: 0, paddingStart: 0}}
                     editable={!loadingSave}
                     pointerEvents="none"
-                    onEndEditing={(e) => updateProduct(item, e.nativeEvent.text) }
+                    onEndEditing={(e) => {
+                        let cant = '';
+                        try {
+                            cant = e.nativeEvent.text?.match(/^[0-9]*$/g)[0];
+                            if(cant && cant[0] === '0') 
+                                cant = cant.substring(1,cant.length);
+                        } catch {
+                        }
+
+                        if(!cant || parseInt(cant) <= 0) {
+                            return otroInput2.current?.setNativeProps({text: item.QUANT.toString()});
+                        }
+                        otroInput2.current?.setNativeProps({text: cant})
+                        updateProduct(item, parseInt(cant)); 
+                    }}
                     ref={otroInput2}
                     maxLength={10}
                     />

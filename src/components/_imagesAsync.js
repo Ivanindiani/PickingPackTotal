@@ -46,7 +46,7 @@ const ImagesAsync = memo(({imageCode, imageStyle = {}, token, ipSelect}) => {
     //console.log("IMAGEN MEMa: ",prevProps.imageCode === nextProps.imageCode,_.isEqual(prevProps.imageStyle, nextProps.imageStyle),prevProps.token === nextProps.token)
 
     if (prevProps.imageCode === nextProps.imageCode &&
-        //_.isEqual(prevProps.imageStyle, nextProps.imageStyle) &&
+        _.isEqual(prevProps.imageStyle, nextProps.imageStyle) &&
         prevProps.token === nextProps.token) {
         return true; // props are equal
     }

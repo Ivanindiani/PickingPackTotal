@@ -1048,7 +1048,7 @@ const Scaneo = (props) => {
                 </HStack>:''}
                 <HStack spacing={4}>
                     <Text style={styles.title2}>Fecha:</Text>
-                    <Text style={styles.subtitle}>{traslado.TRACR.split("T")[0]+" "+traslado.TRACR.split("T")[1].substring(0,5)}</Text>
+                    <Text style={styles.subtitle}>{traslado.DATEC.split("T")[0]+" "+traslado.DATEC.split("T")[1].substring(0,5)}</Text>
                 </HStack>
                 <HStack spacing={4}>
                     <Text style={styles.title2}>Origen:</Text>

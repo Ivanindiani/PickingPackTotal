@@ -1,48 +1,58 @@
 import { ListItem, Provider, Stack, Text } from "@react-native-material/core";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { Alert, FlatList, RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
 import ListaPerform from "../components/_virtualList";
 
-const Pedidos = (props) => {
+const Pedidos = (props, ref) => {
     const traslado = props.route.params.traslado;
     const IDPAL = props.route.params.IDPAL;
     const [loading, setLoading] = useState(false);
     const pedido = props.pedido;
     const [msgConexion, setMsgConex] = useState('');
 
+    useImperativeHandle(ref, () => ({
+        getItems: () => getItems(),
+    }));
+
     useEffect(() => {
         getItems();
     }, []);
 
-    const getItems = () => {
-        let datos = [
-            `IDPED=${traslado.IDPED}`,
-            `IDTRA=${traslado.IDTRA}`,
-            `WERKS=${traslado.FWERK}`,
-            `LGORT=${traslado.FLGOR}`,
-            `IDPAL=${IDPAL}`,
-            `simpleData=true`
-        ];
-        
-        setLoading(true);
-        fetchIvan(props.ipSelect).get('/trasladosItemsBodega', datos.join('&'), props.token.token, undefined, undefined, 60000) // 1 minuto para probar
-        .then(({data}) => {
-            props.setPedido(data.data);
-            ToastAndroid.show("Productos del pedido listado correctamente", ToastAndroid.SHORT)
-        })
-        .catch(({status, error}) => {
-            //console.log(error);
-            if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
-                setMsgConex("¡Ups! Parece que no hay conexión a internet");
-            }
-            ToastAndroid.show(
-                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
-            );
-        })
-        .finally(() => {
-            setLoading(false);
+    function getItems(show=true) {
+        return new Promise((resolve) => {
+            let datos = [
+                `IDPED=${traslado.IDPED}`,
+                `IDTRA=${traslado.IDTRA}`,
+                `WERKS=${traslado.FWERK}`,
+                `LGORT=${traslado.FLGOR}`,
+                `IDPAL=${IDPAL}`,
+                `simpleData=true`
+            ];
+            
+            setLoading(true);
+            fetchIvan(props.ipSelect).get('/trasladosItemsBodega', datos.join('&'), props.token.token, undefined, undefined, 60000) // 1 minuto para probar
+            .then(({data}) => {
+                props.setPedido(data.data);
+                
+                resolve(data.data);
+                if(show)
+                    ToastAndroid.show("Productos del pedido listado correctamente", ToastAndroid.SHORT)
+            })
+            .catch(({status, error}) => {
+                //console.log(error);
+                if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
+                    setMsgConex("¡Ups! Parece que no hay conexión a internet");
+                }
+                ToastAndroid.show(
+                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                    ToastAndroid.SHORT
+                );
+                resolve(false);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
         });
     }
 
@@ -56,9 +66,9 @@ const Pedidos = (props) => {
         let text = ``;
         for(let art of item.ArticulosBodegas) {
             if(text.length)
-                text += " | ["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+(art.QUANT-(art.RESERVADOS??0));
+                text += " | ["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+(art.QUANT-(traslado.TRSTS === 1 ? (art.RESERVADOS??0):0));
             else
-                text += "["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+(art.QUANT-(art.RESERVADOS??0));
+                text += "["+art.Bodega.FLOOR+"-"+art.Bodega.AISLE+"-"+art.Bodega.COLUM+"-"+art.Bodega.RACKS+"-"+art.Bodega.PALET+"] stock: "+(art.QUANT-(traslado.TRSTS === 1 ? (art.RESERVADOS??0):0));
         }
         if(!text.length) {
             return <Text style={styles.ubicaciones}>No encontramos ubicación registrada del artículo</Text>;
@@ -74,8 +84,8 @@ const Pedidos = (props) => {
                     {"\n"}Usuario: {item.UsuarioAsignado.USNAM+" "+item.UsuarioAsignado.USLAS}</Text>}
         title={item.MAKTG}
         secondaryText={<Text style={styles.subtitle}>{item.Producto.MAKTG} {item.UnidadBase.XCHPF === 'X' ? <Text style={styles.lote}>{"\n"}LOTE: {item.CHARG}</Text>:''}
-            {`\nCant. Max. Disponible: ${getDisponible(item)}\n`}
-        {getUbicaciones(item)}</Text>}
+            {traslado.TRSTS === 1 ? `\nCant. Max. Disponible: ${getDisponible(item)}\n`:''}
+        {traslado.TRSTS === 1 ? getUbicaciones(item):''}</Text>}
     />
 
     return (
@@ -86,14 +96,14 @@ const Pedidos = (props) => {
                     items={pedido}
                     renderItems={rows}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={getItems}/>}
-                    height={106}
+                    height={traslado.TRSTS === 1 ? 106:92}
                     forceHeight={false}
                 />
             </View>
         </Provider>)
 }
 
-export default Pedidos;
+export default forwardRef(Pedidos);
 
 
 const styles = StyleSheet.create({

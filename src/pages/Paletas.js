@@ -263,14 +263,14 @@ const Paletas = (props) => {
                     <ListItem
                         key={index}
                         leading={<FontAwesome5 name="route" size={24} color={rutaColor[item.DROUT]}/>}
-                        title={"Destino "+item.Centro.NAME1}
+                        title={"Destino "+item.Traslado?.HaciaCentro?.NAME1}
                         overline={"Actualizado el: "+item.DATEU.split("T")[0]+" "+item.DATEU.split("T")[1].substring(0,5)}
-                        secondaryText={item.DROUT+"\n"+item.Centro.STRAS}
+                        secondaryText={item.DROUT+"\n"+item.Traslado?.HaciaCentro?.STRAS}
                         trailing={props.dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
                             //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
-                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Centro.TLATI},${item.Centro.TLONG}`);
+                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.TLATI},${item.Traslado?.HaciaCentro?.TLONG}`);
                         }}/>}
-                        onPress={() => changeStatusRuta(ruta, i)}
+                        onPress={() => changeStatusRuta(item, index)}
                     />
                 }
                 ListEmptyComponent={<Text>No hay rutas registradas</Text>}
