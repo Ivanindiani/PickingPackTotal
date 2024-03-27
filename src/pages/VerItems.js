@@ -339,7 +339,7 @@ const VerItems = (props) => {
                 <VStack w={traslado.TRSTS >= 3 ? "50%":"65%"}>
                     <Text style={styles.title2}>{item.MAKTG || ""}</Text>
                     <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
-                    <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL}</Text>
+                    <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL.substr(-3).padStart(3, '0')}</Text>
                     {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3 ? <Text style={styles.small2}>Pulse para confirmar la cantidad real del producto:</Text>:''}
                 </VStack>
 
@@ -550,7 +550,7 @@ const VerItems = (props) => {
                                                         </HStack>}
                                                         <HStack spacing={5} style={{alignItems: 'center'}}>
                                                             <Text style={styles.subtitle}>Paleta:</Text>
-                                                            <Text style={styles.subtitle}>{item.IDPAL}</Text>
+                                                            <Text style={styles.subtitle}>{item.IDPAL.substr(-3).padStart(3, '0')}</Text>
                                                         </HStack>
                                                     </VStack>
                                                     <VStack >

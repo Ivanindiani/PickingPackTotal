@@ -194,9 +194,10 @@ const ScaneoPedido = (props) => {
             `find={"IDTRA": ${traslado.IDTRA}}`,
             `fromWERKS=${traslado.FWERK}`,
             `fromLGORT=${traslado.FLGOR}`,
-            //`IDPAL=${IDPAL}`,
+            `IDPAL=${IDPAL}`,
             `checkProducts=${traslado.TRSTS === 1}`,
-            `simpleData=true`
+            `simpleData=true`,
+            `admin=true`
         ];
         
         setLoading(true);
@@ -208,13 +209,13 @@ const ScaneoPedido = (props) => {
                         try {
                             if(producto.CHARG) { // CON LOTES
                                 producto.maxQuantityLote = {};
-                                for(let lote of producto.Producto.ProdConLote) {
+                                for(let lote of producto.Producto.ProdConLotes) {
                                     producto.maxQuantityLote[lote.CHARG] = parseInt(lote.CLABS)-parseInt(lote.RESERVADOS ?? 0);
                                 }
                             } else {
                                 producto.maxQuantity = parseInt(producto.Producto.ProdSinLotes[0]?.LABST ?? 0)-parseInt(producto.Producto.ProdSinLotes[0]?.RESERVADOS ?? 0);
                             }
-                            producto.unidad_index = producto.Producto.UnidadBase;
+                            producto.unidad_index = producto.UnidadBase;
                             producto.noBase = false;
                             
                             if(forceCheck) {
@@ -322,6 +323,9 @@ const ScaneoPedido = (props) => {
                             producto.maxQuantityLote = {
                                 [producto.CHARG]: parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0)
                             };
+                            if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1) {
+                                producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0)
+                            }
 
                             if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                                 producto.noBase = true;
@@ -337,6 +341,9 @@ const ScaneoPedido = (props) => {
                             }];
                         } else {
                             producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
+                            if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1) {
+                                producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0)
+                            }
                             if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                                 producto.noBase = true;
                                 producto.max_paquete = Math.floor(producto.maxQuantity/unidad.UMREZ);
@@ -382,7 +389,9 @@ const ScaneoPedido = (props) => {
 
     const editarProducto = (find) => {
         //setRackSel(null);
-        for(let producto of pedido) {
+        let producto = {};
+        for(let tri of pedido) {
+            producto = JSON.parse(JSON.stringify(tri));
             if(producto.MATNR === find.MATNR && producto.CHARG === find.CHARG) {
                 try {  
                     const unidad = producto.UnidadBase;
@@ -392,6 +401,11 @@ const ScaneoPedido = (props) => {
                         producto.maxQuantityLote = {
                             [producto.CHARG]: parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0)
                         };
+                        if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
+                            producto.maxQuantityLote[producto.CHARG] +=parseInt(find.TCANT);
+                            if(producto.UCRID == props.dataUser.IDUSR)
+                                producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0);
+                        }
                         producto.lotes = [{
                             label: producto.CHARG,
                             value: producto.CHARG,
@@ -399,6 +413,11 @@ const ScaneoPedido = (props) => {
                         }];
                     } else {
                         producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
+                        if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
+                            producto.maxQuantity +=parseInt(find.TCANT);
+                            if(producto.UCRID == props.dataUser.IDUSR)
+                                producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0);
+                        }
                     }
                     producto.ubicaciones = getUbicaciones(producto, find.UCRID, true);
                     producto.TCANT = find.TCANT;
@@ -804,6 +823,21 @@ const ScaneoPedido = (props) => {
                 let result2 = await props.updatePedido(false);
                 if(!result2) return;
 
+                for(const ped of result) {
+                    let sumaTra1 = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.CHARG === tri.CHARG ? (prev+tri.TCANT):prev, 0);
+
+                    if(ped.CHARG) {
+                        console.log(sumaTra1, ped.maxQuantityLote[ped.CHARG]);
+                        if(sumaTra1 > ped.maxQuantityLote[ped.CHARG]) {
+                            return Alert.alert(`Error de exceso`, `El artículo ${ped.Producto.MAKTG} (${ped.MATNR} LOTE: ${ped.CHARG}), sobre pasa la cantidad máxima disponible en SAP por favor verifica`);
+                        }
+                    } else {
+                        console.log(sumaTra1, ped.maxQuantity);
+                        if(sumaTra1 > ped.maxQuantity) {
+                            return Alert.alert(`Error de exceso`, `El artículo ${ped.Producto.MAKTG} (${ped.MATNR}), sobre pasa la cantidad máxima disponible en SAP por favor verifica`);
+                        }
+                    }
+                }
                 let checkPedido = false;
                 for(const ped of result2) {
                     let sumar = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.LOTEA === tri.CHARG ? (prev+tri.TCANT):prev, 0);
@@ -814,11 +848,12 @@ const ScaneoPedido = (props) => {
                     } else if(sumar > cantp_total) {
                         return ToastAndroid.show('Hay productos mayores a los solicitados por favor verifica', ToastAndroid.LONG);
                     }
+                    
                     //console.log(ped.ArticulosBodegas);
                     for(const ubi of ped.ArticulosBodegas) { // Verificar cantidades en ubicacion
                         let sumaTra = result.reduce((prev, tri) => ubi.MATNR === tri.MATNR && ubi.LOTEA === tri.CHARG && ubi.IDADW === tri.IDADW ? (prev+tri.TCANT):prev, 0);
-                        console.log(sumaTra, ubi.QUANT, ubi.MATNR);
-                        if(sumaTra > ubi.QUANT) {
+                        console.log(sumaTra, ubi.QUANT-ubi.RESERVADOS, ubi.MATNR);
+                        if(sumaTra > ubi.QUANT-ubi.RESERVADOS) {
                             return Alert.alert(`Error en ubicación ${ubi.IDADW}`, `El artículo ${ped.Producto.MAKTG} (${ubi.MATNR}), sobre pasa la cantidad disponible de la ubicación por favor verifica`);
                         }
                     }

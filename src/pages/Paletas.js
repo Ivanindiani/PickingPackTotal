@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import fetchIvan from "../components/_fetch";
 import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text } from "@react-native-material/core";
-import { Alert, FlatList, Linking, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
+import { Alert, FlatList, Linking, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import MI from "react-native-vector-icons/MaterialCommunityIcons";
 import AntDesign from "react-native-vector-icons/AntDesign";
@@ -265,10 +265,12 @@ const Paletas = (props) => {
                         leading={<FontAwesome5 name="route" size={24} color={rutaColor[item.DROUT]}/>}
                         title={"Destino "+item.Traslado?.HaciaCentro?.NAME1}
                         overline={"Actualizado el: "+item.DATEU.split("T")[0]+" "+item.DATEU.split("T")[1].substring(0,5)}
-                        secondaryText={item.DROUT+"\n"+item.Traslado?.HaciaCentro?.STRAS}
+                        secondaryText={`${item.DROUT}\nCiudad: ${(item.Traslado?.HaciaCentro?.CentrosDescripcion?.CITNA ?? '')}\nDirección: ${(item.Traslado?.HaciaCentro?.CentrosDescripcion?.DIRAV ?? '')}`+
+                        `\nTraslado Nº: ${item.Traslado.IDTRA}`+
+                        `\nDistancia: ${getDistance(item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS, item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS)}`}
                         trailing={props.dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
                             //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
-                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.TLATI},${item.Traslado?.HaciaCentro?.TLONG}`);
+                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}`);
                         }}/>}
                         onPress={() => changeStatusRuta(item, index)}
                     />
@@ -289,12 +291,12 @@ const Paletas = (props) => {
     const changeStatusRuta = (ruta, index) => {
         if(props.dataUser.CAMIONERO && ruta.DROUT !== 'Entregada' && Orden.STSOR < 3) {
             if(Orden.STSOR === 1) {
-                return Alert.alert("Error", "Debes confirmar antes la salida de la orden y luego cliquea la ruta que deseas dirigirte.",
+                return Alert.alert("Error", "Debes confirmar antes la salida de la orden y luego selecciona la ruta que deseas dirigirte.",
                 [{text: "Ok"}])
             }
             Alert.alert(ruta.DROUT === 'Creada' ? 'Iniciar Ruta':'Entregar Productos', 
-                ruta.DROUT === 'Creada' ? `Confirma\n\n¿Deseas iniciar la ruta a ${ruta.Centro.NAME1}?`:
-                `Confirma\n\n¿Deseas dar por finalizada la ruta y que haz entregado los productos a ${ruta.Centro.NAME1}?`, [
+                ruta.DROUT === 'Creada' ? `Confirma\n\n¿Deseas iniciar la ruta a ${ruta.Traslado?.HaciaCentro?.NAME1}?`:
+                `Confirma\n\n¿Deseas dar por finalizada la ruta y que haz entregado los productos a ${ruta.Traslado?.HaciaCentro?.NAME1}?`, [
                 {
                   text: 'Sí',
                   onPress: () => {
@@ -313,7 +315,7 @@ const Paletas = (props) => {
                         ordenProvi.Rutas[index].DROUT = ruta.DROUT === 'Creada' ? 'En Ruta':'Entregada';
                         props.route.params.setOrden(ordenProvi);
                         setOrden(ordenProvi);
-                        ToastAndroid.show(`Ruta (${ruta.Centro.NAME1}), puesta en ${ordenProvi.Rutas[index].DROUT}. Gracias por reportar ¡feliz viaje!`, ToastAndroid.SHORT);
+                        ToastAndroid.show(`Ruta (${ruta.Traslado?.HaciaCentro?.NAME1}), puesta en ${ordenProvi.Rutas[index].DROUT}. Gracias por reportar ¡feliz viaje!`, ToastAndroid.SHORT);
                     })
                     .catch(({status, error}) => {
                         console.log(error);
@@ -397,6 +399,23 @@ const Paletas = (props) => {
         ]);
     }
 
+    const getDistance = (lat, lng) => {
+        let startingLat = degreesToRadians(Orden.TLATI);
+        let startingLong = degreesToRadians(Orden.TLONG);
+        let destinationLat = degreesToRadians(lat);
+        let destinationLong = degreesToRadians(lng);
+      
+        // Radius of the Earth in kilometers
+        let radius = 6571;
+      
+        // Haversine equation
+        let distanceInKilometers = Math.acos(Math.sin(startingLat) * Math.sin(destinationLat) +
+                                    Math.cos(startingLat) * Math.cos(destinationLat) *
+                                    Math.cos(startingLong - destinationLong)) * radius;
+                                    
+        return distanceInKilometers.toFixed(2)+" Km.";
+    }
+
     return (
         <Provider>
             <Stack spacing={2} style={{margin: 2, flex: 1 }}>
@@ -476,3 +495,9 @@ const styles = StyleSheet.create({
 });
 
 export default Paletas;
+
+
+function degreesToRadians(degrees) {
+    var radians = (degrees * Math.PI)/180;
+    return radians;
+}

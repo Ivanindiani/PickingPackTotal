@@ -16,6 +16,7 @@ const PaletasByCode = (props) => {
     const [traslados, setTraslados] = useState([]);
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
+    const [pallet, setPallet] = useState(null);
 
     const inputPaleta = useRef(null);
 
@@ -77,6 +78,7 @@ const PaletasByCode = (props) => {
         setLoading(true);
         setTraslados([]);
         setMsgConex('');
+        setPallet(null);
         let datos = [
             `code=${scancode}`,
             `type=${props.type}`
@@ -85,6 +87,7 @@ const PaletasByCode = (props) => {
         fetchIvan(props.ipSelect).get('/trasladosByPallet', datos.join('&'), props.token.token)
         .then(({data}) => {
             console.log(data);
+            setPallet(parseInt(scancode));
             setTraslados(data.data);
         })
         .catch(({status, error}) => {
@@ -152,7 +155,8 @@ const PaletasByCode = (props) => {
                             //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
                             onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
                                 traslado: item,
-                                updateTras: updateTras
+                                updateTras: updateTras,
+                                fixpallet: pallet
                             }):''}
                         />
                     }
