@@ -2,6 +2,7 @@ import { View, useWindowDimensions, StyleSheet, ToastAndroid, Alert, ScrollView 
 import { TabView, TabBar } from 'react-native-tab-view';
 import FindProducts from './Almacen/FindProducts';
 import ManagerProducts from './Almacen/ManagerProducts';
+import FindByBodega from './Almacen/FindByBodega';
 import { useState, useEffect } from 'react';
 import { Text } from '@react-native-material/core';
 import SelectInput from '../components/_virtualSelect';
@@ -25,13 +26,15 @@ const AlmacenInv = (props) => {
         if(props.dataUser.USSCO?.indexOf('INSERT_ARTBODEGA') !== -1 && props.dataUser.USSCO?.indexOf('MOVE_ARTBODEGA') === -1) {
             setRoutes([
                 { key: 'find', title: 'Buscar\nProductos' }, 
-                { key: 'manager', title: 'Agregar\nProductos' }
+                { key: 'manager', title: 'Agregar\nProductos' }, 
+                { key: 'bodega', title: 'Buscar\npor QR' }
             ])
         } else if(props.dataUser.USSCO?.indexOf('INSERT_ARTBODEGA') !== -1 && props.dataUser.USSCO?.indexOf('MOVE_ARTBODEGA') !== -1) {
             setRoutes([
                 { key: 'find', title: 'Buscar\nProductos' }, 
                 { key: 'manager', title: 'Agregar\nProductos' }, 
-                { key: 'mover', title: 'Mover\nProductos' }
+                { key: 'mover', title: 'Mover\nProductos' }, 
+                { key: 'bodega', title: 'Buscar\npor QR' }
             ])
         }
     },[]);
@@ -44,6 +47,8 @@ const AlmacenInv = (props) => {
                 return <ManagerProducts {...props} almacenId={almacenId} centroId={centroId} tabActive={index===1}  bodega={bodega}/>;
             case 'mover':
                 return <MoveProducts {...props} almacenId={almacenId} centroId={centroId} tabActive={index===2}  bodega={bodega}/>;
+            case 'bodega':
+                return <FindByBodega {...props} almacenId={almacenId} centroId={centroId} tabActive={index===3}  bodega={bodega}/>;
         }
     }
 
@@ -132,7 +137,7 @@ const AlmacenInv = (props) => {
                     renderScene={_renderScene}
                     onIndexChange={setIndex}
                     initialLayout={{ width: layout.width }}
-                    renderTabBar={props => <TabBar {...props} style={{backgroundColor: Global.colorMundoTotal}} labelStyle={{fontSize: 12}}/>} // <-- add this line
+                    renderTabBar={props => <TabBar {...props} style={{backgroundColor: Global.colorMundoTotal}} labelStyle={{fontSize: 8.6, padding: 0}}/>} // <-- add this line
                 />
         </ScrollView>
     );

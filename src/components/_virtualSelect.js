@@ -30,7 +30,7 @@ const SelectInput = memo((props) => {
                     />}
                     <FlatList
                         data={find && props.searchable ? props.data.filter(f => f.value?.toString()?.toUpperCase().indexOf(find.toUpperCase()) !== -1 || f.label.toUpperCase().indexOf(find.toUpperCase()) !== -1):props.data}
-                        renderItem={({item, index}) => <ListItem key={index} title={item.label} secondaryText={item.subLabel} onPress={() => { props.setValue(item.value); setOpen(false); if(props.onClose) {props.onClose();}}} style={styles.list}
+                        renderItem={({item, index}) => <ListItem key={index} title={item.label} secondaryText={item.subLabel} onPress={() => { if(!item.disabled){ props.setValue(item.value); setOpen(false); if(props.onClose) {props.onClose();}}}} style={styles.list}
                         trailing={props2 => <FontAwesome name="chevron-right" {...props2} size={14} />}/>}
                         ListEmptyComponent={<Text style={{fontSize: 11, textAlign: 'center'}}>No hay datos...</Text>}
                     />

@@ -17,6 +17,7 @@ const TrasladosByCode = (props) => {
     const [traslado, setTraslado] = useState({});
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
+    const [paleta, setPaleta] = useState(null);
 
     const inputScan = useRef(null);
 
@@ -64,14 +65,20 @@ const TrasladosByCode = (props) => {
     const codeFind = (text) => {
         if(text.length) {
             //console.log("Hola soy code change "+text);
-            let codigo = text.split(',')[0].match(/([A-Z|a-z|0-9])/g);
-            findCode(codigo?.join("") || "");
+            let split = text.split(';');
+            let codigo = split[0].split(',')[0].match(/([A-Z|a-z|0-9])/g);
+            console.log(split);
+            if(split.length === 2) {
+                findCode(codigo?.join("") || "", split[1].split(',')[0]);
+            } else {
+                findCode(codigo?.join("") || "");
+            }
         }
     }
 
-    const findCode = (scancode) => {
+    const findCode = (scancode, paleta = null) => {
         if(!scancode) return;
-        console.log("Codigo scaneado: "+scancode);
+        console.log("Codigo scaneado: "+scancode, paleta);
 
         inputScan.current?.clear();
 
@@ -86,7 +93,7 @@ const TrasladosByCode = (props) => {
         fetchIvan(props.ipSelect).get('/trasladosByCode', datos.join('&'), props.token.token)
         .then(({data}) => {
             console.log(data);
-            setTraslado(data.data);
+            setTraslado({...data.data, IDPAL: paleta});
         })
         .catch(({status, error}) => {
             console.log(error);
@@ -120,7 +127,7 @@ const TrasladosByCode = (props) => {
                     showSoftInputOnFocus={showKeyBoard}
                     //keyboardType={!showKeyBoard ? "numeric":"default"}
                     ref={inputScan}
-                    maxLength={10}
+                    maxLength={20}
                 />
 
                 <HStack style={{alignItems:'center', alignSelf: 'center'}}>
@@ -139,7 +146,8 @@ const TrasladosByCode = (props) => {
                     //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
                     onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
                         traslado: traslado,
-                        updateTras: updateTras
+                        updateTras: updateTras,
+                        IDPAL: traslado.IDPAL
                     }):''}
                 />
                 }

@@ -25,7 +25,7 @@ const MoveProducts = (props) => {
     const inputScan2 = useRef(null);
 
     const evento = (keyEvent) => { 
-        if(!inputScan2.current?.isFocused()) {
+        if(!inputScan2.current?.isFocused() && dialogVisible === -1) {
             if((keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) || keyEvent.keyCode === 103 || keyEvent.keyCode === 10036) { // Nos llaman con enter
                 inputScan2.current?.focus();
             }
@@ -71,12 +71,12 @@ const MoveProducts = (props) => {
     }, [props.tabActive, props.almacenId, dialogVisible]);
 
     useEffect(() => { // efecto para cada vez que cambian los estados de las config nos pone modo FOCUS
-        if(props.tabActive) {
+        if(props.tabActive && dialogVisible === -1) {
             setTimeout(() => {
                 inputScan2.current?.focus()
             }, 200);
         }
-    },[showKeyBoard, props.tabActive]);
+    },[showKeyBoard, props.tabActive, dialogVisible]);
 
     const codeFind = (code) => {
         let codigo = code.split(',')[0].match(/([A-Z|a-z|0-9])/g);
@@ -137,7 +137,7 @@ const MoveProducts = (props) => {
     const RowProducts = (item, index) => {
         return (
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 265}} 
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: item.Bodega?.BLOQU ? 'auto':275}} 
                 spacing={1}
                 p={1}
                 key={index}>
@@ -159,25 +159,30 @@ const MoveProducts = (props) => {
                     <Text style={[styles.td, {color: 'red'}]} numberOfLines={1}>{item.RESERVADOS ?? 0} Unidad{item.RESERVADOS != 1 ? 'es':''}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PISO/NIVEL:</Text>
-                    <Text style={[styles.td, {color: 'black'}]}>{item.Bodega?.FLOOR}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
+                    <Text style={[styles.td, {color: bodega.extra.Niveles[item.Bodega?.FLOOR].Color.HCODE || 'black'}]}>{item.Bodega?.FLOOR}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PASILLO:</Text>
-                    <Text style={[styles.td, {color: 'orange'}]}>{item.Bodega?.AISLE}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
+                    <Text style={[styles.td, {color: bodega.extra.Niveles[item.Bodega?.FLOOR].Pasillos[item.Bodega?.AISLE].Color.HCODE || 'black'}]}>{item.Bodega?.AISLE}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>COLUMNA:</Text>
-                    <Text style={[styles.td, {color: Global.colorMundoTotal}]}>{item.Bodega?.COLUM}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>
+                    <Text style={[styles.td]}>{item.Bodega?.COLUM}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>RACK:</Text>
-                    <Text style={[styles.td, {color: 'red'}]}>{item.Bodega?.RACKS}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.RANAM || "RACK"}:</Text>
+                    <Text style={[styles.td]}>{item.Bodega?.RACKS}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PALETA:</Text>
-                    <Text style={[styles.td, {color: 'blue'}]}>{item.Bodega?.PALET}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.PANAM || "PALETA"}:</Text>
+                    <Text style={[styles.td]}>{item.Bodega?.PALET}</Text>
                 </HStack>
+                {item.Bodega?.BLOQU && 
+                <VStack style={[styles.row, {alignItems: 'center'}]}>
+                    <Text style={[styles.th, {color: 'red', textAlign: 'center', width: '100%'}]}>¡Ubicación BLOQUEADA!</Text>
+                    <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{item.Bodega?.COMEB}</Text>
+                </VStack>}
                 <HStack style={[styles.row, {alignItems: 'center'}]}>
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>
                     <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center', fontSize: 13}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
@@ -199,7 +204,7 @@ const MoveProducts = (props) => {
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
 
                 <TextInput placeholder={props.almacenId !== null ? "Pulsa y escanea o busca por nombre/código":"Selecciona el almacén"}
-                    autoFocus = {true} 
+                    autoFocus = {dialogVisible === -1} 
                     onEndEditing={(e) => codeFind(e.nativeEvent.text) }
                     showSoftInputOnFocus={showKeyBoard}
                     ref={inputScan2}
@@ -219,7 +224,7 @@ const MoveProducts = (props) => {
                     //heightRemove={dimensionesScreen.height < 600 ? 335:380}
                     //height={186}
                     />
-                {bodega.data && dialogVisible > -1 ?
+                {bodega?.data && dialogVisible > -1 ?
                 <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 100000, elevation: 100}}>
                     <DialogContent>
                         <Stack spacing={1} mt={4}>
@@ -238,27 +243,32 @@ const MoveProducts = (props) => {
                                 <Text style={styles.small2}>Activar teclado</Text>
                                 <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
                             </HStack>
-                            {moveCode ? <VStack>
+                            {moveCode ? <VStack style={{backgroundColor: 'lightgrey'}}>
                                 <HStack style={styles.row}>
-                                    <Text style={styles.th}>PISO/NIVEL:</Text>
-                                    <Text style={[styles.td, {color: 'black'}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR}</Text>
+                                    <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
+                                    <Text style={[styles.td, {color: bodega.extra.Niveles[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR]?.Color.HCODE || 'black'}]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR}</Text>
                                 </HStack>
                                 <HStack style={styles.row}>
-                                    <Text style={styles.th}>PASILLO:</Text>
-                                    <Text style={[styles.td, {color: 'orange'}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.AISLE}</Text>
+                                    <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
+                                    <Text style={[styles.td, {color: bodega.extra.Niveles[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR].Pasillos[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.AISLE].Color.HCODE || 'black'}]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.AISLE}</Text>
                                 </HStack>
                                 <HStack style={styles.row}>
-                                    <Text style={styles.th}>COLUMNA:</Text>
-                                    <Text style={[styles.td, {color: Global.colorMundoTotal}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.COLUM}</Text>
+                                    <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>
+                                    <Text style={[styles.td]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.COLUM}</Text>
                                 </HStack>
                                 <HStack style={styles.row}>
-                                    <Text style={styles.th}>RACK:</Text>
-                                    <Text style={[styles.td, {color: 'red'}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.RACKS}</Text>
+                                    <Text style={styles.th}>{bodega.extra?.Nombres?.RANAM || "RACK"}:</Text>
+                                    <Text style={[styles.td]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.RACKS}</Text>
                                 </HStack>
                                 <HStack style={styles.row}>
-                                    <Text style={styles.th}>PALETA:</Text>
-                                    <Text style={[styles.td, {color: 'blue'}]}>{bodega.data.filter((a) => a.IDDWA === moveCode)[0]?.PALET}</Text>
+                                    <Text style={styles.th}>{bodega.extra?.Nombres?.PANAM || "PALETA"}:</Text>
+                                    <Text style={[styles.td]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.PALET}</Text>
                                 </HStack>
+                                {bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.BLOQU && 
+                                <VStack style={[styles.row, {alignItems: 'center', padding: 4}]}>
+                                    <Text style={[styles.th, {color: 'red', width: '100%', textAlign: 'center'}]}>¡Ubicación BLOQUEADA!</Text>
+                                    <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.COMEB}</Text>
+                                </VStack>}
                             </VStack>:''}
                         </Stack>
                     </DialogContent>
@@ -268,7 +278,7 @@ const MoveProducts = (props) => {
                             compact
                             variant="text"
                             loading={loading}
-                            disabled={loading || !moveCode}
+                            disabled={loading || !moveCode || bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.BLOQU}
                             onPress={() => {
                                 if(moveCode === null) {
                                     return Alert.alert("Error", "Por favor ingresa un identificador válido");
@@ -285,9 +295,12 @@ const MoveProducts = (props) => {
                                     console.log(data);
                                     let temp = JSON.parse(JSON.stringify(findProduct));
                                     temp[dialogVisible].IDDWA = moveCode;
-                                    temp[dialogVisible].Bodega = bodega.data.filter((a) => a.IDDWA === moveCode)[0];
+                                    temp[dialogVisible].Bodega = bodega?.data?.filter((a) => a.IDDWA === moveCode)[0];
                                     setFindProduct(temp);
                                     ToastAndroid.show("Cambios realizados éxitosamente!", ToastAndroid.SHORT);
+                                    if(showKeyBoard){
+                                        setShowKeyBoard(false);
+                                    }
                                     setDialogVisible(-1);
                                 }).catch(({status, error}) => {
                                     console.log(error);

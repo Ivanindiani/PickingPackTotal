@@ -197,7 +197,7 @@ const Recepcion = (props) => {
         });
     }
 
-    const dropRecepcion = (name, id) => {
+    const dropRecepcion = (name, id, anular) => {
         Alert.alert('Confirmar', `¿Deseas eliminar la recepción (${name}) realmente?\nSe eliminarán todo los artículos creados`, [
         {
           text: 'Sí, deseo eliminar',
@@ -205,6 +205,7 @@ const Recepcion = (props) => {
           onPress: () => {
             let datos = {
                 id: id,
+                anular: anular,
                 update: {
                     RESTS: 'CANCELADO'
                 }
@@ -245,7 +246,6 @@ const Recepcion = (props) => {
         setRecepciones(auxRecepciones);
         console.log("Recepciones actualizados");
     }
-    
     
     return (
         <Provider>
@@ -327,7 +327,7 @@ const Recepcion = (props) => {
                             title="Crear" 
                             color="secondary" 
                             onPress={crearRecepcion}
-                            disabled={!descripcion.length || !tipo_proveedor_id || !grupo_proveedor_id || !proveedor_id.length || loading || !almacenId}
+                            disabled={!descripcion.length || !tipo_proveedor_id || !grupo_proveedor_id || !proveedor_id?.length || loading || !almacenId}
                             style={{marginTop: 5, zIndex: -1}}/>
                     </Box>:''}
                     <Stack style={styles.scrollView}>
@@ -345,12 +345,12 @@ const Recepcion = (props) => {
                                 key={i}
                                 overline={recepcion.RESTS}
                                 title={recepcion.DESCR}
-                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+new Date(recepcion.DATEC).toLocaleString()}
+                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+new Date(recepcion.DATEC?.replace('Z', '')).toLocaleString()}
                                 leading={<Entypo name="circle" size={24} backgroundColor={statusColor[recepcion.RESTS]} color={statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
                                 trailing={(p2) => 
                                     <View>
-                                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' ? 
-                                        <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC)}/>:''}
+                                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
+                                        <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC, recepcion.RESTS === 'RECIBIDO' ? true:false)}/>:''}
                                     </View>
                                 }
                                 onPress={() => props.dataUser.USSCO.indexOf('RECEPCION_FIND') !== -1  || props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1

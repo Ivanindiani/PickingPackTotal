@@ -27,18 +27,17 @@ const ManagerProducts = (props) => {
     const inputCantidad = useRef(null);
 
     useEffect(() => {
-        if(estructura.paleta) {
-            console.log(estructura.nivel, estructura.pasillo, estructura.columna, estructura.rack, estructura.paleta)
-            for(let bod of bodega.data) {
-                if(bod.FLOOR == estructura.nivel &&
-                    bod.AISLE == estructura.pasillo &&
-                    bod.COLUM === estructura.columna &&
-                    bod.RACKS === estructura.rack &&
-                    bod.PALET === estructura.paleta) {
-                        setCodeID(bod.IDDWA);
-                        break;
-                    }
-            }
+        setEstructura({});
+        setPreProduct({});
+        setProducto({});
+        setCodeID("");
+        setLote(null);
+    }, [props.almacenId]);
+
+    useEffect(() => {
+        if(estructura?.paleta) {
+            console.log(estructura.nivel, estructura.pasillo, estructura.columna, estructura.rack, estructura.paleta);
+            setCodeID(bodega?.extra?.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.IDDWA)
         } else {
             setCodeID(null);
         }
@@ -138,6 +137,7 @@ const ManagerProducts = (props) => {
             setEstructura({});
             setCantidad(0);
             setProducto({...datos.create, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: estructura.paleta, MAKTG: preProduct.MAKTG, ...data.data});
+            ToastAndroid.show('Producto agregado correctamente', ToastAndroid.LONG);
         }).catch(({status, error}) => {
             console.log(error);
             if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
@@ -162,7 +162,7 @@ const ManagerProducts = (props) => {
                         pasillo: space.AISLE,
                         columna: space.COLUM.toString(),
                         rack: space.RACKS.toString(),
-                        paleta: space.PALET.toString()
+                        paleta: bodega.extra.Niveles[space.FLOOR].Pasillos[space.AISLE].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
                     });
                     return;
                 }
@@ -280,7 +280,7 @@ const ManagerProducts = (props) => {
                             <Text style={styles.small3}>Lote:</Text>
                             <SelectInput
                                 searchable={true}
-                                data={preProduct.ProdConLotes.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG}],[])}
+                                data={preProduct.ProdConLotes.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG, subLabel: i.FVENC+" - (Cant. "+preProduct.cantidadDispLote[i.CHARG]+")"}],[])}
                                 value={lote}
                                 setValue={setLote}
                                 title="Lote"
@@ -330,67 +330,72 @@ const ManagerProducts = (props) => {
                             editable={Object.keys(preProduct).length ? true:false} /> */}
                     </HStack>
 
-
                     <HStack style={styles.row}>
-                        <Text style={[styles.small3, {maxWidth: 120}]}>Piso/Nivel:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.FLNAM || "Piso/Nivel"}:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra ? []:Object.keys(bodega.extra.Niveles).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
                             value={estructura.nivel}
                             setValue={(val) => setEstructura({nivel: val})}
-                            title="Nivel"
+                            title={bodega.extra?.Nombres?.FLNAM || "Nivel"}
                             disabled={Object.keys(preProduct).length ? false:true}
                         />
-                        <Text style={[styles.small3, {maxWidth: 120}]}>Pasillo:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.AINAM || "Pasillo"}:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel ? 
                                 []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
                             value={estructura.pasillo}
                             setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: val})}
-                            title="Pasillo"
+                            title={bodega.extra?.Nombres?.AINAM || "Pasillo"}
                             disabled={!estructura.nivel || !Object.keys(preProduct).length}
                         />
                     </HStack>
                     <HStack style={styles.row}>
-                        <Text style={[styles.small3, {maxWidth: 120}]}>Columna:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.CONAM || "Columna"}:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo ? 
                                 []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas).reduce((p,i) => [...p, {value: i, label: i}],[])}
                             value={estructura.columna}
                             setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: estructura.pasillo, columna: val})}
-                            title="Columna"
+                            title={bodega.extra?.Nombres?.CONAM || "Columna"}
                             disabled={!estructura.pasillo || !Object.keys(preProduct).length}
                         />
-                        <Text style={[styles.small3, {maxWidth: 120}]}>Rack:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.RANAM || "Rack"}:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !estructura.columna ? 
                                 []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks).reduce((p,i) => [...p, {value: i, label: i}],[])}
                             value={estructura.rack}
                             setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: estructura.pasillo, columna: estructura.columna, rack: val})}
-                            title="Rack"
+                            title={bodega.extra?.Nombres?.RANAM || "Rack"}
                             disabled={!estructura.columna || !Object.keys(preProduct).length}
                         />
                     </HStack>
                     <HStack style={[styles.row, {justifyContent: 'space-around'}]}>
-                        <Text style={[styles.small3, {maxWidth: 120}]}>Paleta:</Text>
+                        <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.PANAM || "Paleta"}:</Text>
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !estructura.columna  || !estructura.rack ? 
-                                []:bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas.reduce((p,i) => [...p, {value: i, label: i}],[])}
+                                []:bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas.reduce((p,i,idx) => [...p, {value: idx, label: i.PALETA}],[])}
                             value={estructura.paleta}
                             setValue={(val) => setEstructura({...estructura, paleta: val})}
-                            title="Paleta"
+                            title={bodega.extra?.Nombres?.PANAM || "Paleta"}
                             disabled={!estructura.rack || !Object.keys(preProduct).length}
                             buttonStyle={{width: 'auto'}}
                         />
                     </HStack>
 
+                    {bodega?.extra && bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU ?
+                    <VStack style={[styles.row, {alignItems: 'center'}]}>
+                        <Text style={[styles.th, {color: 'red', textAlign: 'center', width: '100%'}]}>¡Ubicación BLOQUEADA!</Text>
+                        <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas[estructura.paleta]?.COMEB}</Text>
+                    </VStack>:''}
+
                     <Button title="Cargar" onPress={addProduct} color={Global.colorMundoTotal} loading={loading}
                         disabled={!codeID || !estructura.columna || !estructura.nivel || !estructura.pasillo || !estructura.rack ||
-                            !estructura.paleta || !cantidad || !Object.keys(preProduct).length} 
+                            !estructura.paleta || !cantidad || !Object.keys(preProduct).length || bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU} 
                         style={{marginTop: 10}}/>
                 </VStack>
             :<Text>Selecciona un almacén para continuar</Text>}
@@ -415,24 +420,24 @@ const ManagerProducts = (props) => {
                     <Text style={[styles.td, {color: 'black'}]}>{producto.QUANT}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PISO/NIVEL:</Text>
-                    <Text style={[styles.td, {color: 'black'}]}>{producto.FLOOR}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
+                    <Text style={[styles.td, {color: bodega.extra.Niveles[producto.FLOOR].Color.HCODE || 'black'}]}>{producto.FLOOR}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PASILLO:</Text>
-                    <Text style={[styles.td, {color: 'orange'}]}>{producto.AISLE}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
+                    <Text style={[styles.td, {color: bodega.extra.Niveles[producto.FLOOR].Pasillos[producto.AISLE].Color.HCODE || 'black'}]}>{producto.AISLE}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>COLUMNA:</Text>
-                    <Text style={[styles.td, {color: Global.colorMundoTotal}]}>{producto.COLUM}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>
+                    <Text style={[styles.td]}>{producto.COLUM}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>RACK:</Text>
-                    <Text style={[styles.td, {color: 'red'}]}>{producto.RACKS}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.RANAM || "RACK"}:</Text>
+                    <Text style={[styles.td]}>{producto.RACKS}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PALETA:</Text>
-                    <Text style={[styles.td, {color: 'blue'}]}>{producto.PALET}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.PANAM || "PALETA"}:</Text>
+                    <Text style={[styles.td]}>{producto.PALET}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>IDENTIFICACIÓN:</Text>

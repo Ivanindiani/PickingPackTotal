@@ -1,4 +1,4 @@
-import { ActivityIndicator, Box, Pressable, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Box, Pressable, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack, Chip } from "@react-native-material/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, LogBox, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
@@ -37,6 +37,13 @@ const Scaneo = (props) => {
     const [openSheet, setOpenSheet] = useState(false);
     const [comentario, setComentario] = useState(-2);
 
+    const [pesoE, setPesoE] = useState(props.route.params.Paleta?.PESO ?? 0);
+    const [VolumenE, setVolumenE] = useState(props.route.params.Paleta?.VOLUMEN ?? 0);
+    const [peso, setPeso] = useState(0);
+    const [Volumen, setVolumen] = useState(0);
+
+    const [undSelect, setUndSelect] = useState(null);
+
     /** CONFIG **/
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [autosumar, setAutoSumar] = useState(true);
@@ -53,14 +60,14 @@ const Scaneo = (props) => {
     const scrollPrincipal = useRef(null);
     const inputScan = useRef(null); // Input principal
     const inputCant1 = useRef(null); // Input cantidad escaneo
-    const inputCantList = useRef(null); // Input cantidad escaneo
+    //const inputCantList = useRef(null); // Input cantidad escaneo
     const inputComentario = useRef(null); // Input comentario dialog
     /** Referencias a componentes **/
 
     /* EVENTO KEYBOARD */
     const evento = (keyEvent) => { 
         try {
-            if(!inputScan.current?.isFocused() && !inputCantList.current?.isFocused() && !inputCant1.current?.isFocused() && !inputComentario.current?.isFocused()) {
+            if(!inputScan.current?.isFocused() && !inputComentario.current?.isFocused()) {// && !inputCant1.current?.isFocused() && !inputComentario.current?.isFocused()) {
                 console.log(`Key: ${keyEvent.pressedKey}`);
                 console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
                 if((keyEvent.keyCode >= 520 && keyEvent.keyCode <= 523) || keyEvent.keyCode === 103 || keyEvent.keyCode === 10036) { // Nos llaman con enter
@@ -132,6 +139,18 @@ const Scaneo = (props) => {
             setMsgConex("");
         }
     }, [loading === true]);
+
+    useEffect(() => {
+        let pesos = 0;
+        let volumenes = 0;
+        for(let producto of trasladoItems) {
+            pesos += (producto.UnidadBase?.BRGEW ?? 0)*producto.TCANT;
+            volumenes += (producto.UnidadBase?.VOLUM ?? 0)*producto.TCANT;
+        }
+
+        setPeso(pesoE + pesos);
+        setVolumen(VolumenE + volumenes);
+    }, [trasladoItems]);
 
     /* Funciones fetch init() */
     function getSesionScan() {
@@ -205,6 +224,8 @@ const Scaneo = (props) => {
             .then(({data}) => {
                 let falla = false;
                 if(traslado.TRSTS == 1) {
+                    let pesos = 0;
+                    let volumenes = 0;
                     for(let producto of data.data) {
                         try {
                             if(producto.CHARG) { // CON LOTES
@@ -217,10 +238,14 @@ const Scaneo = (props) => {
                             }
                             producto.unidad_index = producto.UnidadBase;
                             producto.noBase = false;
+                            pesos += (producto.UnidadBase?.BRGEW ?? 0)*producto.TCANT;
+                            volumenes += (producto.UnidadBase?.VOLUM ?? 0)*producto.TCANT;
                         } catch (e) {
                             console.log(e);
                         }
                     }
+                    setPesoE(props.route.params.Paleta?.PESO - pesos);
+                    setVolumenE(props.route.params.Paleta?.VOLUMEN - volumenes);
                 }
                 setTrasladoItems(data.data);
                 resolve(falla ? false:data.data);
@@ -254,26 +279,35 @@ const Scaneo = (props) => {
 
         inputScan.current?.clear(); // Limpiamos el input
         inputScan.current?.focus(); // Limpiamos el input
+
+        let unidadFindScan = {};
+        if(scanCurrent) {
+            unidadFindScan = scanCurrent.Producto?.ProductosUnidads?.filter((p) => p.EAN11 == scancode)[0] ?? {};
+            console.log(unidadFindScan);
+        }
         
-        if(scanCurrent && scancode === scanCurrent.unidad_index?.EAN11 && !scanCurrent.force) { // Si el escaneado es el mismo 
+        if(scanCurrent && unidadFindScan.EAN11 && !scanCurrent.force) { // Si el escaneado es el mismo 
             if(autosumar && rackSel !== null) {
                 let producto = JSON.parse(JSON.stringify(scanCurrent));
                 let maximoPosible = 0;
                 if(!producto.maxQuantityLote) {
-                    maximoPosible = producto.noBase && producto.max_paquete == 0 ? 
+                    /*maximoPosible = producto.noBase && producto.max_paquete == 0 ? 
                                 (producto.ubicaciones[rackSel].MAX < producto.max_paquete ? producto.ubicaciones[rackSel].MAX:producto.max_paquete):
-                                (producto.ubicaciones[rackSel].MAX < producto.maxQuantity ? producto.ubicaciones[rackSel].MAX:producto.maxQuantity);
+                                (producto.ubicaciones[rackSel].MAX < producto.maxQuantity ? producto.ubicaciones[rackSel].MAX:producto.maxQuantity);*/
+                    maximoPosible = producto.ubicaciones[rackSel].MAX < producto.maxQuantity ? producto.ubicaciones[rackSel].MAX:producto.maxQuantity;                           
                 } else {
-                    maximoPosible = producto.noBase && producto.max_paquete[producto.CHARG] == 0 ? 
+                    /*maximoPosible = producto.noBase && producto.max_paquete[producto.CHARG] == 0 ? 
                                 (producto.ubicaciones[rackSel].MAX < producto.max_paquete[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.max_paquete[producto.CHARG]):
-                                (producto.ubicaciones[rackSel].MAX < producto.maxQuantityLote[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.maxQuantityLote[producto.CHARG]);
+                                (producto.ubicaciones[rackSel].MAX < producto.maxQuantityLote[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.maxQuantityLote[producto.CHARG]);*/
+                    maximoPosible = producto.ubicaciones[rackSel].MAX < producto.maxQuantityLote[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.maxQuantityLote[producto.CHARG];     
                 }
 
                 if(maximoPosible <= 0) {
                     RNBeep.beep(false);
                     return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
                 }
-                producto.TCANT = parseInt(producto.TCANT ?? 0) + (maximoPosible < parseInt(producto.unidad_index.UMREZ) ? maximoPosible:parseInt(producto.unidad_index.UMREZ));
+                let unidad_index = producto.Producto?.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? producto.unidad_index;
+                producto.TCANT = parseInt(producto.TCANT ?? 0) + (maximoPosible < parseInt(unidad_index.UMREZ) ? maximoPosible:parseInt(unidad_index.UMREZ));
                 
                 if(producto.TCANT > maximoPosible) {
                     producto.TCANT = maximoPosible;
@@ -294,6 +328,7 @@ const Scaneo = (props) => {
         } else { // Si no es el mismo procedemos a buscarlo en la lista de trasladoitems.
             setScanCurrent({});
             setRackSel(null);
+            setUndSelect(null);
             let producto = {};
             /*for(const tri of trasladoItems) {
                 producto = JSON.parse(JSON.stringify(tri));
@@ -323,7 +358,7 @@ const Scaneo = (props) => {
                                 producto.lotes.push({
                                     label: prodLote.CHARG,
                                     value: prodLote.CHARG,
-                                    subLabel: prodLote.LAEDA+" - (Cant. "+producto.maxQuantityLote[prodLote.CHARG]+")"
+                                    subLabel: prodLote.FVENC+" - (Cant. "+producto.maxQuantityLote[prodLote.CHARG]+")"
                                 });
                             }
                         } else {
@@ -360,6 +395,7 @@ const Scaneo = (props) => {
                 producto.unidad_index = unidad;
                 producto.force = false;
                 producto.TCANT = 0;
+                setUndSelect(unidad.MEINH);
                 try {  
                     const unidadBase = producto.UnidadBase?.MEINS || "ST";
                     if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
@@ -372,16 +408,14 @@ const Scaneo = (props) => {
                         producto.max_paquete = {};
                         producto.lotes = [];
                         for(let prodLote of producto.ProdConLotes) {
-                            producto.maxQuantityLote = {
-                                [prodLote.CHARG]: parseInt(prodLote.CLABS)-parseInt(prodLote.RESERVADOS ?? 0)
-                            };
+                            producto.maxQuantityLote[prodLote.CHARG] = parseInt(prodLote.CLABS)-parseInt(prodLote.RESERVADOS ?? 0);
                             if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                                 producto.max_paquete[prodLote.CHARG] = Math.floor(producto.maxQuantityLote[prodLote.CHARG]/unidad.UMREZ);
                             }
                             producto.lotes.push({
                                 label: prodLote.CHARG,
                                 value: prodLote.CHARG,
-                                subLabel: prodLote.LAEDA+" - (Cant. "+producto.maxQuantityLote[prodLote.CHARG]+")"
+                                subLabel: prodLote.FVENC+" - (Cant. "+producto.maxQuantityLote[prodLote.CHARG]+")"
                             });
                         }
                     } else {
@@ -427,19 +461,18 @@ const Scaneo = (props) => {
                     producto.unidad_index = unidadBase;
                     producto.noBase = false;
                     let forzar = false;
+                    setUndSelect(null);
 
                     if(unidadBase.XCHPF === 'X') { // Con lote
                         producto.maxQuantityLote = {};
                         producto.max_paquete = {};
                         producto.lotes = [];
                         for(let prodLote of producto.Producto.ProdConLotes) {
-                            producto.maxQuantityLote = {
-                                [prodLote.CHARG]: parseInt(prodLote.CLABS)-parseInt(prodLote.RESERVADOS ?? 0)
-                            };
+                            producto.maxQuantityLote[prodLote.CHARG] = parseInt(prodLote.CLABS)-parseInt(prodLote.RESERVADOS ?? 0);
                             producto.lotes.push({
                                 label: prodLote.CHARG,
                                 value: prodLote.CHARG,
-                                subLabel: prodLote.LAEDA+" - (Cant. "+producto.maxQuantityLote[prodLote.CHARG]+")"
+                                subLabel: prodLote.FVENC+" - (Cant. "+producto.maxQuantityLote[prodLote.CHARG]+")"
                             });
                         }
                         if(producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL) {
@@ -461,7 +494,8 @@ const Scaneo = (props) => {
                     producto.TCANT = find.TCANT;
                     producto.IDTRI = find.IDTRI;
                     producto.force = true;
-                    setScanCurrent({...scanCurrent, ...producto});
+                    setScanCurrent(producto);
+                    //setScanCurrent({...scanCurrent, ...producto});
                     if(find.IDADW === null) {
                         let index = producto.ubicaciones.length-1;
                         if(index < 0) index = 0;
@@ -492,14 +526,14 @@ const Scaneo = (props) => {
                 cant = cant.substring(1,cant.length);
         } catch {
         }
-        console.log("CAMBIAR CANTIDAD");
+        console.log("CAMBIAR CANTIDAD", cant);
         let producto = JSON.parse(JSON.stringify(scanCurrent));
         if(!cant) {
             setScanCurrent({...producto, TCANT: 0});
             return inputCant1.current?.setNativeProps({text: cant});
         }
         let maximoPosible = 0;
-        if(!producto.maxQuantityLote) {
+        /*if(!producto.maxQuantityLote) {
             maximoPosible = producto.noBase && producto.max_paquete == 0 ? 
                         (producto.ubicaciones[rackSel].MAX < producto.max_paquete ? producto.ubicaciones[rackSel].MAX:producto.max_paquete):
                         (producto.ubicaciones[rackSel].MAX < producto.maxQuantity ? producto.ubicaciones[rackSel].MAX:producto.maxQuantity);
@@ -507,7 +541,19 @@ const Scaneo = (props) => {
             maximoPosible = producto.noBase && producto.max_paquete[producto.CHARG] == 0 ? 
                         (producto.ubicaciones[rackSel].MAX < producto.max_paquete[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.max_paquete[producto.CHARG]):
                         (producto.ubicaciones[rackSel].MAX < producto.maxQuantityLote[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.maxQuantityLote[producto.CHARG]);
+        }*/
+        if(!producto.maxQuantityLote) {
+            /*maximoPosible = producto.noBase && producto.max_paquete == 0 ? 
+                        (producto.ubicaciones[rackSel].MAX < producto.max_paquete ? producto.ubicaciones[rackSel].MAX:producto.max_paquete):
+                        (producto.ubicaciones[rackSel].MAX < producto.maxQuantity ? producto.ubicaciones[rackSel].MAX:producto.maxQuantity);*/
+            maximoPosible = producto.ubicaciones[rackSel].MAX < producto.maxQuantity ? producto.ubicaciones[rackSel].MAX:producto.maxQuantity;                           
+        } else {
+            /*maximoPosible = producto.noBase && producto.max_paquete[producto.CHARG] == 0 ? 
+                        (producto.ubicaciones[rackSel].MAX < producto.max_paquete[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.max_paquete[producto.CHARG]):
+                        (producto.ubicaciones[rackSel].MAX < producto.maxQuantityLote[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.maxQuantityLote[producto.CHARG]);*/
+            maximoPosible = producto.ubicaciones[rackSel].MAX < producto.maxQuantityLote[producto.CHARG] ? producto.ubicaciones[rackSel].MAX:producto.maxQuantityLote[producto.CHARG];     
         }
+        //console.log(maximoPosible, producto.max_paquete[producto.CHARG], producto.ubicaciones[rackSel].MAX, producto.maxQuantityLote[producto.CHARG]);
         if(parseInt(cant) > parseInt(maximoPosible)) {
             setScanCurrent({...producto, TCANT: parseInt(maximoPosible)});
         } else {
@@ -644,12 +690,13 @@ const Scaneo = (props) => {
         console.log("Get ubi update");
         if(producto.ArticulosBodegas) {
             for(const ubi of producto.ArticulosBodegas) {
+                if(producto.CHARG != ubi.LOTEA) continue;
 
                 const escaneados = props.dataUser.USSCO.indexOf('ADMIN_SCAN') == -1 && force ? 
                     trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG == producto.CHARG &&
                         tra.IDADW == ubi.IDADW && (tra.IDPAL != IDPAL || tra.UCRID != ucrid) ? (prev+tra.TCANT):prev, 0):0;
                 let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0)//-parseInt(escaneados);
-                if(producto.IDADW == ubi.IDADW && force) {
+                if(producto.IDADW == ubi.IDADW && producto.CHARG == ubi.LOTEA && force) {
                     cantDisp += parseInt(producto.TCANT);
                     //if(producto.UCRID == props.dataUser.IDUSR && producto.IDPAL != IDPAL)
                         //cantDisp -= parseInt(escaneados)
@@ -658,8 +705,9 @@ const Scaneo = (props) => {
                 contar += cantDisp;
                 console.log(ubi.QUANT, ubi.RESERVADOS, escaneados, cantDisp, props.dataUser.USSCO.indexOf('ADMIN_SCAN'), producto.TCANT)
                 ubicaciones.push({
-                    label: "Paleta ID: "+ubi.IDDWA,
+                    label: "Paleta: "+ubi.IDDWA+(ubi.Bodega.BLOQU ? ' (BLOQUEADO)':''),
                     subLabel: `${ubi.Bodega.FLOOR}-${ubi.Bodega.AISLE}-${ubi.Bodega.COLUM}-${ubi.Bodega.RACKS}-${ubi.Bodega.PALET} - (Cant. ${cantDisp})`,
+                    disabled: ubi.Bodega.BLOQU,
                     value: idx,
                     MAX: cantDisp,
                     VALOR: ubi.IDDWA,
@@ -813,11 +861,12 @@ const Scaneo = (props) => {
             >
                 <VStack w="55%">
                     <Text style={styles.title2} numberOfLines={2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
-                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.unidad_index?.EAN11 || item.MATNR}</Text>
+                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.MATNR}</Text>
                     {item.CHARG && traslado.TRSTS === 1 && <Text style={styles.subtitle} color="primary" numberOfLines={1}>Lote: {item.CHARG}</Text>}
                     <Text style={styles.subtitle} numberOfLines={1}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                     <Text style={[styles.small3, {fontWeight: 'bold'}]} color="primary" numberOfLines={1}>Ubicación: {!item.Ubicacion ? 'S/N':(item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET)}</Text>
                     <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL}</Text>
+                    {item.COMNT ? <View style={{position: 'absolute', bottom: 5, right: 10}}><AntDesign name="exclamationcircleo" size={18} color={"red"}/></View>:''}
                 </VStack>
 
                 {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
@@ -877,7 +926,7 @@ const Scaneo = (props) => {
                         }
                     }
                 }
-                return; //finalizarPost();
+                return finalizarPost();
             }
                 
         },
@@ -895,13 +944,19 @@ const Scaneo = (props) => {
                 TRSTS: 2
             }
         }
+
         //console.log(scanSelect, datos);
         fetchIvan(props.ipSelect).put('/crudTraslados', datos, props.token.token)
         .then(({data}) => {
             //console.log(data);
             setTraslado({...traslado, TRSTS: 2});
             props.route.params.updateTras({...traslado, TRSTS: 2});
-            setCronometro({...cronometro, FFEND: new Date()})
+            if(!cronometro.FFEND) {
+                /*let fecha = new Date();
+                fecha = fecha.toISOString().split('T')[0]+"T"+fecha.getHours().toString().padStart(2, '0')+":"+fecha.getMinutes().toString().padStart(2, '0')+":"+fecha.getSeconds().toString().padStart(2, '0');
+                console.log(fecha);*/
+                setCronometro({...cronometro, FFEND: (new Date()).toString()});
+            }
 
             ToastAndroid.show(
                 "Carga de traslado finalizado con éxito",
@@ -948,7 +1003,9 @@ const Scaneo = (props) => {
                 .then(({data}) => {
                     console.log("Productos borrados: ", data.data);
                     setTrasladoItems(trasladoItems.filter(f => f.IDTRI !== producto.IDTRI));
-                    setScanCurrent({});
+                    if(scanCurrent.MATNR == producto.MATNR) {
+                        setScanCurrent({});
+                    }
                     setRackSel(null);
                     
                     ToastAndroid.show(
@@ -1031,6 +1088,20 @@ const Scaneo = (props) => {
             }
         ]);
     }
+
+    const getCantUnidades = (producto) => {
+        let cantidad = parseInt(producto.TCANT);
+        let unidad_index = producto.Producto?.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? producto.unidad_index;
+        let paquete = Math.floor(cantidad/unidad_index.UMREZ);
+        let unidad = cantidad - (paquete*unidad_index.UMREZ);
+        if(!cantidad) return "";
+
+        if(producto.noBase) {
+            return (paquete == 0 || paquete > 1 ? getPrural(unidad_index.UnidadDescripcion.MSEHL):unidad_index.UnidadDescripcion.MSEHL.split(" ")[0])+": "+paquete+"\n"
+                +(unidad == 0 || unidad > 1 ? getPrural(producto.UnidadBase.UnidadDescripcion.MSEHL):producto.UnidadBase.UnidadDescripcion.MSEHL.split(" ")[0])+": "+unidad;
+        }
+        return (cantidad == 0 || cantidad > 1 ? getPrural(producto.UnidadBase.UnidadDescripcion.MSEHL):producto.UnidadBase.UnidadDescripcion.MSEHL.split(" ")[0])+": "+cantidad;
+    }
     /* Otras funciones */
 
     return (
@@ -1081,23 +1152,35 @@ const Scaneo = (props) => {
                                         <VStack spacing={0} w={"65%"}>
                                             <HStack spacing={4}>
                                                 <Text style={styles.title2}>Código:</Text>
-                                                <Text style={styles.subtitle}>{scanCurrent.unidad_index?.EAN11}</Text>
+                                                <Text style={styles.subtitle}>{scanCurrent.unidad_index?.EAN11 ?? scanCurrent.MATNR}</Text>
                                             </HStack>
                                             <HStack spacing={4}>
+                                                <Text style={styles.title2}>Producto:</Text>
+                                                <Text style={[styles.subtitle, {width: '80%', flexWrap: 'wrap'}]} numberOfLines={2}>{scanCurrent.Producto.MAKTG}</Text>
+                                            </HStack>
+                                            <HStack spacing={4}>
+                                                <Text style={styles.title2}>Cod. Material:</Text>
+                                                <Text style={styles.subtitle}>{scanCurrent.Producto.MATNR}</Text>
+                                            </HStack>
+                                            <HStack spacing={4} style={{width: '90%', flexWrap: 'wrap'}}>
                                                 <Text style={styles.title2}>Und. de escaneo:</Text>
                                                 <Text style={styles.subtitle}>{scanCurrent.unidad_index?.UnidadDescripcion?.MSEHL || ""}</Text>
-                                                {scanCurrent.noBase && <Text style={styles.small3}>({scanCurrent.maxQuantityLote ? scanCurrent.max_paquete[scanCurrent.CHARG]:scanCurrent.max_paquete} completos)</Text>}
                                             </HStack>
-                                            {scanCurrent.noBase && <Text style={styles.small3}>{parseInt(scanCurrent.unidad_index.UMREZ)+" "+scanCurrent.UnidadBase?.UnidadDescripcion?.MSEHL+". Por "+(scanCurrent.unidad_index?.UnidadDescripcion?.MSEHL || "")}</Text>}
-                                            <HStack spacing={4} style={{width: '80%', flexWrap: 'nowrap'}}>
-                                                <Text style={styles.title2}>Producto:</Text>
-                                                <Text style={styles.subtitle}>{scanCurrent.Producto.MAKTG}</Text>
-                                            </HStack>
-                                            <Text style={styles.subtitle}>{scanCurrent.Producto.MATNR}</Text>
                                         </VStack>
                                         <Stack w={"35%"}>
                                             <ImagesAsync ipSelect={props.ipSelect} imageCode={scanCurrent.MATNR} token={props.token.token}/>
                                         </Stack>
+                                    </HStack>
+
+                                    <HStack border={0.5} p={2} mt={5} spacing={2} style={{borderRadius: 5}}>
+                                        {scanCurrent.Producto?.ProductosUnidads?.map((und, inx) => 
+                                            <Chip key={inx} 
+                                                variant="outlined" 
+                                                label={und.UnidadDescripcion.MSEHL+"\nx"+und.UMREZ} 
+                                                color={undSelect === und.MEINH ? Global.colorMundoTotal:'black'} 
+                                                onPress={() => setUndSelect(und.MEINH)}
+                                                labelStyle={{textAlign: 'center', fontSize: 12}}/>
+                                        )}
                                     </HStack>
                                     {(scanCurrent.UnidadBase.XCHPF === 'X' && scanCurrent.CHARG) || scanCurrent.UnidadBase.XCHPF !== 'X' ?  // Con lote
                                     <HStack style={{justifyContent: 'space-between', alignItems: 'flex-end'}}>
@@ -1191,6 +1274,14 @@ const Scaneo = (props) => {
                                 ''
                             }
                         </HStack>
+                        <VStack border={0} p={2} spacing={4}>
+                            <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Peso act: {peso.toFixed(2)} kg</Text>
+                            </HStack>
+                            <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {Volumen.toFixed(2)} m3</Text>
+                            </HStack>
+                        </VStack>
                         <ListaPerform 
                             items={props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
@@ -1331,16 +1422,4 @@ function getPrural(texto) {
         default: 
             return texto.split(" ")[0]
     }
-}
-function getCantUnidades(producto) {
-    let cantidad = parseInt(producto.TCANT);
-    let paquete = Math.floor(cantidad/producto.unidad_index.UMREZ);
-    let unidad = cantidad - (paquete*producto.unidad_index.UMREZ);
-    if(!cantidad) return "";
-
-    if(producto.noBase) {
-        return (paquete == 0 || paquete > 1 ? getPrural(producto.unidad_index.UnidadDescripcion.MSEHL):producto.unidad_index.UnidadDescripcion.MSEHL.split(" ")[0])+": "+paquete+"\n"
-            +(unidad == 0 || unidad > 1 ? getPrural(producto.UnidadBase.UnidadDescripcion.MSEHL):producto.UnidadBase.UnidadDescripcion.MSEHL.split(" ")[0])+": "+unidad;
-    }
-    return (cantidad == 0 || cantidad > 1 ? getPrural(producto.UnidadBase.UnidadDescripcion.MSEHL):producto.UnidadBase.UnidadDescripcion.MSEHL.split(" ")[0])+": "+cantidad;
 }

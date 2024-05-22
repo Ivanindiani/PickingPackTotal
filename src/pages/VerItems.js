@@ -32,6 +32,7 @@ const VerItems = (props) => {
     const [scanSelect, setScan] = useState({});
     const [showInfo, setShowInfo] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
+    const [onlyPalet, setOnlyPalet] = useState(props.route.params.IDPAL ? true:false);
 
     const elInput = useRef(null);
 
@@ -107,10 +108,10 @@ const VerItems = (props) => {
     async function getItems() {
         //console.log("TRASLADO", traslado);
         let data = [
-            `find={"IDTRA": ${traslado.IDTRA}}`,
+            props.route.params.fixpallet ? `find={"IDTRA": ${traslado.IDTRA}, "IDPAL": ${props.route.params.fixpallet}}`:`find={"IDTRA": ${traslado.IDTRA}}`,
             `checkProducts=false`,
             `unidadBase=true`,
-            `simpleData=true`
+            `simpleData=true`,
         ]
         setLoading(true);
         fetchIvan(props.ipSelect).get('/crudTrasladoItems', data.join('&'), props.token.token)
@@ -402,7 +403,7 @@ const VerItems = (props) => {
         </DialogActions>
     </Dialog>
     ;
-
+                /* HACER VALIDACIÓN EN SAP SI EL ARTICULO NO EXISTE */
     const confirmarCantidad = (its, item) => {
         let datos = {
             id: item.IDTRI,
@@ -453,7 +454,7 @@ const VerItems = (props) => {
 
     }
 
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [items, scanSelect.Producto ? scanSelect.Producto.MATNR:undefined, traslado])
+    const memoRows = useCallback((item, index) => RowProducts(item, index), [items, scanSelect.Producto ? scanSelect.Producto.MATNR:undefined, traslado, onlyPalet])
 
     const memoGet = useCallback(() => getItems());
 
@@ -585,11 +586,19 @@ const VerItems = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({items.length}):</Text>
+                            
                             {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3 && items.length && 
                                 <Button compact={true} title="Recibir" onPress={recibirTraslado} disabled={loading}/>}
                         </HStack>
+
+                        {props.route.params.IDPAL &&
+                        <HStack style={{alignItems:'center'}}>
+                            <Text style={styles.small2}>Ver solo paleta {props.route.params.IDPAL.substr(-3).padStart(3, '0')}</Text>
+                            <Switch value={onlyPalet} onValueChange={() => setOnlyPalet(!onlyPalet)} autoFocus={false}/> 
+                        </HStack>}
+
                         <ListaPerform
-                            items={items} 
+                            items={onlyPalet ? items.filter((v) => v.IDPAL == props.route.params.IDPAL):items} 
                             renderItems={memoRows} 
                             heightRemove={traslado.TRSTS >= 3 && traslado.TRSTS < 5 ? ((scanSelect && scanSelect.Producto ) ? 125:260):160}
                             //refreshGet={memoGet}

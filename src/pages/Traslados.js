@@ -1,4 +1,4 @@
-import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, ListItem, Provider, Stack, Switch, Text, TextInput } from "@react-native-material/core";
+import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, ListItem, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { memo, useEffect, useState } from "react";
 import { Alert, FlatList, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
 import fetchIvan from "../components/_fetch";
@@ -358,7 +358,15 @@ const Traslados = (props) => {
         <FlatList
             data={traslados}
             ListHeaderComponent={
-            <HStack style={{justifyContent: 'flex-end', alignItems: 'flex-start'}} mt={5} mb={5}>
+            <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}} mt={5} mb={5}>
+                <VStack border={0} p={2} spacing={4}>
+                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso act: {props.route.params.Paleta?.PESO?.toFixed(2)} kg</Text>
+                    </HStack>
+                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {props.route.params.Paleta?.VOLUMEN?.toFixed(2)} m3</Text>
+                    </HStack>
+                </VStack>
                 <SelectInput
                     data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
                     value={filtrado}
@@ -389,6 +397,7 @@ const Traslados = (props) => {
                     }
                     onPress={() => props.dataUser.USSCO.indexOf('SCAN') !== -1 ? 
                     props.navigation.navigate(item.IDPED ? 'TabScaneo':'Scaneo', {
+                        Paleta: props.route.params.Paleta,
                         IDPAL: props.route.params.IDPAL,
                         traslado: item,
                         updateTras: updateTras

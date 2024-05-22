@@ -1,9 +1,4 @@
-//const apiURL = 'http://192.168.1.33:9393';
-const ipLocal = '172.16.10.78';
-//const ipRemota = '200.35.195.130';
-//const ipRemota2 = '201.249.133.34';
-const ipRemota2 = '172.16.10.78';
-const port = '8888';
+const ipRemota2 = '172.16.10.78:8888';
 var apiURL;
 
 const ApiAUTH = '214b0c3777a0e89cf338272ccc2234c2';
@@ -14,7 +9,7 @@ const defaultHeaders = {
 };
 
 const defaultTimeout = 90000; // 1min + 30seg
-import Ping from 'react-native-ping';
+//import Ping from 'react-native-ping';
 
 const fetchIvan = (ipDefault = null) => {
 	//auth: ApiAUTH,
@@ -39,16 +34,16 @@ const fetchIvan = (ipDefault = null) => {
 
 				//console.log('special code',error.code, error.message);
 				
-				apiURL = "http://"+(ipDefault || ipRemota2)+":"+port;
+				apiURL = "http://"+(ipDefault || ipRemota2);
 				/*try {
 					const ms = await Ping.start(ipLocal,{ timeout: 50 });
 					console.log(ms+"ms");
-					apiURL = "http://"+ipLocal+":"+port;
+					apiURL = "http://"+ipLocal;
 				} catch (error) {
 					console.log('special code',error.code, error.message);
-					//apiURL = "http://"+ipRemota+":"+port;
+					//apiURL = "http://"+ipRemota;
 					try {
-						apiURL = "http://"+ipRemota+":"+port;
+						apiURL = "http://"+ipRemota;
 						function pruebaServer1(ms) {
 							return new Promise(async function(resolve, reject) {
 								setTimeout(function() {
@@ -66,7 +61,7 @@ const fetchIvan = (ipDefault = null) => {
 						}
 					} catch (error) {
 						console.log('special code',error.message);
-						apiURL = "http://"+ipRemota2+":"+port;
+						apiURL = "http://"+ipRemota2;
 					}
 				}*/
 				
@@ -128,16 +123,16 @@ const fetchIvan = (ipDefault = null) => {
 				},timeout);
 
 				//console.log('special code',error.code, error.message);
-				apiURL = "http://"+(ipDefault || ipRemota2)+":"+port;
+				apiURL = "http://"+(ipDefault || ipRemota2);
 				/*try {
 					const ms = await Ping.start(ipLocal,{ timeout: 50 });
 					console.log(ms+"ms");
-					apiURL = "http://"+ipLocal+":"+port;
+					apiURL = "http://"+ipLocal;
 				} catch (error) {
 					console.log('special code',error.code, error.message);
-					//apiURL = "http://"+ipRemota+":"+port;
+					//apiURL = "http://"+ipRemota;
 					try {
-						apiURL = "http://"+ipRemota+":"+port;
+						apiURL = "http://"+ipRemota;
 						function pruebaServer1(ms) {
 							return new Promise(async function(resolve, reject) {
 								setTimeout(function() {
@@ -155,7 +150,7 @@ const fetchIvan = (ipDefault = null) => {
 						}
 					} catch (error) {
 						console.log('special code',error.message);
-						apiURL = "http://"+ipRemota2+":"+port;
+						apiURL = "http://"+ipRemota2;
 					}
 				}*/
 
@@ -217,16 +212,16 @@ const fetchIvan = (ipDefault = null) => {
 				},timeout);
 
 				//console.log('special code',error.code, error.message);
-				apiURL = "http://"+(ipDefault || ipRemota2)+":"+port;
+				apiURL = "http://"+(ipDefault || ipRemota2);
 				/*try {
 					const ms = await Ping.start(ipLocal,{ timeout: 50 });
 					console.log(ms+"ms");
-					apiURL = "http://"+ipLocal+":"+port;
+					apiURL = "http://"+ipLocal;
 				} catch (error) {
 					console.log('special code',error.code, error.message);
-					//apiURL = "http://"+ipRemota+":"+port;
+					//apiURL = "http://"+ipRemota;
 					try {
-						apiURL = "http://"+ipRemota+":"+port;
+						apiURL = "http://"+ipRemota;
 						function pruebaServer1(ms) {
 							return new Promise(async function(resolve, reject) {
 								setTimeout(function() {
@@ -244,7 +239,7 @@ const fetchIvan = (ipDefault = null) => {
 						}
 					} catch (error) {
 						console.log('special code',error.message);
-						apiURL = "http://"+ipRemota2+":"+port;
+						apiURL = "http://"+ipRemota2;
 					}
 				}*/
 
@@ -307,16 +302,16 @@ const fetchIvan = (ipDefault = null) => {
 				},timeout);
 				
 				//console.log('special code',error.code, error.message);
-				apiURL = "http://"+(ipDefault || ipRemota2)+":"+port;
+				apiURL = "http://"+(ipDefault || ipRemota2);
 				/*try {
 					const ms = await Ping.start(ipLocal,{ timeout: 50 });
 					console.log(ms+"ms");
-					apiURL = "http://"+ipLocal+":"+port;
+					apiURL = "http://"+ipLocal;
 				} catch (error) {
 					console.log('special code',error.code, error.message);
-					//apiURL = "http://"+ipRemota+":"+port;
+					//apiURL = "http://"+ipRemota;
 					try {
-						apiURL = "http://"+ipRemota+":"+port;
+						apiURL = "http://"+ipRemota;
 						function pruebaServer1(ms) {
 							return new Promise(async function(resolve, reject) {
 								setTimeout(function() {
@@ -334,7 +329,7 @@ const fetchIvan = (ipDefault = null) => {
 						}
 					} catch (error) {
 						console.log('special code',error.message);
-						apiURL = "http://"+ipRemota2+":"+port;
+						apiURL = "http://"+ipRemota2;
 					}
 				}*/
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import fetchIvan from "../components/_fetch";
-import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text } from "@react-native-material/core";
-import { Alert, FlatList, Linking, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text, VStack } from "@react-native-material/core";
+import { Alert, FlatList, Linking, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
 import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import MI from "react-native-vector-icons/MaterialCommunityIcons";
 import AntDesign from "react-native-vector-icons/AntDesign";
@@ -10,6 +10,8 @@ import { TabBar, TabView } from "react-native-tab-view";
 import GetLocation from "react-native-get-location";
 //import foreground from "../components/_foregroundService";
 //import { PermissionsAndroid } from "react-native";
+import {Circle} from 'react-native-progress';
+
 const Global = require('../../app.json');
 
 const ordenStatusColor = ['red', 'yellow', 'orange', 'lightgreen', 'green'];
@@ -210,7 +212,8 @@ const Paletas = (props) => {
         <View style={styles.view}>
             {loading && <ActivityIndicator />}
             <FlatList
-                ListHeaderComponent={<HStack style={{justifyContent: 'flex-end', alignItems: 'center', padding: 1, paddingBottom: 3}}>
+                ListHeaderComponent={<HStack style={{justifyContent: 'space-between', alignItems: 'center', padding: 1, paddingBottom: 3}}>
+                    <Text style={{fontSize: 12}}>Total Paletas: {Orden.Paletas.length}</Text>
                     {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && Orden.STSOR === 1 ?
                     <Button title="Agregar paleta" color="secondary" 
                         leading={p2 => <FontAwesome5 name="pallet" {...p2} size={14}/>} 
@@ -232,7 +235,9 @@ const Paletas = (props) => {
                         leading={<FontAwesome5 name="pallet" size={24}/>}
                         overline={"ID: "+item.IDPAL}
                         title={"Paleta "+item.IDPAL.substr(-3).padStart(3, '0')}
-                        secondaryText={"Creada el: "+item.DATEC.split("T")[0]+" "+item.DATEC.split("T")[1].substring(0,5)}
+                        secondaryText={"Peso actual: "+(item.PESO?.toFixed(2) ?? 0)+" kg\n"+
+                            "Volumen actual: "+(item.VOLUMEN?.toFixed(2) ?? 0)+" m3"+
+                            "\nCreada el: "+item.DATEC.split("T")[0]+" "+item.DATEC.split("T")[1].substring(0,5)}
                         trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && Orden.STSOR === 1 ? <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2} color="red"/> } onPress={() => delPalet(item.IDPAL)}/>:''}
                         onPress={() => props.dataUser.USSCO.indexOf('TRASLADOS_FIND') !== -1 ? props.navigation.navigate(props.dataUser.CAMIONERO ? 'RecibirTraslados':'Traslados', {
                             type_tras: 'crear_tras',
@@ -243,6 +248,7 @@ const Paletas = (props) => {
                             IDTRG: Orden.IDTRG,
                             IDPAL: item.IDPAL,
                             STSOR: Orden.STSOR,
+                            Paleta: item,
                             Paletas: Orden.Paletas,
                             setPaletas: (json) => {
                                 setOrden({...Orden, Paletas: json});
@@ -416,6 +422,21 @@ const Paletas = (props) => {
         return distanceInKilometers.toFixed(2)+" Km.";
     }
 
+    const getColorVolumen = (valor) => {
+        valor = valor*100;
+        if(valor <= 25) return "#af7100";
+        else if(valor > 25 && valor <= 50) return "#6caf00";
+        else if(valor > 50 && valor <= 80) return "#23af00";
+        else if(valor > 80) return "#ad0000";
+    }
+    const getColorPeso = (valor) => {
+        valor = valor*100;
+        if(valor <= 25) return "#03af00";
+        else if(valor > 25 && valor <= 50) return "#84af00";
+        else if(valor > 50 && valor <= 80) return "#c16b00";
+        else if(valor > 80) return "#ad0000";
+    }
+
     return (
         <Provider>
             <Stack spacing={2} style={{margin: 2, flex: 1 }}>
@@ -435,11 +456,23 @@ const Paletas = (props) => {
                     <Text style={{fontSize: 12}}>{
                         "Chofer: "+Orden.Chofere?.DNAME+" "+Orden.Chofere?.DFNAM+
                         "\nVehículo: "+Orden.Camione?.BRAND+" "+Orden.Camione?.MODEL+" ("+Orden.Camione?.PLATE+")"+
-                        "\nFecha: "+Orden.DATEC.split("T")[0]+" "+Orden.DATEC.split("T")[1].substring(0,5)+
-                        "\nÚltima actualización: "+Orden.DATEU.split("T")[0]+" "+Orden.DATEU.split("T")[1].substring(0,5)+
-                        "\nNº Paletas: "+Orden.Paletas.length
-                        
+                        "\nFecha: "+new Date(Orden.DATEC).toLocaleString()+
+                        "\nÚltima actualización: "+new Date(Orden.DATEU).toLocaleString()
                     }</Text>
+                    <VStack border={0} p={2} spacing={4}>
+                        <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                            <VStack>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Peso act: {Orden.Paletas.reduce((prev, val) => prev+(val.PESO ?? 0),0).toFixed(2)} kg</Text>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Peso max: 39.180 kg</Text>
+                            </VStack>
+                            <Circle progress={0.4} size={50} showsText={true} textStyle={{fontSize: 14}} direction="counter-clockwise" color={getColorPeso(0.4)}/>
+                            <Circle progress={0.78} size={50} showsText={true} textStyle={{fontSize: 14}} direction="counter-clockwise" color={getColorVolumen(0.78)}/>
+                            <VStack>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {Orden.Paletas.reduce((prev, val) => prev+(val.VOLUMEN ?? 0),0).toFixed(2)} m3</Text>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen max: 35 m3</Text>
+                            </VStack>
+                        </HStack>
+                    </VStack>
                     {Orden.TLATI && Orden.TLONG ?
                     <Button title="Última Ubicación" color={Global.colorMundoTotal} variant="outlined" style={{fontSize: 13, marginTop: -10, alignSelf: 'flex-end'}}
                         trailing={<MI name="google-maps" size={24} />}
@@ -450,7 +483,7 @@ const Paletas = (props) => {
                         Estado de orden: {ordenStatus[Orden.STSOR]} 
                     </Text>
                     {props.dataUser.CAMIONERO && Orden.STSOR === 1 ?
-                     <Button title="Salir a ruta" color="secondary" disabled={loading} onPress={() => salirOrden()} trailing={<MI name="truck-fast" size={24}/>}/>:''}
+                    <Button title="Salir a ruta" color="secondary" disabled={loading} onPress={() => salirOrden()} trailing={<MI name="truck-fast" size={24}/>}/>:''}
                 </Box>
 
                 <TabView

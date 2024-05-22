@@ -1,4 +1,4 @@
-import { ActivityIndicator, Box, Button, Divider, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Box, Button, Chip, Dialog, DialogContent, Divider, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
 import SelectInput from "../components/_virtualSelect";
@@ -9,6 +9,7 @@ import ImagesAsync from "../components/_imagesAsync";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import ListaPerform from "../components/_virtualList";
 
+import Entypo from "react-native-vector-icons/Entypo";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import Ft from "react-native-vector-icons/Fontisto";
 import RNBeep from "react-native-a-beep";
@@ -20,12 +21,15 @@ var mode = {};
 const ManagerProducts = (props) => {
     const centroId = props.route.params.centroId;
     const almacenId = props.route.params.almacenId;
-    const recepcion = props.route.params.recepcion;
+    const [recepcion, setRecepcion] = useState(props.route.params.recepcion);
     
+    const [dialogVisible, setDialogVisible] = useState(-1);
     const [lote, setLote] = useState(null);
     const [preProduct, setPreProduct] = useState({});
     const [productos, setProductos] = useState([]);
     const [cantidad, setCantidad] = useState(0);
+
+    const [undSelect, setUndSelect] = useState(null);
 
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [autosumar, setAutoSumar] = useState(true);
@@ -38,11 +42,14 @@ const ManagerProducts = (props) => {
     const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
     const [dateLote, setDateLote] = useState(null);
     const [loteName, setLoteName] = useState(null);
+    const [cuatro, setCuatro] = useState(null);
 
     const inputScan = useRef(null);
     const inputCantidad = useRef(null);
-    const otroInput1 = useRef(null);
-    const otroInput2 = useRef(null);
+    const otroInput1 = useRef([]);
+    const otroInput2 = useRef([]);
+    const otroInput3 = useRef(null);
+    const otroInput4 = useRef(null);
     const scrollShow = useRef(null);
 
     useEffect(() => {
@@ -64,6 +71,13 @@ const ManagerProducts = (props) => {
             }
         }
     },[]); 
+
+    /*useEffect(() => {
+        if(dialogVisible > -1) {
+            otroInput3.current?.setNativeProps({text: productos[dialogVisible].QUAND?.toString() ?? '0'});
+            otroInput4.current?.setNativeProps({text: productos[dialogVisible].COMEN});
+        }
+    }, [dialogVisible]);*/
     
     // Evento alternativo para detectar el escaneo
     const evento = (keyEvent) => { 
@@ -75,7 +89,7 @@ const ManagerProducts = (props) => {
         console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
         //console.log("FOCUS?",otroInput.current?.isFocused());
         try {
-            if(!inputScan.current?.isFocused() && !otroInput1.current?.isFocused() && !otroInput2.current?.isFocused() && !inputCantidad.current?.isFocused()) {
+            if(!inputScan.current?.isFocused()){ // && !otroInput1.current?.isFocused() && !otroInput2.current?.isFocused() && !inputCantidad.current?.isFocused()) {
                 //console.log(`onKeyUp keyCode: ${keyEvent.keyCode}`);
                 //console.log(`Action: ${keyEvent.action}`);
                 //console.log(`Key: ${keyEvent.pressedKey}`);
@@ -107,6 +121,10 @@ const ManagerProducts = (props) => {
 
     useEffect(() => {// Efecto para detectar si va para atras
         let before = props.navigation.addListener('beforeRemove', (e) => {
+            if(dialogVisible !== -1) {
+                setDialogVisible(-1)
+                return e.preventDefault();
+            }
             //console.log("Mount listener info")
             e.preventDefault();
             Alert.alert('Escaneo de productos', '¿Deseas realmente salir de la ventana de escaneo de productos?',
@@ -121,7 +139,7 @@ const ManagerProducts = (props) => {
             //console.log("Remove listener info");
             before();
         }
-    }, [props.navigation]);
+    }, [props.navigation, dialogVisible]);
 
     useEffect(() => { // efecto para cada vez que cambian los estados de las config nos pone modo FOCUS
         setTimeout(() => {
@@ -132,6 +150,7 @@ const ManagerProducts = (props) => {
     useEffect(() => {
         setCantidad(0);
         setLoteName(null);
+        setCuatro(null);
         if(lote) {
             let encontrar = false;
             inputCantidad.current?.setNativeProps({text: ""})
@@ -157,8 +176,8 @@ const ManagerProducts = (props) => {
     useEffect(() => {
         if(loteName) {
             let encontrar = false;
-            inputCantidad.current?.setNativeProps({text: ""});
-            setCantidad(0);
+            //inputCantidad.current?.setNativeProps({text: ""});
+            //setCantidad(0);
             for(let item of productos) {
                 if(item.LOTEA == loteName) {
                     //console.log("Encontramos el lote en la lista: ", item.quantity_usar)
@@ -218,12 +237,19 @@ const ManagerProducts = (props) => {
         console.log("hola")
         if(codigo) {
             inputScan.current?.clear();
-            if(preProduct && codigo == preProduct.unidad_index?.EAN11) {
+
+            let unidadFindScan = {};
+            if(preProduct) {
+                unidadFindScan = preProduct.ProductosUnidads?.filter((p) => p.EAN11 == codigo)[0] ?? {};
+                console.log(unidadFindScan);
+            }
+            if(preProduct && unidadFindScan.EAN11) {
                 if(preProduct.UnidadBase.XCHPF !== 'X' && autosumar) {
                     let prod = JSON.parse(JSON.stringify(preProduct));
 
                     console.log("ENTRAMOS EN PREPRODUCT", mode)
-                    prod.QUANT += parseInt(prod.unidad_index.UMREZ);
+                    let unidad_index = prod.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? prod.unidad_index;
+                    prod.QUANT += parseInt(unidad_index.UMREZ);
                     setCantidad(prod.QUANT);
                     if(!inputCantidad.current) {
                         let recursivo = () => {
@@ -278,6 +304,7 @@ const ManagerProducts = (props) => {
                 setLote(null);
                 setLoteName(null);
                 setDateLote(null);
+                setUndSelect(null);
                 setCantidad(1);
                 console.log("Lo buscamos en la lista");
                 for(let prod of productos) {
@@ -293,6 +320,7 @@ const ManagerProducts = (props) => {
                             }
                             console.log("Lo encontramos en la lista")
                             prod.unidad_index = und;
+                            setUndSelect(und.MEINH);
 
                             if(prod.unidad_index?.EAN11 === prod.UnidadBase.EAN11) {
                                 prod.noBase = false;
@@ -302,21 +330,21 @@ const ManagerProducts = (props) => {
                             
                             if(autosumar) {
                                 prod.QUANT += parseInt(und.UMREZ);
-                                setCantidad(prod.QUANT);
-                                if(!inputCantidad.current) {
-                                    setTimeout(() => inputCantidad.current.setNativeProps({ text: prod.QUANT.toString() ?? '' }),300);
-                                } else {
-                                    inputCantidad.current.setNativeProps({ text: prod.QUANT.toString() ?? '' });
-                                }
                                 RNBeep.beep(true);
+                            }
+                            setCantidad(prod.QUANT);
+                            if(!inputCantidad.current) {
+                                setTimeout(() => inputCantidad.current.setNativeProps({ text: prod.QUANT.toString() ?? '' }),300);
+                            } else {
+                                inputCantidad.current.setNativeProps({ text: prod.QUANT.toString() ?? '' });
                             }
                             mode = {
                                 mode: 'update',
                                 lote: null
                             }
 
-                            setPreProduct(prod);
-                            if(autoinsert) {
+                            setPreProduct({...prod, ...prod.Producto});
+                            if(autoinsert && autosumar) {
                                 updateProduct(prod, prod.QUANT);
                             }
                             return;
@@ -330,7 +358,8 @@ const ManagerProducts = (props) => {
                     `code=${codigo}`,
                     `WERKS=${centroId}`,
                     `LGORT=${almacenId}`,
-                    `simpleData=true`
+                    `simpleData=true`,
+                    `RECEPCION=true`
                 ];
                 fetchIvan(props.ipSelect).get('/administrative/findProductScan', datos.join('&'), props.token.token)
                 .then(({data}) => {
@@ -338,7 +367,7 @@ const ManagerProducts = (props) => {
                     let prod = data.data;
                     
                     mode = {
-                        mode: 'update',
+                        mode: 'insert',
                         lote: null
                     }
 
@@ -353,24 +382,27 @@ const ManagerProducts = (props) => {
                     } else {
                         prod.noBase = true;
                     }
+                    setUndSelect(prod.unidad_index.MEINH);
 
                     console.log("END FIND", prod);
 
                     if(prod.UnidadBase.XCHPF !== 'X') {
+                        prod.QUANT = 0;
                         if(autosumar) {
                             setCantidad(parseInt(prod.unidad_index.UMREZ));
                             prod.QUANT = parseInt(prod.unidad_index.UMREZ);
-                            let recursivo = () => {
-                                if(!inputCantidad.current){
-                                    setTimeout(() => recursivo(),100);
-                                } else {
-                                    inputCantidad.current?.setNativeProps({ text: prod.unidad_index.UMREZ.toString() ?? '' })
-                                }
-                            }
-                            setTimeout(() => recursivo(),50);
                         }
+                        let recursivo = () => {
+                            if(!inputCantidad.current){
+                                setTimeout(() => recursivo(),100);
+                            } else {
+                                inputCantidad.current?.setNativeProps({ text: prod.QUANT.toString() ?? '' })
+                            }
+                        }
+                        setTimeout(() => recursivo(),50);
+                        
                         setPreProduct(prod);
-                        if(autoinsert) {
+                        if(autoinsert && autosumar) {
                             addProduct(prod);
                         }
                     } else {
@@ -460,11 +492,14 @@ const ManagerProducts = (props) => {
 
     const getCantUnidades = (producto, cant = cantidad) => {
         if(!cant) return "";
-        let paquete = Math.floor(cant/producto.unidad_index.UMREZ);
-        let unidad = (cant - (paquete*producto.unidad_index.UMREZ));
+        let unidad_index = producto.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? producto.unidad_index;
+        console.log(unidad_index);
+
+        let paquete = Math.floor(cant/unidad_index.UMREZ);
+        let unidad = (cant - (paquete*unidad_index.UMREZ));
     
         if(producto.noBase) {
-            return (paquete == 0 || paquete > 1 ? getPrural(producto.unidad_index?.UnidadDescripcion.MSEHL):producto.unidad_index?.UnidadDescripcion.MSEHL.split(" ")[0])+": "+paquete+"\n"
+            return (paquete == 0 || paquete > 1 ? getPrural(unidad_index?.UnidadDescripcion.MSEHL):unidad_index?.UnidadDescripcion.MSEHL.split(" ")[0])+": "+paquete+"\n"
                 +(unidad == 0 || unidad > 1 ? getPrural(producto.UnidadBase?.UnidadDescripcion.MSEHL):producto.UnidadBase?.UnidadDescripcion.MSEHL.split(" ")[0])+": "+unidad;
         }
         return (cant == 0 || cant > 1 ? getPrural(producto.UnidadBase?.UnidadDescripcion.MSEHL):producto.UnidadBase?.UnidadDescripcion.MSEHL.split(" ")[0])+": "+cantidad;
@@ -473,18 +508,33 @@ const ManagerProducts = (props) => {
     const selectDate = (date) => {
         let fecha = date;
         console.log(fecha)
-        let fechaName = fecha.getDate().toString().padStart(2, '0')+""+(fecha.getMonth()+1).toString().padStart(2, '0')+fecha.getFullYear().toString().substr(-2);
+        //let fechaName = fecha.getDate().toString().padStart(2, '0')+""+(fecha.getMonth()+1).toString().padStart(2, '0')+fecha.getFullYear().toString().substr(-2);
         fecha = fecha.getFullYear().toString()+""+(fecha.getMonth()+1).toString().padStart(2, '0')+""+fecha.getDate().toString().padStart(2, '0');
         setDatePickerVisibility(false);
         setDateLote(fecha);
-        let name = preProduct.MATNR.substring(0,2)+""+preProduct.MATNR.substr(-2, 2)+""+fechaName;
+        /*let name = preProduct.MATNR.substring(0,2)+""+preProduct.MATNR.substr(-2, 2)+""+fechaName;
         console.log(name);
         for(let m in preProduct.ProdConLotes) {
             if(preProduct.ProdConLotes[m].CHARG === name) {
                 return Alert.alert('Error', 'Este lote ya existe, actualiza el lote existente');
             }
         }
-        setLoteName(name);
+        setLoteName(name);*/
+        if(cuatro) {
+            let fechaName = fecha.substring(6,8)+""+fecha.substring(4,6)+""+fecha.substring(2,4);
+            setLoteName(cuatro+fechaName);
+        }
+    }
+
+    const setInputCuatro = (text) => {
+        if(text.length != 4) {
+            return Alert.alert('Error', 'Selecciona un nombre de 4 carácteres minimo');
+        }
+        setCuatro(text.toUpperCase());
+        if(dateLote) {
+            let fechaName = dateLote.substring(6,8)+""+dateLote.substring(4,6)+""+dateLote.substring(2,4);
+            setLoteName(text.toUpperCase()+fechaName);
+        }
     }
 
     const finalizarRecepcion = async () => {
@@ -497,9 +547,9 @@ const ManagerProducts = (props) => {
             getProductos()
             .then((prods) => {
                 for(let prod of prods) {
-                    if(parseFloat(prod.MONTO) < 0.01) {
+                    /*if(parseFloat(prod.MONTO) < 0.01) {
                         return Alert.alert('Error', 'Hay artículos sin costo por favor verifique');
-                    }
+                    }*/
                     if(parseFloat(prod.QUANT) <= 0) {
                         return Alert.alert('Error', 'Hay artículos con la cantidad inválida  por favor verifique');
                     }
@@ -523,8 +573,8 @@ const ManagerProducts = (props) => {
                 .then(({data}) => {
                     console.log("Recepcion confirmada: ", data.data);
                     setPreProduct({});
-                    recepcion.RESTS = 'RECIBIDO';
-                    props.route.params.updateRecepcion(recepcion);
+                    setRecepcion({...recepcion, RESTS: 'RECIBIDO'});
+                    props.route.params.updateRecepcion({...recepcion, RESTS: 'RECIBIDO'});
                 })
                 .catch(({status, error}) => {
                     console.log(error);
@@ -548,7 +598,7 @@ const ManagerProducts = (props) => {
         ]);
     }
 
-    const updateProduct = (item, cantidad, monto = null) => {
+    const updateProduct = (item, cantidad, monto = undefined, descuento = undefined, comentario = undefined) => {
         let datos = {
             id: item.IDREA,
             IDREC: recepcion.IDREC,
@@ -557,8 +607,14 @@ const ManagerProducts = (props) => {
             }
         }
         
-        if(monto) {
+        if(monto >= 0) {
             datos.update.MONTO = parseFloat(monto);
+        }
+        if(descuento >= 0) {
+            datos.update.QUAND = parseFloat(descuento);
+        }
+        if(comentario) {
+            datos.update.COMEN = comentario;
         }
         
         setLoadingSave(true);
@@ -571,6 +627,12 @@ const ManagerProducts = (props) => {
                     prod[i].QUANT = parseInt(cantidad);
                     if(monto) {
                         prod[i].MONTO = parseFloat(monto);
+                    }
+                    if(descuento >= 0) {
+                        prod[i].QUAND = parseFloat(descuento);
+                    }
+                    if(comentario) {
+                        prod[i].COMEN = comentario;
                     }
 
                     prod[i].UMOID = props.dataUser.IDUSR;
@@ -593,7 +655,7 @@ const ManagerProducts = (props) => {
             setProductos(prod);
 
             ToastAndroid.show(
-                "Cantidad actualizada con éxito",
+                comentario ? "Comentario reflejado con éxito":(monto ? "Costo actualizado con éxito":"Cantidad actualizada con éxito"),
                 ToastAndroid.SHORT
             );
         })
@@ -622,7 +684,7 @@ const ManagerProducts = (props) => {
         })
     }
 
-    const deleteItem = (name, id) => {
+    const deleteItem = (name, id, matnr) => {
         Alert.alert('Confirmar', `¿Deseas eliminar la recepción (${name}) realmente?\nSe eliminarán todo los artículos creados`, [
         {
           text: 'Sí, deseo eliminar',
@@ -638,11 +700,8 @@ const ManagerProducts = (props) => {
             .then(({data}) => {
                 console.log("Recepcion eliminado: ", data.data);
                 setProductos(productos.filter(t => t.IDREA != id));
-                if(preProduct.IDREA == id) {
-                    mode = {
-                        mode: 'insert',
-                        lote: mode.lote
-                    };
+                if(preProduct.IDREA == id || preProduct.MATNR == matnr) {
+                   setPreProduct({});
                 }
             })
             .catch(({status, error}) => {
@@ -673,10 +732,11 @@ const ManagerProducts = (props) => {
         >
             <VStack w="55%">
                 <Text style={styles.title3}>{item.Producto.MAKTG ?? ""}</Text>
-                <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.unidad_index?.EAN11 || item.MATNR}</Text>
+                <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
                 {item.LOTEA && recepcion.RESTS === 'CREADO' && <Text style={styles.subtitle} color="primary">Lote: {item.LOTEA}</Text>}
                 <Text style={[styles.subtitle2]}>Creado Por: {(item.CreadoPor?.USNAM ?? '')+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                 {item.UCRID !== item.UMOID && <Text style={[styles.subtitle2]}>Actualizado Por: {(item.CreadoPor?.USNAM ?? '')+" "+(item.CreadoPor?.USLAS ?? '')}</Text>}
+                {item.COMEN ? <Text style={[styles.subtitle2]}>Motivo devolución: {item.COMEN}</Text>:''}
             </VStack>
 
             {recepcion.RESTS === 'CREADO' ? 
@@ -698,25 +758,37 @@ const ManagerProducts = (props) => {
                     inputStyle={{paddingEnd: 0, paddingStart: 0}}
                     editable={!loadingSave}
                     pointerEvents="none"
+                    onFocus={(e) => {
+                        if(!item.MONTO) {
+                            otroInput1.current[index]?.setNativeProps({text: ""});
+                        }
+                    }}
                     onEndEditing={(e) => {
                         let cant = '';
                         try {
                             cant = e.nativeEvent.text?.match(/(^\d+(?:\.\d+)?)/g)[0];
-                            if(cant && cant[0] === '0') 
+                            if(cant && cant[0] === '0' && cant !== '0') 
                                 cant = cant.substring(1,cant.length);
                         } catch {
                         }
-                        console.log(cant);
-                        if(!cant || parseFloat(cant) <= 0) {
-                            return otroInput1.current?.setNativeProps({text: item.MONTO.toString()});
+                        if((!cant && cant !== 0) || parseFloat(cant) < 0) {
+                            if(item.MONTO) {
+                                otroInput1.current[index]?.setNativeProps({text: item.MONTO.toString()});
+                                return;
+                            }
                         }
-                        otroInput1.current?.setNativeProps({text: cant})
-                        updateProduct(item, item.QUANT, parseFloat(cant)) 
+                        if(parseFloat(cant) == item.MONTO) return otroInput1.current[index]?.setNativeProps({text: item.MONTO.toString()});
+
+                        console.log(cant, "cant")
+                        otroInput1.current[index]?.setNativeProps({text: cant ?? '0'});
+                        updateProduct(item, item.QUANT, parseFloat(cant ?? 0));
                     }}
-                    ref={otroInput1}
+                    ref={el => otroInput1.current ? otroInput1.current[index] = el:''} 
                     maxLength={10}
                 />}
-                <Text style={styles.subtitle2}>Cant.</Text>
+                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
+                <Text style={styles.subtitle2}>Cant.</Text>}
+                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <TextInput
                     containerStyle={{fontSize: 5}} 
                     defaultValue={item.QUANT.toString()} 
@@ -736,20 +808,21 @@ const ManagerProducts = (props) => {
                         let cant = '';
                         try {
                             cant = e.nativeEvent.text?.match(/^[0-9]*$/g)[0];
-                            if(cant && cant[0] === '0') 
+                            if(cant && cant[0] === '0' && cant !== '0') 
                                 cant = cant.substring(1,cant.length);
                         } catch {
                         }
+                        if(parseFloat(cant) == item.QUANT) return otroInput2.current[index]?.setNativeProps({text: item.QUANT.toString()});
 
-                        if(!cant || parseInt(cant) <= 0) {
-                            return otroInput2.current?.setNativeProps({text: item.QUANT.toString()});
+                        if(!cant || parseInt(cant) < 0) {
+                            return otroInput2.current[index]?.setNativeProps({text: item.QUANT.toString()});
                         }
-                        otroInput2.current?.setNativeProps({text: cant})
+                        otroInput2.current[index]?.setNativeProps({text: cant})
                         updateProduct(item, parseInt(cant)); 
                     }}
-                    ref={otroInput2}
+                    ref={el => otroInput2.current ? otroInput2.current[index] = el:''} 
                     maxLength={10}
-                    />
+                    />}
                {/*<Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text>*/}
             </VStack>:
             <VStack w="30%">
@@ -757,13 +830,21 @@ const ManagerProducts = (props) => {
                 <Text style={styles.subtitle}>{item.MONTO} {recepcion.ProveedoresFijo.WAERS}</Text>
                 <Text style={styles.subtitle}>Cantidad:</Text>
                 <Text style={styles.quantity}>{item.QUANT}</Text>
+                <Text style={styles.subtitle}>Cant. devolución:</Text>
+                <Text style={styles.quantity}>{item.QUAND}</Text>
                 {item.LOTEA && <Text style={styles.subtitle}>Lote:</Text> }
                 {item.LOTEA && <Text style={styles.lote}>{item.LOTEA}</Text>}
                 {/* <Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text> */}
             </VStack>}
-            {recepcion.RESTS === 'CREADO' && 
-                <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item.MAKTG, item.IDREA)} style={{alignSelf: 'center'}}/>
+            <VStack w={recepcion.RESTS === 'CREADO' ? '20%':'15%'} style={{alignItems: 'center'}}>
+            {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_DELETE') !== -1) &&
+                <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item.MAKTG, item.IDREA, item.MATNR)} style={{alignSelf: 'center'}}/>
             }
+            {recepcion.RESTS === 'CREADO' && props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 &&
+                <IconButton icon={p2=p2 => <Entypo name="back" {...p2}/> } onPress={() => setDialogVisible(index)}/>
+            }
+            <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>
+            </VStack>
         </HStack>
     ;
 
@@ -805,28 +886,34 @@ const ManagerProducts = (props) => {
                                 </HStack>
                             </HStack>
                         </VStack>
-                        <Box style={styles.box1}>
                         {preProduct.MATNR ?
-                            <HStack>
+                        <Box style={styles.box1}>
+                            <HStack style={{justifyContent: 'space-between'}} spacing={4}>
                                 <VStack style={[styles.row, {alignItems: 'flex-start', width: '65%'}]}>
-                                    <Text style={styles.small2}>{preProduct.MAKTG || preProduct.Producto.MAKTG} </Text>
+                                    <Text style={[styles.small2, {width: '80%', flexWrap: 'wrap'}]}>{preProduct.MAKTG || preProduct.Producto?.MAKTG} </Text>
                                     <Text style={[styles.small2, {backgroundColor: 'yellow'}]}>{preProduct.MATNR} </Text>
-                                    <HStack>
-                                        <Text style={[styles.small2, {fontWeight: '600'}]}>Unidad escaneada: </Text>
-                                        <Text style={styles.small2}>{preProduct.unidad_index?.UnidadDescripcion.MSEHL}</Text>
-                                        {preProduct.noBase && <Text style={[styles.small2, {fontWeight: '600', flexWrap: 'nowrap'}]}> | Unds. por {preProduct.unidad_index?.UnidadDescripcion.MSEHL}: {preProduct.unidad_index?.UMREZ}</Text>}
-                                    </HStack>
-                                    <HStack>
-                                        <Text style={[styles.small2, {fontWeight: '600'}]}>Unidad base: </Text>
-                                        <Text style={styles.small2}>{preProduct.UnidadBase?.UnidadDescripcion.MSEHL}</Text>
-                                    </HStack>
                                     <Text style={styles.title3}>{getCantUnidades(preProduct)}</Text>
+                                    <HStack spacing={4} style={{width: '90%', flexWrap: 'wrap'}}>
+                                        <Text style={[styles.small2, {fontWeight: '600'}]}>Und. de escaneo: </Text>
+                                        <Text style={styles.small2}>{preProduct.unidad_index?.UnidadDescripcion.MSEHL}</Text>
+                                    </HStack>
                                 </VStack>
-                                <View style={{flex: 1}}>
+                                <Stack w={"35%"}>
                                     <ImagesAsync ipSelect={props.ipSelect} imageCode={preProduct.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
-                                </View>
-                            </HStack>:''}
-                        </Box>
+                                </Stack>
+                            </HStack>
+
+                            <HStack border={0.5} mt={5} p={2} spacing={2} style={{borderRadius: 5}}>
+                                {preProduct.ProductosUnidads?.map((und, inx) => 
+                                    <Chip key={inx} 
+                                        variant="outlined" 
+                                        label={und.UnidadDescripcion.MSEHL+"\nx"+und.UMREZ} 
+                                        color={undSelect === und.MEINH ? Global.colorMundoTotal:'black'} 
+                                        onPress={() => setUndSelect(und.MEINH)}
+                                        labelStyle={{textAlign: 'center', fontSize: 12}}/>
+                                )}
+                            </HStack>
+                        </Box>:''}
 
                         {preProduct.MATNR &&
                         <HStack style={[styles.row, {justifyContent: 'space-between'}]}>
@@ -838,7 +925,7 @@ const ManagerProducts = (props) => {
                                     data={preProduct.ProdConLotes?.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG}],[{value: 'NEWLOTE', label: 'NUEVO LOTE'}])}
                                     value={lote}
                                     setValue={setLote}
-                                    title="Sin Lote"
+                                    title="Elegir"
                                     buttonStyle={{marginLeft: 5}}
                                 />
                             </VStack>}
@@ -870,16 +957,33 @@ const ManagerProducts = (props) => {
                             </VStack>
                         </HStack>}
                         {preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' ?
-                        <HStack style={[styles.row, {flexWrap: 'wrap'}]}>
-                            <Text style={{position: 'absolute', top: 0, start: 2, fontSize: 11, fontWeight: 'bold', textAlign: 'center'}}>{loteName ? 'Nombre asignado: '+loteName:''}</Text>
-                            <Text>Fecha Vencimiento:</Text>
-                            <Text>{dateLote}</Text>
-                            <IconButton icon={props => <Ft name="date" {...props} />} onPress={() => setDatePickerVisibility(true)}/> 
-                        </HStack>:''
+                        <VStack mt={6} spacing={-5}>
+                            <HStack style={[styles.row, {flexWrap: 'wrap'}]}>
+                                <Text>Fecha Vencimiento:</Text>
+                                <Text>{dateLote}</Text>
+                                <IconButton icon={props => <Ft name="date" {...props} />} onPress={() => setDatePickerVisibility(true)}/> 
+                            </HStack>
+                            <HStack style={{alignItems: 'center', justifyContent: 'space-around'}} ms={5}>
+                                <Text style={{fontSize: 12, fontWeight: 'bold', textAlign: 'center'}}>{loteName ? 'Nombre asignado: '+loteName:''}</Text>
+                                <TextInput
+                                    autoCapitalize={"characters"}
+                                    onEndEditing={(e) => setInputCuatro(e.nativeEvent.text)}
+                                    placeholder="Iniciales"
+                                    textAlign={'center'}
+                                    inputStyle={{marginTop: -18}}
+                                    inputContainerStyle={{
+                                        height: 30,
+                                        padding: 10,
+                                        paddingHorizontal: 0}}
+                                    style={{alignItems: 'flex-end', width: 90, flexWrap: 'nowrap'}}
+                                    maxLength={4}
+                                />
+                            </HStack>
+                        </VStack>:''
                         }
 
                         <Button title="Cargar" onPress={() => mode?.mode === 'update' ? updateProduct(preProduct, cantidad):addProduct()} color={Global.colorMundoTotal} loading={loading}
-                            disabled={!cantidad || !Object.keys(preProduct).length || (preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' && !dateLote && !loteName) ? true:false} 
+                            disabled={!cantidad || !Object.keys(preProduct).length || (preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' && !loteName) || (preProduct.UnidadBase?.XCHPF === 'X' && !lote) ? true:false} 
                             style={{marginTop: 10}}/>
                     </View>
                     :''}
@@ -889,7 +993,7 @@ const ManagerProducts = (props) => {
                 <Stack style={styles.escaneados} mt={1}>
                     <HStack spacing={1} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                         <Text style={styles.title2}>Prod. escaneados ({productos.length}):</Text>
-                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' && productos.length && <Button compact={true} title="Confirmar" onPress={finalizarRecepcion} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
+                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' && productos.length && <Button compact={true} color="secondary" title="Finalizar" onPress={finalizarRecepcion} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
                     </HStack>
                     <ListaPerform
                         items={productos} 
@@ -908,6 +1012,64 @@ const ManagerProducts = (props) => {
                 onCancel={() => setDatePickerVisibility(false)}
                 minimumDate={new Date()}
             />
+
+            {productos.length && dialogVisible > -1 ?
+            <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 100000, elevation: 100}}>
+                <DialogContent>
+                    <Stack spacing={1} mt={4} style={{textAlign: 'center'}}>
+                        <Text style={styles.title2}>Cantidad de devolución: </Text>
+                        <TextInput
+                            defaultValue={productos[dialogVisible].QUAND.toString()} 
+                            numeric
+                            textAlign={'center'}
+                            keyboardType="numeric" 
+                            inputStyle={{paddingEnd: 0, paddingStart: 0}}
+                            editable={!loadingSave}
+                            pointerEvents="none"
+                            onFocus={(e) => {
+                                if(!productos[dialogVisible].QUAND) {
+                                    otroInput3.current?.setNativeProps({text: ""});
+                                }
+                            }}
+                            onEndEditing={(e) => {
+                                let cant = '';
+                                try {
+                                    cant = e.nativeEvent.text?.match(/(^\d+(?:\.\d+)?)/g)[0];
+                                    if(cant && cant[0] === '0' && cant !== '0') 
+                                        cant = cant.substring(1,cant.length);
+                                } catch {
+                                }
+                                if((!cant && cant !== 0) || parseFloat(cant) < 0) {
+                                    if(productos[dialogVisible].QUAND) {
+                                        otroInput3.current?.setNativeProps({text: productos[dialogVisible].QUAND.toString()});
+                                        return;
+                                    }
+                                }
+                                if(parseFloat(cant) == productos[dialogVisible].QUAND) return otroInput3.current?.setNativeProps({text: productos[dialogVisible].QUAND.toString()});
+
+                                if(parseFloat(cant) > productos[dialogVisible].QUANT) {
+                                    cant = productos[dialogVisible].QUANT?.toString();
+                                    ToastAndroid.show('La cantidad de devolución no puede ser mayor a la recibida', ToastAndroid.SHORT);
+                                }
+                                console.log(cant, "cant")
+                                otroInput3.current?.setNativeProps({text: cant ?? '0'});
+                                updateProduct(productos[dialogVisible], productos[dialogVisible].QUANT, undefined, parseFloat(cant ?? 0 ));
+                            }}
+                            ref={otroInput3} 
+                            maxLength={10}
+                        />
+                        <Text style={styles.title2}>Ingresa un comentario referente a esta devolución: </Text>
+                        <TextInput 
+                            multiline={true}
+                            numberOfLines={5}
+                            defaultValue={productos[dialogVisible].COMEN ?? ''} 
+                            maxLength={300}
+                            returnKeyType="done"
+                            blurOnSubmit={true}
+                            onEndEditing={(e) => updateProduct(productos[dialogVisible], productos[dialogVisible].QUANT, undefined, undefined, e.nativeEvent.text)}/>
+                    </Stack>
+                </DialogContent>
+            </Dialog>:''}
         </Provider>
     )
 }

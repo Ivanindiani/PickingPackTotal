@@ -462,7 +462,7 @@ const Scaneo = (props) => {
                             lotico.push({
                                 label: quan2.CHARG,
                                 value: quan2.CHARG,
-                                subLabel: quan2.LAEDA+" - (Cant. "+item.max_paquete[quan2.CHARG]+")"
+                                subLabel: quan2.FVENC+" - (Cant. "+item.max_paquete[quan2.CHARG]+")"
                             });
                         }
                         
@@ -617,7 +617,7 @@ const Scaneo = (props) => {
                 lotes.push({
                     label: quan2.CHARG,
                     value: quan2.CHARG,
-                    subLabel: quan2.LAEDA+" - (Cant. "+producto.maxQuantityLote[quan2.CHARG]+")"
+                    subLabel: quan2.FVENC+" - (Cant. "+producto.maxQuantityLote[quan2.CHARG]+")"
                 });
             }
             //setLotes(lotes);
@@ -1078,7 +1078,7 @@ const Scaneo = (props) => {
         >
             <VStack w="55%">
                 <Text style={styles.title2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
-                <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.unidad_index?.EAN11 || item.MATNR}</Text>
+                <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
                 {item.CHARG && traslado.TRSTS === 1 && <Text style={styles.subtitle} color="primary">Lote: {item.CHARG}</Text>}
             </VStack>
 
@@ -1114,6 +1114,7 @@ const Scaneo = (props) => {
                 <Text style={styles.quantity}>{parseInt(item.TCANT)}</Text>
                 {item.CHARG && <Text style={styles.subtitle}>Lote:</Text> }
                 {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
+                
                 {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
             </VStack>}
             {traslado.TRSTS === 1 && 
@@ -1211,7 +1212,7 @@ const Scaneo = (props) => {
                                         <Text style={styles.title2}>Código:</Text>
                                         <Text style={styles.subtitle}>{scanSelect.unidad_index?.EAN11}</Text>
                                     </HStack>
-                                    <HStack spacing={4}>
+                                    <HStack spacing={4} style={{width: '90%', flexWrap: 'wrap'}}>
                                         <Text style={styles.title2}>Unidad de escaneo:</Text>
                                         <Text style={styles.subtitle}>{scanSelect.unidad_index?.UnidadDescripcion?.MSEHL || ""}</Text>
                                         {scanSelect.noBase && <Text style={styles.small2}>({scanSelect.maxQuantityLote ? (loteSel && scanSelect.max_paquete[loteSel]):scanSelect.max_paquete} completos)</Text>}
@@ -1219,7 +1220,7 @@ const Scaneo = (props) => {
                                     {scanSelect.noBase && <Text style={styles.small2}>{parseInt(scanSelect.unidad_index.UMREZ)+" "+scanSelect.Producto.UnidadBase?.UnidadDescripcion?.MSEHL+". Por "+(scanSelect.unidad_index?.UnidadDescripcion?.MSEHL || "")}</Text>}
                                     <HStack spacing={4} style={{width: '80%', flexWrap: 'nowrap'}}>
                                         <Text style={styles.title2}>Producto:</Text>
-                                        <Text style={styles.subtitle}>{scanSelect.Producto.MAKTG}</Text>
+                                        <Text style={[styles.subtitle, {width: '80%', flexWrap: 'wrap'}]}>{scanSelect.Producto.MAKTG}</Text>
                                     </HStack>
                                     <Text style={styles.subtitle}>{scanSelect.Producto.MATNR}</Text>
 

@@ -153,11 +153,13 @@ const PaletasByCode = (props) => {
                             "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                             leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                             //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
-                            onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
-                                traslado: item,
-                                updateTras: updateTras,
-                                fixpallet: pallet
-                            }):''}
+                            onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? 
+                                props.navigation.navigate('VerItems', {
+                                    traslado: item,
+                                    updateTras: updateTras,
+                                    fixpallet: pallet
+                                }):''
+                            }
                         />
                     }
                 />

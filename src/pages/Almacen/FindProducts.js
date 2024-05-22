@@ -12,6 +12,7 @@ const Global = require('../../../app.json');
 const dimensionesScreen = Dimensions.get('screen');
 const FindProducts = (props) => {
     
+    const bodega = props.bodega;
     const [loading, setLoading] = useState(false);
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
@@ -19,6 +20,10 @@ const FindProducts = (props) => {
     const [findProduct, setFindProduct] = useState([]);
 
     const inputScan = useRef(null);
+
+    useEffect(() => {
+        setFindProduct([]);
+    }, [props.almacenId]);
 
     const evento = (keyEvent) => { 
         if(!inputScan.current?.isFocused()) {
@@ -142,7 +147,7 @@ const FindProducts = (props) => {
     const RowProducts = (item, index) => {
         return (
             <VStack 
-                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: 265}} 
+                style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: item.Bodega.BLOQU ? 'auto':265}} 
                 spacing={1}
                 p={2}
                 key={index}>
@@ -164,34 +169,39 @@ const FindProducts = (props) => {
                     <Text style={[styles.td, {color: 'red'}]} numberOfLines={1}>{item.RESERVADOS ?? 0} Unidad{item.RESERVADOS != 1 ? 'es':''}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PISO/NIVEL:</Text>
-                    <Text style={[styles.td, {color: 'black'}]}>{item.Bodega?.FLOOR}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
+                    <Text style={[styles.td, {color: bodega.extra.Niveles[item.Bodega?.FLOOR]?.Color?.HCODE ?? 'black'}]}>{item.Bodega?.FLOOR}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PASILLO:</Text>
-                    <Text style={[styles.td, {color: 'orange'}]}>{item.Bodega?.AISLE}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
+                    <Text style={[styles.td, {color: bodega.extra.Niveles[item.Bodega?.FLOOR].Pasillos[item.Bodega?.AISLE]?.Color?.HCODE ?? 'black'}]}>{item.Bodega?.AISLE}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>COLUMNA:</Text>
-                    <Text style={[styles.td, {color: Global.colorMundoTotal}]}>{item.Bodega?.COLUM}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>
+                    <Text style={[styles.td]}>{item.Bodega?.COLUM}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>RACK:</Text>
-                    <Text style={[styles.td, {color: 'red'}]}>{item.Bodega?.RACKS}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.RANAM || "RACK"}:</Text>
+                    <Text style={[styles.td]}>{item.Bodega?.RACKS}</Text>
                 </HStack>
                 <HStack style={styles.row}>
-                    <Text style={styles.th}>PALETA:</Text>
-                    <Text style={[styles.td, {color: 'blue'}]}>{item.Bodega?.PALET}</Text>
+                    <Text style={styles.th}>{bodega.extra?.Nombres?.PANAM || "PALETA"}:</Text>
+                    <Text style={[styles.td]}>{item.Bodega?.PALET}</Text>
                 </HStack>
-                <HStack style={[styles.row, {alignItems: 'center'}]}>
-                    <Text style={styles.th}>IDENTIFICACIÓN:</Text>
-                    <Text style={[styles.td, {backgroundColor: 'lightgreen', maxWidth: '30%', textAlign: 'center', fontSize: 13}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
-                    {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 && item.RESERVADOS <= 0 ?
+                {item.Bodega?.BLOQU && 
+                <VStack style={[styles.row, {alignItems: 'center'}]}>
+                    <Text style={[styles.th, {color: 'red', textAlign: 'center', width: '100%'}]}>¡Ubicación BLOQUEADA!</Text>
+                    <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{item.Bodega?.COMEB}</Text>
+                </VStack>}
+                <HStack style={[styles.row, {alignItems: 'center', justifyContent: 'space-between', left: -16}]}>
+                    <Text style={styles.th}>ID:</Text>
+                    <Text style={[styles.td, {backgroundColor: 'lightgreen', width: 'auto', maxWidth: '45%', textAlign: 'center', fontSize: 12}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
+                    {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 && !item.RESERVADOS ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
                 </HStack>
                 <View style={styles.imagenPosition}>
-                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}}/>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}} msg={false}/>
                 </View>
             </VStack>
         )

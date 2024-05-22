@@ -5,13 +5,16 @@ import { useState } from 'react';
 
 const ipDefaults = [{
     label: '172.16.10.78',
-    value: '172.16.10.78'
+    value: '172.16.10.78:8888'
 }, {
     label: '200.35.195.130',
-    value: '200.35.195.130'
+    value: '200.35.195.130:8888'
 }, {
-    label: '201.249.133.34',
-    value: '201.249.133.34'
+    label: '201.249.133.34 (develop)',
+    value: '201.249.133.34:8888'
+}, {
+    label: '201.249.133.34 (production)',
+    value: '201.249.133.34:8899'
 }];
 
 const HeaderMundo = (props) => {
