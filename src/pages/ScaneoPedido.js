@@ -37,6 +37,9 @@ const ScaneoPedido = (props) => {
     const [openSheet, setOpenSheet] = useState(false);
     const [comentario, setComentario] = useState(-2);
 
+    const [peso, setPeso] = useState(0);
+    const [volumen, setVolumen] = useState(0);
+
     const [undSelect, setUndSelect] = useState(null);
 
     /** CONFIG **/
@@ -133,6 +136,35 @@ const ScaneoPedido = (props) => {
             setMsgConex("");
         }
     }, [loading === true]);
+    
+    useEffect(() => {
+        let pesos = 0;
+        let volumenes = 0;
+        for(let producto of trasladoItems) {
+            if(producto.IDPAL === IDPAL) {
+                pesos += parseFloat(producto.UnidadBase?.BRGEW ?? 0)*parseFloat(producto.TCANT);
+                volumenes += parseFloat(producto.UnidadBase?.VOLUM ?? 0)*parseFloat(producto.TCANT);
+            }
+        }
+        console.log(props.route.params.Paletas);
+        let pesoE = props.route.params.Paleta?.PESO-parseFloat(traslado.PESO ?? 0);
+        let volumenE = props.route.params.Paleta?.VOLUMEN-parseFloat(traslado.VOLUMEN ?? 0);
+
+        setPeso(parseFloat(pesoE ?? 0) + parseFloat(pesos ?? 0));
+        setVolumen(parseFloat(volumenE ?? 0) + parseFloat(volumenes ?? 0));
+
+        let paletas_aux = JSON.parse(JSON.stringify(props.route.params?.Paletas ?? {}));
+        for(let pal of paletas_aux) {
+            if(pal.IDPAL === IDPAL) {
+                pal.PESO = parseFloat(pesoE ?? 0)+parseFloat(pesos ?? 0);
+                pal.VOLUMEN = parseFloat(volumenE ?? 0)+parseFloat(volumenes ?? 0);
+                break;
+            }
+        }
+        props.route.params.updateTras({...traslado, PESO: pesos, VOLUMEN: volumenes});
+        props.route.params.updatePaletas(paletas_aux);
+        console.log("HOLA");
+    }, [trasladoItems]);
 
     /* Funciones fetch init() */
     function getSesionScan() {
@@ -206,6 +238,8 @@ const ScaneoPedido = (props) => {
             fetchIvan(props.ipSelect).get('/crudTrasladoItems', datos.join('&'), props.token.token, undefined, undefined, 60000) // 1 minuto para probar
             .then(({data}) => {
                 if(traslado.TRSTS == 1) {
+                    let pesos = 0;
+                    let volumenes = 0;
                     for(let producto of data.data) {
                         try {
                             if(producto.CHARG) { // CON LOTES
@@ -218,6 +252,9 @@ const ScaneoPedido = (props) => {
                             }
                             producto.unidad_index = producto.UnidadBase;
                             producto.noBase = false;
+                            pesos += (producto.UnidadBase?.BRGEW ?? 0)*producto.TCANT;
+                            volumenes += (producto.UnidadBase?.VOLUM ?? 0)*producto.TCANT;
+                        
                             
                             if(forceCheck) {
                                 if(producto.CHARG) {//Lote
@@ -371,6 +408,7 @@ const ScaneoPedido = (props) => {
                                 producto.noBase = false;
                             }
                         }
+                        producto.IDPAL = IDPAL;
                         producto.ubicaciones = getUbicaciones(producto);
 
                         return setScanCurrent({...producto});
@@ -518,8 +556,8 @@ const ScaneoPedido = (props) => {
                 ToastAndroid.SHORT
             );
         }
-        let existe = trasladoItems.filter(f => (producto.force && f.IDTRI === producto.IDTRI) || (!producto.force && f.MATNR === producto.MATNR 
-            && f.CHARG === producto.CHARG && producto.ubicaciones[rackSel].UBI === f.IDADW && props.dataUser.IDUSR === f.UCRID && IDPAL === producto.IDPAL));
+        let existe = trasladoItems.filter(f => (producto.force && f.IDTRI == producto.IDTRI) || (!producto.force && f.MATNR == producto.MATNR 
+            && f.CHARG == producto.CHARG && (rackSel !== null && producto.ubicaciones[rackSel].UBI == f.IDADW) && props.dataUser.IDUSR == f.UCRID && IDPAL == producto.IDPAL));
 
         let sumado = trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG && (existe[0]?.IDTRI !== tra.IDTRI) ? (prev+tra.TCANT):prev,producto.TCANT);
         let maxCantP = pedido.reduce((prev, ped) => ped.MATNR === producto.MATNR && ped.CHARG === producto.CHARG ? (prev+ped.CANTP):prev, 0);
@@ -810,6 +848,14 @@ const ScaneoPedido = (props) => {
     ;
     /* Componente Información */
 
+    const getMedidas = (medida) => {
+        if(medida?.length > 5) {
+            let medidas = medida.replaceAll(",",'.').split("/");
+            return `${parseFloat(medidas[0] ?? 0).toFixed(2)}x${parseFloat(medidas[1] ?? 0).toFixed(2)}x${parseFloat(medidas[2] ?? 0).toFixed(2)}`;
+        }
+        return "-";
+    }
+
     /* Componente de lista */
     const RowProducts = (item, index) => 
         <Pressable onPress={() => item.COMNT ? Alert.alert("Comentario", item.COMNT):''} key={index}>
@@ -828,7 +874,10 @@ const ScaneoPedido = (props) => {
                     <Text style={styles.subtitle} numberOfLines={1}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                     <Text style={[styles.small3, {fontWeight: 'bold'}]} color="primary" numberOfLines={1}>Ubicación: {!item.Ubicacion ? 'S/N':(item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET)}</Text>
                     <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL}</Text>
-                </VStack>
+                    {item.COMNT ? <View style={{position: 'absolute', bottom: 20, right: 5}}><AntDesign name="exclamationcircleo" size={18} color={"red"}/></View>:''}
+                    <Text style={styles.subtitle} numberOfLines={1}>Peso: {(parseFloat(item.UnidadBase?.BRGEW ?? 0)*parseFloat(item.TCANT)).toFixed(2)} kg</Text>
+                    <Text style={styles.subtitle} numberOfLines={1}>{getMedidas(item.UnidadBase?.GROES)} ({(parseFloat(item.UnidadBase?.VOLUM ?? 0)*parseFloat(item.TCANT)).toFixed(2)} m3)</Text>
+               </VStack>
 
                 {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
                     <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
@@ -1283,11 +1332,19 @@ const ScaneoPedido = (props) => {
                                 ''
                             }
                         </HStack>
+                        <VStack border={0} p={2} spacing={4}>
+                            <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Peso act: {peso.toFixed(2)} kg</Text>
+                            </HStack>
+                            <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {volumen.toFixed(2)} m3</Text>
+                            </HStack>
+                        </VStack>
                         <ListaPerform 
                             items={props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
-                            heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 125:280):160}
-                            height={125}
+                            heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
+                            height={160}
                             forceHeight={false}
                             />
                     </Stack>

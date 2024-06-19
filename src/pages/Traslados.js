@@ -33,7 +33,8 @@ const Traslados = (props) => {
     const [filtrado2, setFiltrado2] = useState(10);
     const [showCrear, setShowCrear] = useState(false);
     const [modalPallet, setModalPallet] = useState(null);
-    const [paletas, setPaletas] = useState(props.route.params.Paletas || []);
+    const [paletas, setPaletas] = useState(props.route.params.Paletas ?? []);
+    const [paleta, setPaleta] = useState(props.route.params.Paleta ?? {});
 
     /*useEffect( () =>{
         console.log("INIT SCANNER RECEIVED");
@@ -60,6 +61,21 @@ const Traslados = (props) => {
             //DeviceEventEmitter.removeListener('ScannerBroadcastReceiver'); 
         }
     },[]);*/
+
+    useEffect(() => {
+        let before = props.navigation.addListener('beforeRemove', (e) => {
+            console.log("Mount listener info")
+            if(modalPallet) {
+                e.preventDefault();
+                setModalPallet(null);
+            }
+        })
+
+        return () => {
+            console.log("Remove listener info");
+            before();
+        }
+    }, [props.navigation, modalPallet]);
 
     useEffect(() => {
         // Lo deshabilitamos porque no se puede traer desde el usuario todos los almacenes solo los registrados
@@ -361,11 +377,21 @@ const Traslados = (props) => {
             <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}} mt={5} mb={5}>
                 <VStack border={0} p={2} spacing={4}>
                     <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso act: {props.route.params.Paleta?.PESO?.toFixed(2)} kg</Text>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso art: {parseFloat(paleta.PESO??0).toFixed(2)} KG</Text>
                     </HStack>
                     <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {props.route.params.Paleta?.VOLUMEN?.toFixed(2)} m3</Text>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen art: {parseFloat(paleta.VOLUMEN??0).toFixed(2)} M3</Text>
                     </HStack>
+                </VStack>
+                <VStack border={0} p={2} spacing={4}>
+                    {paleta.WEIGH ?
+                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso reportado: {parseFloat(paleta.WEIGH??0).toFixed(2)} KG</Text>
+                    </HStack>:''}
+                    {paleta.DISTX && paleta.DISTY && paleta.DISTZ ?
+                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen reportado: {parseFloat((paleta.DISTX*paleta.DISTY*paleta.DISTZ) ?? 0).toFixed(2)} M3</Text>
+                    </HStack>:''}
                 </VStack>
                 <SelectInput
                     data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
@@ -381,11 +407,13 @@ const Traslados = (props) => {
                     overline={trasladosStatus[item.TRSTS]}
                     title={item.TRCON}
                     secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
-                        "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
+                        "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
                     //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
                             //+")\n"+item.DATEU?.substr(0,16).replace("T"," ")
                             //+"\nAmpliado en: "+(item.Paletas.reduce((pr, pl) => (pr.length ? (pr+","):pr)+pl.IDPAL?.padStart(3, "0"), ""))
-                        //}
+                        +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`
+                        +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`
+                        }
                     leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                     trailing={(p2) => 
                         <View>
@@ -397,7 +425,13 @@ const Traslados = (props) => {
                     }
                     onPress={() => props.dataUser.USSCO.indexOf('SCAN') !== -1 ? 
                     props.navigation.navigate(item.IDPED ? 'TabScaneo':'Scaneo', {
-                        Paleta: props.route.params.Paleta,
+                        updatePaletas: (json) => {
+                            setPaletas(json);
+                            setPaleta(json.filter(f => f.IDPAL === props.route.params.IDPAL)[0]);
+                            props.route.params.setPaletas(json)
+                        },
+                        Paletas: paletas,
+                        Paleta: paleta,
                         IDPAL: props.route.params.IDPAL,
                         traslado: item,
                         updateTras: updateTras
@@ -461,6 +495,7 @@ const Traslados = (props) => {
         <Provider>
             <Stack spacing={1} style={{margin: 2, flex: 1 }}>
                 <Text style={styles.subtitle}>Origen: {centroName+` (${almacenName})`}</Text>
+                <Text style={styles.subtitle}>Tiendas en ruta: {props.route.params.planed?.PJWER.tiendas.join(',') ?? ''}</Text>
 
                 {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && props.route.params.STSOR === 1 ?
                 <Button style={styles.title1} title="Crear traslado manual" color="white" tintColor={Global.colorMundoTotal} onPress={() => setShowCrear(!showCrear)}

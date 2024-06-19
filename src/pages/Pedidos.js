@@ -75,6 +75,14 @@ const Pedidos = (props, ref) => {
         }
         return <Text style={styles.ubicaciones2}>{text}</Text>;
     }
+    
+    const getMedidas = (medida) => {
+        if(medida?.length > 5) {
+            let medidas = medida.replaceAll(",",'.').split("/");
+            return `${parseFloat(medidas[0] ?? 0).toFixed(2)}x${parseFloat(medidas[1] ?? 0).toFixed(2)}x${parseFloat(medidas[2] ?? 0).toFixed(2)}`;
+        }
+        return "-";
+    }
 
     const rows = (item, index) => 
     <ListItem
@@ -85,7 +93,9 @@ const Pedidos = (props, ref) => {
         title={item.MAKTG}
         secondaryText={<Text style={styles.subtitle}>{item.Producto.MAKTG} {item.UnidadBase.XCHPF === 'X' ? <Text style={styles.lote}>{"\n"}LOTE: {item.CHARG}</Text>:''}
             {traslado.TRSTS === 1 ? `\nCant. Max. Disponible: ${getDisponible(item)}\n`:''}
-        {traslado.TRSTS === 1 ? getUbicaciones(item):''}</Text>}
+        {traslado.TRSTS === 1 ? getUbicaciones(item):''}
+        {"\n"}Peso: {item.UnidadBase?.BRGEW} kg
+        {"\n"}{getMedidas(item.UnidadBase?.GROES)} ({item.UnidadBase?.VOLUM} m3)</Text>}
     />
 
     return (
@@ -96,7 +106,7 @@ const Pedidos = (props, ref) => {
                     items={pedido}
                     renderItems={rows}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={getItems}/>}
-                    height={traslado.TRSTS === 1 ? 106:92}
+                    height={traslado.TRSTS === 1 ? 136:122}
                     forceHeight={false}
                 />
             </View>

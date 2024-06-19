@@ -14,7 +14,7 @@ const createDataProvider = () => {
     return new DataProvider((r1, r2) => r1 !== r2);
 };
 
-const ListaPerform = memo(({items, renderItems, heightRemove=null, refreshGet, height = 90, refreshControl = null, forceHeight=true}) => {
+const ListaPerform = memo(({items, renderItems, heightRemove=null, refreshGet, height = 90, refreshControl = null, forceHeight=true, header = '', ListEmptyComponent = <Text>...</Text>}) => {
     const [dataProvider, setDataProvider] = useState(createDataProvider());
 
     const _layoutProvider = new LayoutProvider(
@@ -33,7 +33,7 @@ const ListaPerform = memo(({items, renderItems, heightRemove=null, refreshGet, h
 
     return (
         <View style={{marginTop: 5, minHeight: 1, flex: 2, width: dimensionesScreen.width}}>
-            {!items?.length ? <Text style={styles.subtitle}>...</Text>:
+            {!items?.length ? ListEmptyComponent:
             <RecyclerListView
                 layoutProvider={_layoutProvider}
                 dataProvider={dataProvider}

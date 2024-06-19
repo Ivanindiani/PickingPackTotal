@@ -61,7 +61,7 @@ const ManagerProducts = (props) => {
     useEffect(() => {
         getProductos();
 
-        if(recepcion.RESTS === 'CREADO') {
+        if(recepcion.RESTS === 'CREADO' && dialogVisible === -1) {
             //console.log("Mount listerner key")
             KeyEvent.onKeyDownListener(evento);
 
@@ -70,7 +70,7 @@ const ManagerProducts = (props) => {
                 KeyEvent.removeKeyDownListener();
             }
         }
-    },[]); 
+    },[dialogVisible, recepcion]); 
 
     /*useEffect(() => {
         if(dialogVisible > -1) {
@@ -120,26 +120,28 @@ const ManagerProducts = (props) => {
     }
 
     useEffect(() => {// Efecto para detectar si va para atras
-        let before = props.navigation.addListener('beforeRemove', (e) => {
-            if(dialogVisible !== -1) {
-                setDialogVisible(-1)
-                return e.preventDefault();
-            }
-            //console.log("Mount listener info")
-            e.preventDefault();
-            Alert.alert('Escaneo de productos', '¿Deseas realmente salir de la ventana de escaneo de productos?',
-            [{
-                text: 'No', style: 'cancel'
-            },{
-                text: 'Si', style: 'destructive', onPress: () => props.navigation.dispatch(e.data.action)
-            }])
-        });
+        if(recepcion?.RESTS === 'CREADO') {
+            let before = props.navigation.addListener('beforeRemove', (e) => {
+                if(dialogVisible !== -1) {
+                    setDialogVisible(-1)
+                    return e.preventDefault();
+                }
+                //console.log("Mount listener info")
+                e.preventDefault();
+                Alert.alert('Escaneo de productos', '¿Deseas realmente salir de la ventana de escaneo de productos?',
+                [{
+                    text: 'No', style: 'cancel'
+                },{
+                    text: 'Si', style: 'destructive', onPress: () => props.navigation.dispatch(e.data.action)
+                }])
+            });
 
-        return () => {
-            //console.log("Remove listener info");
-            before();
+            return () => {
+                //console.log("Remove listener info");
+                before();
+            }
         }
-    }, [props.navigation, dialogVisible]);
+    }, [props.navigation, dialogVisible, recepcion?.RESTS]);
 
     useEffect(() => { // efecto para cada vez que cambian los estados de las config nos pone modo FOCUS
         setTimeout(() => {
@@ -546,13 +548,16 @@ const ManagerProducts = (props) => {
           onPress: () => {
             getProductos()
             .then((prods) => {
+                //let date = new Date();
+                //date = date = parseInt(date.getFullYear().toString().substr(-2)+""+(date.getMonth()+1).toString().padStart(2,"0")+""+date.getDate().toString().padStart(2,"0"));
+                
                 for(let prod of prods) {
                     /*if(parseFloat(prod.MONTO) < 0.01) {
                         return Alert.alert('Error', 'Hay artículos sin costo por favor verifique');
                     }*/
                     if(parseFloat(prod.QUANT) <= 0) {
                         return Alert.alert('Error', 'Hay artículos con la cantidad inválida  por favor verifique');
-                    }
+                    } 
                     for(let prod2 of prods) {
                         if(prod.MATNR === prod2.MATNR && prod.LOTEA === prod2.LOTEA) {
                             if(prod.MONTO !== prod2.MONTO) {
@@ -560,6 +565,14 @@ const ManagerProducts = (props) => {
                             }
                         }
                     }
+                    /*if(prod.LOTEA) {
+                        let fecha_producto = parseInt(prod.LOTEA.substring(8,10)+""+prod.LOTEA.substring(6,8)+""+prod.LOTEA.substring(4,6));
+                        console.log(date, fecha_producto, date > fecha_producto);
+
+                        if(date > fecha_producto) {
+                            return Alert.alert('Error', 'El articulo '+prod.MATNR+' ya está vencido verifique e intente nuevamente');
+                        }
+                    }*/
                 }
                 let datos = {
                     id: recepcion.IDREC,
@@ -598,7 +611,7 @@ const ManagerProducts = (props) => {
         ]);
     }
 
-    const updateProduct = (item, cantidad, monto = undefined, descuento = undefined, comentario = undefined) => {
+    const updateProduct = (item, cantidad, monto = undefined, descuento = undefined, comentario = '') => {
         let datos = {
             id: item.IDREA,
             IDREC: recepcion.IDREC,
@@ -613,9 +626,9 @@ const ManagerProducts = (props) => {
         if(descuento >= 0) {
             datos.update.QUAND = parseFloat(descuento);
         }
-        if(comentario) {
+        //if(comentario) {
             datos.update.COMEN = comentario;
-        }
+        //}
         
         setLoadingSave(true);
         console.log(datos);
@@ -843,7 +856,7 @@ const ManagerProducts = (props) => {
             {recepcion.RESTS === 'CREADO' && props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 &&
                 <IconButton icon={p2=p2 => <Entypo name="back" {...p2}/> } onPress={() => setDialogVisible(index)}/>
             }
-            <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>
+            {recepcion.RESTS === 'CREADO' && <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>}
             </VStack>
         </HStack>
     ;

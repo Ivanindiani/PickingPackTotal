@@ -1,20 +1,172 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import fetchIvan from "../components/_fetch";
-import { ActivityIndicator, Box, HStack, ListItem, Stack, Text } from "@react-native-material/core";
-import { RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
+import { Button, HStack, ListItem, Stack, Text } from "@react-native-material/core";
+import { ActivityIndicator, Dimensions, StyleSheet, ToastAndroid, View } from "react-native";
 import SelectInput from "../components/_virtualSelect";
 import Entypo from "react-native-vector-icons/Entypo";
+import { Agenda, LocaleConfig } from 'react-native-calendars';
+import { SafeAreaView } from "react-native-safe-area-context";
+const Global = require('../../app.json');
 
 const ordenStatusColor = ['red', 'yellow', 'orange', 'lightgreen', 'green'];
 const ordenStatus = ['Eliminado', 'Cargando en Origen', 'En Ruta', 'Recibiendo paquetes', 'Finalizada'];
+
+LocaleConfig.locales['es'] = {
+    monthNames: [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
+    ],
+    monthNamesShort: ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Jul.', 'Ago.', 'Sept.', 'Oct.', 'Nov.', 'Dic.'],
+    dayNames: ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'],
+    dayNamesShort: ['Dom.', 'Lun.', 'Mar.', 'Mie.', 'Jue.', 'Vie.', 'Sab.'],
+    today: "Hoy"
+};
+LocaleConfig.defaultLocale = 'es';
+
+const getDateDiff = (diff, date = undefined) => {
+    let d = date ? new Date(date):new Date();
+    d.setDate(d.getDate() + diff);
+    return d.getFullYear()+"-"+(parseInt(d.getMonth())+1).toString().padStart(2, '0')+"-"+(parseInt(d.getDay())+1).toString().padStart(2, '0');
+}
+const minDate = getDateDiff(-30);
+const maxDate = getDateDiff(30);
+
+import _ from 'lodash';
+
+const dimensiones = Dimensions.get('window');
+
+console.log(dimensiones);
+
+const Calendario = memo(({ordenes, loading, getOrdenes, setOrden, navigation, almacenId}) => {
+    const items = ordenes.data?.reduce((prev, ord) => {
+        if(prev[ord.DATE_FORMAT]) {
+            prev[ord.DATE_FORMAT].push(ord);
+        } else {
+            prev[ord.DATE_FORMAT] = [ord];
+        }
+        return prev;
+    }, {});
+
+    const marked = ordenes.data?.reduce((prev, ord) => {
+        if(prev[ord.DATE_FORMAT]) {
+            prev[ord.DATE_FORMAT].dots.push({
+                key: ord.IDTRG,
+                marked: true,
+                color: ordenStatusColor[ord.STSOR]
+            });
+        } else {
+            prev[ord.DATE_FORMAT] = {
+                    dots: [{
+                    key: ord.IDTRG,
+                    marked: true,
+                    color: ordenStatusColor[ord.STSOR]
+                }]
+            };
+        }
+        return prev;
+    }, {});
+
+    console.log(marked ? marked['2024-06-17']:"Hola");
+    return <Agenda 
+            items={items}
+            markedDates={marked}
+            markingType="multi-dot"
+            onDayChange={day => {
+                console.log('day changed');
+            }}
+            showOnlySelectedDayItems={false}
+            showClosingKnob
+            minDate={minDate}
+            maxDate={maxDate}
+            pastScrollRange={15}
+            futureScrollRange={15}
+            onRefresh={() => getOrdenes(getDateDiff(-30), getDateDiff(30))}
+            refreshing={loading}
+            disabledByDefault={!almacenId}
+            rowHasChanged={(r1, r2) => {
+                return r1.IDTRG !== r2.IDTRG;
+            }} 
+            renderEmptyData={() => {
+                return <Text>No hay ordenes para este día</Text>;
+            }}
+            renderItem={(orden, first) => {
+                return (
+                    <ListItem
+                        key={orden.IDTRG}
+                        overline={ordenStatus[orden.STSOR]}
+                        title={orden.DCONC} 
+                        secondaryText={<View style={{maxWidth: dimensiones.width*0.45}}>
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Chofer: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.Chofere?.DNAME+" "+orden.Chofere?.DFNAM}</Text>
+                            </HStack>
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Vehículo: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.Camione?.BRAND+" "+orden.Camione?.MODEL+" ("+orden.Camione?.PLATE+")"}</Text>
+                            </HStack>
+                            {!orden.Container?.IDTRU && <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Cont: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.Container?.CLASC+" "+orden.Container?.CMODE+" ("+orden.Container?.CPLAT+")"}</Text>
+                            </HStack>}
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Peso max: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.PESO_MAX} KG</Text>
+                            </HStack>
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Vol max: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.PESO_MAX} M3</Text>
+                            </HStack>
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Tiendas: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.PlanedRoute?.PJWER.tiendas.join(', ') ?? ''}</Text>
+                            </HStack>
+                        </View>
+                        }
+                        leading={<Entypo name="circle" size={20} backgroundColor={ordenStatusColor[orden.STSOR]} color={ordenStatusColor[orden.STSOR]} style={{borderRadius: 12, margin: 0, padding: 0}} />}
+                        leadingMode="icon"
+                        onPress={() => navigation.navigate('Paletas', {
+                            orden: orden,
+                            setOrden: setOrden,
+                            configOrden: ordenes.extra,
+                            updateOrden: getOrdenes,
+                            centroId: orden.FWERK,
+                            almacenId: orden.FLGOR,
+                            datemin: minDate,
+                            datemax: maxDate
+                        })}
+                    />)
+            }}
+            theme={{
+                agendaDayTextColor: 'black',
+                agendaDayNumColor: 'green',
+                agendaTodayColor: 'red',
+                agendaKnobColor: Global.colorMundoTotal,
+                selectedDayBackgroundColor: Global.colorMundoTotal
+            }}
+        />
+}, (prevProps, nextProps) => {
+    if(!_.isEqual(prevProps.ordenes, nextProps.ordenes) || !_.isEqual(prevProps.ordenes?.data, nextProps.ordenes?.data) || prevProps.loading !== nextProps.loading) return false;
+    console.log("No RENDER");
+    return true;
+});
+
 const Ordenes = (props) => {
     const [loading, setLoading] = useState(false);
-    const [ordenes, setOrdenes] = useState([]);
+    const [ordenes, setOrdenes] = useState({});
     const [centroId, setCentroId] = useState(props.dataUser.Centros?.length === 1 ? props.dataUser.Centros[0].WERKS:null);
     const [centrosUser] = useState(props.dataUser.Centros?.length ? props.dataUser.Centros.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 ? [...prev, {label: d.NAME1, value: d.WERKS}]:prev,[]):[]);
     const [almacenes, setAlmacenes] = useState([]);
     const [almacenId, setAlmacenId] = useState(null);
-    const [filtrado, setFiltrado] = useState(10);
 
     useEffect(() => {
         if(props.dataUser.Centros.length === 1) {
@@ -31,30 +183,38 @@ const Ordenes = (props) => {
             console.log(almacenesAux);
             setAlmacenes(almacenesAux);
             setAlmacenId(null);
-            setOrdenes([]);
+            //setOrdenes({});
         }
     }, [centroId]);
 
-    async function getOrdenes() {
+    useEffect(() => {
+        console.log(centroId, almacenId);
+        if((centroId && almacenId) || props.dataUser.CAMIONERO) {
+            getOrdenes(getDateDiff(-30), getDateDiff(30));
+        }
+    }, [almacenId, props.dataUser.CAMIONERO === true]);
+
+    async function getOrdenes(datemin=undefined,datemax=undefined) {
+        if(!centroId && !almacenId && !props.dataUser.CAMIONERO) return;
+        console.log("GET ORDERS", datemin, datemax);
+        setLoading(true);
         return new Promise((resolve, reject) => {
             let datos = [
                 `FWERK=${centroId}`,
                 `FLGOR=${almacenId}`,
                 `paletas=true`,
-                `pallettras=true`
+                `pallettras=true`,
+                `DATEMIN=${datemin}`,
+                `DATEMAX=${datemax}`
             ];
-            if(filtrado !== -1) {
-                datos.push(`limit=${filtrado}`);
-            }
             if(props.dataUser.CAMIONERO) {
                 datos.push(`IDDRI=${props.dataUser.IDDRI}`)
             }
-            setLoading(true);
-            setOrdenes([]);
+            setOrdenes({});
             fetchIvan(props.ipSelect).get('/crudOrdenes', datos.join('&'), props.token.token)
             .then(({data}) => {
                 console.log("Ordenes: ", data.data.length);
-                setOrdenes(data.data);
+                setOrdenes(data);
                 resolve(data.data);
             })
             .catch(({status, error}) => {
@@ -67,7 +227,7 @@ const Ordenes = (props) => {
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
                     ToastAndroid.SHORT
                 );
-                reject(false);
+                reject(error);
             })
             .finally(() => {
                 setLoading(false);
@@ -75,96 +235,60 @@ const Ordenes = (props) => {
         });
     }
 
-    useEffect(() => {
+    /*useEffect(() => {
         if((centroId && almacenId) || props.dataUser.CAMIONERO) 
             getOrdenes();
-    }, [almacenId, filtrado, props.dataUser.CAMIONERO === true]);
+    }, [almacenId, props.dataUser.CAMIONERO === true]);*/
 
     const setOrden = (orden) => {
         let ordns = JSON.parse(JSON.stringify(ordenes));
+        setOrdenes({});
 
-        for(let i=0;i < ordns.length;i++){
-            if(orden.IDTRG === ordns[i].IDTRG) {
-                ordns[i] = orden;
+        for(let i=0;i < ordns.data.length;i++){
+            if(orden.IDTRG === ordns.data[i].IDTRG) {
+                ordns.data[i] = orden;
                 break; 
             }
         }
-
-        setOrdenes(ordns);
+        setTimeout(() => setOrdenes(ordns), 100);
     }
-
+    
     return (
-        <Stack spacing={1} style={{ margin: 5 }}>
-            {!props.dataUser.CAMIONERO && <View style={styles.centros}>
-                <Text style={{fontWeight: '500'}}>Sucursal: </Text>
+        <SafeAreaView style={{flex: 1}}>
+            <Stack spacing={1} style={{ margin: 5, flex: 2}}>
                 
-                <SelectInput
-                    searchable={false}
-                    data={centrosUser}
-                    value={centroId}
-                    setValue={setCentroId}
-                    title="Sucursal Origen"
-                    buttonStyle={{maxWidth: '70%', padding: 3}}
-                />
-                
-            </View>}
-           
-            {!props.dataUser.CAMIONERO && centroId && almacenes.length ?
-            <View style={styles.centros}>
-                <Text style={{fontWeight: '500'}}>División: </Text>
-                <SelectInput
-                    searchable={false}
-                    data={almacenes}
-                    value={almacenId}
-                    setValue={setAlmacenId}
-                    title="División origen"
-                    buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
-                />
-            </View>:''}
-
-            <ScrollView nestedScrollEnabled={true}  style={styles.scrollView} refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getOrdenes()}/>}>
-                {loading && <ActivityIndicator />}
-                <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                    <Text>{"Lista de órdenes\n"}
-                        {!props.dataUser.CAMIONERO ? <Text style={styles.subtitle}>Origen: {centrosUser.filter(center => center.value === centroId)[0]?.label}</Text>:
-                        <Text style={styles.subtitle}>Para: {(props.dataUser.DNAME || "")+" "+(props.dataUser.DFNAM || "")}</Text>}
-                    </Text>
+                {!props.dataUser.CAMIONERO ? <View style={styles.centros}>
+                    <Text style={{fontWeight: '500'}}>Sucursal: </Text>
                     <SelectInput
-                        data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
-                        value={filtrado}
-                        setValue={setFiltrado}
-                        title=""
+                        searchable={false}
+                        data={centrosUser}
+                        value={centroId}
+                        setValue={setCentroId}
+                        title="Sucursal Origen"
+                        buttonStyle={{maxWidth: '70%', padding: 3}}
                     />
-                </HStack>
-                <Box style={styles.box}>
-                    {ordenes.map((orden, i) => 
-                        <ListItem
-                            key={i}
-                            overline={ordenStatus[orden.STSOR]}
-                            title={orden.DCONC} 
-                            secondaryText={
-                                "Nº Paletas: "+orden.Paletas.length+
-                                "\nOrigen: "+orden.Centro.NAME1+
-                                "\nNº Rutas destino: "+orden.Rutas.length+
-                                "\nFecha: "+orden.DATEC.split("T")[0]+" "+orden.DATEC.split("T")[1].substring(0,5)+
-                                "\nChofer: "+orden.Chofere?.DNAME+" "+orden.Chofere?.DFNAM+
-                                "\nVehículo: "+orden.Camione?.BRAND+" "+orden.Camione?.MODEL+" ("+orden.Camione?.PLATE+")"
-                            }
-                            leading={<Entypo name="circle" size={24} backgroundColor={ordenStatusColor[orden.STSOR]} color={ordenStatusColor[orden.STSOR]} style={{borderRadius: 12}} />}
-                            onPress={() => props.navigation.navigate('Paletas', {
-                                orden: orden,
-                                setOrden: setOrden,
-                                updateOrden: getOrdenes,
-                                centroId: orden.FWERK,
-                                almacenId: orden.FLGOR
-                            })}
-                        />
-                    )}
-                    {!ordenes.length && <Text>No hay ordenes asignadas</Text>}
-                    <View style={{height: 100, width: 100}}></View>
-                </Box>
-            </ScrollView>
-        </Stack>
+                    
+                </View>:<View style={styles.centros}>
+                    <Button onPress={()=> getOrdenes(getDateDiff(-30), getDateDiff(30))} title="Actualizar" color={Global.colorMundoTotal} loading={loading}/>
+                </View>}
+            
+                {!props.dataUser.CAMIONERO && centroId && almacenes.length ?
+                <View style={styles.centros}>
+                    <Text style={{fontWeight: '500'}}>División: </Text>
+                    <SelectInput
+                        searchable={false}
+                        data={almacenes}
+                        value={almacenId}
+                        setValue={setAlmacenId}
+                        title="División origen"
+                        buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
+                    />
+                </View>:''}
+                {loading && <ActivityIndicator/>}
+                
+                <Calendario ordenes={ordenes} getOrdenes={getOrdenes} setOrden={setOrden} loading={loading} navigation={props.navigation} almacenId={almacenId || props.dataUser.CAMIONERO}/>
+            </Stack>
+        </SafeAreaView>
     )
 }
 
@@ -187,6 +311,16 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 5,
         borderTopLeftRadius: 5,
         borderTopRightRadius: 5
+    },
+    th: {
+        fontSize: 12,
+        fontWeight: '400'
+    },
+    td: {
+        fontSize: 11
+    },
+    textSecondary: {
+        color: 'grey',
     }
 });
 

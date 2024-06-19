@@ -37,10 +37,8 @@ const Scaneo = (props) => {
     const [openSheet, setOpenSheet] = useState(false);
     const [comentario, setComentario] = useState(-2);
 
-    const [pesoE, setPesoE] = useState(props.route.params.Paleta?.PESO ?? 0);
-    const [VolumenE, setVolumenE] = useState(props.route.params.Paleta?.VOLUMEN ?? 0);
     const [peso, setPeso] = useState(0);
-    const [Volumen, setVolumen] = useState(0);
+    const [volumen, setVolumen] = useState(0);
 
     const [undSelect, setUndSelect] = useState(null);
 
@@ -100,7 +98,7 @@ const Scaneo = (props) => {
         mounted.current = true;
         getSesionScan();
         getTrasladoItems();
-        
+
         if(traslado.TRSTS === 1) {
             KeyEvent.onKeyDownListener(evento);
 
@@ -144,12 +142,29 @@ const Scaneo = (props) => {
         let pesos = 0;
         let volumenes = 0;
         for(let producto of trasladoItems) {
-            pesos += (producto.UnidadBase?.BRGEW ?? 0)*producto.TCANT;
-            volumenes += (producto.UnidadBase?.VOLUM ?? 0)*producto.TCANT;
+            if(producto.IDPAL === IDPAL) {
+                pesos += parseFloat(producto.UnidadBase?.BRGEW ?? 0)*parseFloat(producto.TCANT);
+                volumenes += parseFloat(producto.UnidadBase?.VOLUM ?? 0)*parseFloat(producto.TCANT);
+            }
         }
+        console.log(props.route.params.Paletas);
+        let pesoE = props.route.params.Paleta?.PESO-parseFloat(traslado.PESO ?? 0);
+        let volumenE = props.route.params.Paleta?.VOLUMEN-parseFloat(traslado.VOLUMEN ?? 0);
 
-        setPeso(pesoE + pesos);
-        setVolumen(VolumenE + volumenes);
+        setPeso(parseFloat(pesoE ?? 0) + parseFloat(pesos ?? 0));
+        setVolumen(parseFloat(volumenE ?? 0) + parseFloat(volumenes ?? 0));
+
+        let paletas_aux = JSON.parse(JSON.stringify(props.route.params?.Paletas ?? {}));
+        for(let pal of paletas_aux) {
+            if(pal.IDPAL === IDPAL) {
+                pal.PESO = parseFloat(pesoE ?? 0)+parseFloat(pesos ?? 0);
+                pal.VOLUMEN = parseFloat(volumenE ?? 0)+parseFloat(volumenes ?? 0);
+                break;
+            }
+        }
+        props.route.params.updateTras({...traslado, PESO: pesos, VOLUMEN: volumenes});
+        props.route.params.updatePaletas(paletas_aux);
+        console.log("HOLA");
     }, [trasladoItems]);
 
     /* Funciones fetch init() */
@@ -244,8 +259,6 @@ const Scaneo = (props) => {
                             console.log(e);
                         }
                     }
-                    setPesoE(props.route.params.Paleta?.PESO - pesos);
-                    setVolumenE(props.route.params.Paleta?.VOLUMEN - volumenes);
                 }
                 setTrasladoItems(data.data);
                 resolve(falla ? false:data.data);
@@ -391,7 +404,7 @@ const Scaneo = (props) => {
             console.log("Producto", data.data);
             const producto = {...data.data, ...data.data.Producto};
             for(const unidad of producto.Producto?.ProductosUnidads) {
-                if(unidad.EAN11 !== scancode) continue;
+                if(unidad.EAN11 != scancode) continue;
                 producto.unidad_index = unidad;
                 producto.force = false;
                 producto.TCANT = 0;
@@ -420,10 +433,12 @@ const Scaneo = (props) => {
                         }
                     } else {
                         producto.maxQuantity = parseInt(producto.ProdSinLotes[0]?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
+                        producto.CHARG = null;
                         if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                             producto.max_paquete = Math.floor(producto.maxQuantity/unidad.UMREZ);
                         }
                     }
+                    producto.IDPAL = IDPAL;
                     producto.ubicaciones = getUbicaciones(producto);
 
                     return setScanCurrent({...producto});
@@ -572,10 +587,10 @@ const Scaneo = (props) => {
                 ToastAndroid.SHORT
             );
         }
-        let existe = trasladoItems.filter(f => (producto.force && f.IDTRI === producto.IDTRI) || (!producto.force && f.MATNR === producto.MATNR 
-            && f.CHARG == producto.CHARG && producto.ubicaciones[rackSel].UBI == f.IDADW && props.dataUser.IDUSR == f.UCRID && IDPAL == producto.IDPAL));
+        let existe = trasladoItems.filter(f => (producto.force && f.IDTRI == producto.IDTRI) || (!producto.force && f.MATNR == producto.MATNR 
+            && f.CHARG == producto.CHARG && (rackSel !== null && producto.ubicaciones[rackSel].UBI == f.IDADW) && props.dataUser.IDUSR == f.UCRID && IDPAL == producto.IDPAL));
 
-        console.log(existe);
+        //console.log(producto.force, producto.MATNR, producto.CHARG, rackSel, producto.ubicaciones[rackSel].UBI, props.dataUser.IDUSR, producto.IDPAL, IDPAL, producto.IDADW);
         if(rackSel !== null && producto.ubicaciones?.length)
             producto.IDADW = producto.ubicaciones[rackSel].UBI;
         
@@ -848,6 +863,14 @@ const Scaneo = (props) => {
     ;
     /* Componente Información */
 
+    const getMedidas = (medida) => {
+        if(medida?.length > 5) {
+            let medidas = medida.replaceAll(",",'.').split("/");
+            return `${parseFloat(medidas[0] ?? 0).toFixed(2)}x${parseFloat(medidas[1] ?? 0).toFixed(2)}x${parseFloat(medidas[2] ?? 0).toFixed(2)}`;
+        }
+        return "-";
+    }
+
     /* Componente de lista */
     const RowProducts = (item, index) => 
         <Pressable onPress={() => item.COMNT ? Alert.alert("Comentario", item.COMNT):''} key={index}>
@@ -866,7 +889,9 @@ const Scaneo = (props) => {
                     <Text style={styles.subtitle} numberOfLines={1}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                     <Text style={[styles.small3, {fontWeight: 'bold'}]} color="primary" numberOfLines={1}>Ubicación: {!item.Ubicacion ? 'S/N':(item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET)}</Text>
                     <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL}</Text>
-                    {item.COMNT ? <View style={{position: 'absolute', bottom: 5, right: 10}}><AntDesign name="exclamationcircleo" size={18} color={"red"}/></View>:''}
+                    {item.COMNT ? <View style={{position: 'absolute', bottom: 20, right: 5}}><AntDesign name="exclamationcircleo" size={18} color={"red"}/></View>:''}
+                    <Text style={styles.subtitle} numberOfLines={1}>Peso: {(parseFloat(item.UnidadBase?.BRGEW ?? 0)*parseFloat(item.TCANT)).toFixed(2)} kg</Text>
+                    <Text style={styles.subtitle} numberOfLines={1}>{getMedidas(item.UnidadBase?.GROES)} ({(parseFloat(item.UnidadBase?.VOLUM ?? 0)*parseFloat(item.TCANT)).toFixed(2)} m3)</Text>
                 </VStack>
 
                 {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
@@ -1279,14 +1304,14 @@ const Scaneo = (props) => {
                                 <Text style={{fontSize: 11, fontWeight: '600'}}>Peso act: {peso.toFixed(2)} kg</Text>
                             </HStack>
                             <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                                <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {Volumen.toFixed(2)} m3</Text>
+                                <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen act: {volumen.toFixed(2)} m3</Text>
                             </HStack>
                         </VStack>
                         <ListaPerform 
                             items={props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
-                            heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 125:280):160}
-                            height={125}
+                            heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
+                            height={160}
                             forceHeight={false}
                             />
                     </Stack>

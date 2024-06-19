@@ -4,6 +4,7 @@ import { Alert, Image, ScrollView, StyleSheet } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialCI from "react-native-vector-icons/MaterialCommunityIcons";
 import Feather from "react-native-vector-icons/Feather";
+import Octicons from "react-native-vector-icons/Octicons";
 
 const Home = (props) => {
     useEffect(() => 
@@ -25,7 +26,7 @@ const Home = (props) => {
     }), [props.navigation]);
     
     return (
-        <Stack spacing={2} style={{ margin: 14 }}>
+        <Stack spacing={4} style={{ margin: 14 }}>
             <ScrollView style={styles.scrollView}>
                 <Image source={require('../assets/images/PistoleoAppIcon.png') } style={styles.icon} resizeMode="center"/>
                 <Text>Menú Inicio</Text>
@@ -33,7 +34,7 @@ const Home = (props) => {
                     && !props.dataUser.CAMIONERO ?
                 <ListItem
                     title="Recepción de Productos"
-                    leading={<FontAwesome name="registered" size={24} />}
+                    leading={<Octicons name="package-dependencies" size={24} />}
                     trailing={props2 => <FontAwesome name="chevron-right" {...props2} />}
                     onPress={() => props.navigation.navigate('Recepcion')}
                 />:''
@@ -49,8 +50,8 @@ const Home = (props) => {
                 */}
                 {props.dataUser.USSCO?.indexOf('TRASLADOS_FIND') !== -1 && 
                 <ListItem
-                    title="Traslado de Productos"
-                    leading={<MaterialCI name="clipboard-list" size={24} />}
+                    title="Traslados de Productos"
+                    leading={<MaterialCI name="truck-delivery" size={24} />}
                     trailing={props2 => <FontAwesome name="chevron-right" {...props2} />}
                     //onPress={() => props.navigation.navigate('RecibirTraslados')}
                     onPress={() => props.navigation.navigate('TabOrdenes', {type_tras: 'crear_tras'})}
@@ -58,7 +59,7 @@ const Home = (props) => {
                 }
                 {props.dataUser.USSCO?.indexOf('RECEIVE_TRAS') !== -1 && !props.dataUser.CAMIONERO ?
                 <ListItem
-                    title="Recibir Traslados"
+                    title="Recepción de Traslados"
                     leading={<Feather name="check-square" size={24} />}
                     trailing={props2 => <FontAwesome name="chevron-right" {...props2} />}
                     //onPress={() => props.navigation.navigate('RecibirTraslados')}
@@ -68,7 +69,7 @@ const Home = (props) => {
                 {props.dataUser.USSCO?.indexOf('FIND_ARTBODEGA') !== -1 && !props.dataUser.CAMIONERO ?
                 <ListItem
                     title="Almacén Inventario"
-                    leading={<MaterialCI name="archive-search" size={24} />}
+                    leading={<MaterialCI name="warehouse" size={24} />}
                     trailing={props2 => <FontAwesome name="chevron-right" {...props2} />}
                     onPress={() => props.navigation.navigate('AlmacenInv')}
                 />:''

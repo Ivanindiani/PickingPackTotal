@@ -90,7 +90,8 @@ const Recepcion = (props) => {
     function getRecepciones() {
         let datos = [
             `find={"WERKS": "${centroId}", "LGORT": "${almacenId}", "RESTS": "['CREADO','RECIBIDO', 'CONFIRMADO', 'REENVIAR']"}`,
-            `orderBy=[["IDREC", "DESC"]]`
+            `orderBy=[["IDREC", "DESC"]]`,
+            'articulos=1'
         ];
         if(filtrado !== -1) {
             datos.push(`limit=${filtrado}`);
@@ -246,6 +247,46 @@ const Recepcion = (props) => {
         setRecepciones(auxRecepciones);
         console.log("Recepciones actualizados");
     }
+
+    const mailSend = async (recepcion) => {
+        Alert.alert('Confirmar', recepcion.SAP?.MAIL == 1 ?`Ya el correo ha sido enviado, sin embargo.\n¿Deseas hacer un reenvio de correo para notificar la devoluciones pendientes de esta recepción?`:`¿Deseas notificar las devoluciones pendientes de esta recepción`, [
+        {
+            text: 'Sí, enviar correo',
+            style: 'destructive',
+            onPress: () => {
+            let datos = {
+                IDREC: recepcion.IDREC
+            };
+            if(recepcion.SAP?.MAIL == 1) {
+                datos.forzar = true;
+            }
+            setLoading(true);
+            fetchIvan(props.ipSelect).post('/administrative/mailRecepcion', datos, props.token.token)
+            .then(({data}) => {
+                console.log("MAIL ENVIADO: ", data.data);
+                ToastAndroid.show("EMAIL ENVIADO CON ÉXITO", ToastAndroid.LONG);
+                //setRecepciones(recepciones.reduce((prev, rec) => rec.IDREC === recepcion.IDREC ? [...prev, {...rec, SAP: {...rec.SAP, MAIL: '1'}}]:[...prev, {...rec}]));
+                getRecepciones();
+            })
+            .catch(({status, error}) => {
+                console.log(error);
+                return ToastAndroid.show(
+                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                    ToastAndroid.SHORT
+                );
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+            }
+        },
+        {
+            text: 'No',
+            style: 'cancel',
+            onPress: () => console.log("cancel")
+        },
+        ]);
+    }
     
     return (
         <Provider>
@@ -343,14 +384,18 @@ const Recepcion = (props) => {
                         {recepciones.map((recepcion, i) => 
                             <ListItem
                                 key={i}
-                                overline={recepcion.RESTS}
+                                overline={recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS}
                                 title={recepcion.DESCR}
-                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+new Date(recepcion.DATEC?.replace('Z', '')).toLocaleString()}
-                                leading={<Entypo name="circle" size={24} backgroundColor={statusColor[recepcion.RESTS]} color={statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
+                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+new Date(recepcion.DATEC.replace('Z','')).toLocaleString()+
+                                (recepcion.SAP?.NUM_ORDEN_COMPRA ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
+                                (recepcion.SAP?.NUM_ENTRADA_MERC ? `\nNº Entrada Stock: ${recepcion.SAP?.NUM_ENTRADA_MERC}`:"")}
+                                leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
                                 trailing={(p2) => 
                                     <View>
                                         {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
                                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC, recepcion.RESTS === 'RECIBIDO' ? true:false)}/>:''}
+                                        {recepcion.SAP?.NUM_ENTRADA_MERC && recepcion.RecepcionArticulos?.reduce((prev, art) => prev+art.QUAND,0) > 0 ?
+                                        <IconButton disabled={loading} icon={p2=p2 => loading ? <ActivityIndicator/>:<MaterialCommunityIcons name={recepcion.SAP?.MAIL == 1 ? "email-check":"email-send"} {...p2}/> } onPress={() => mailSend(recepcion)}/>:''}
                                     </View>
                                 }
                                 onPress={() => props.dataUser.USSCO.indexOf('RECEPCION_FIND') !== -1  || props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1

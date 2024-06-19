@@ -1,0 +1,197 @@
+import { useEffect, useState } from "react";
+import fetchIvan from "../components/_fetch";
+import { ActivityIndicator, Box, HStack, ListItem, Stack, Text } from "@react-native-material/core";
+import { RefreshControl, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
+import SelectInput from "../components/_virtualSelect";
+import Entypo from "react-native-vector-icons/Entypo";
+
+const ordenStatusColor = ['red', 'yellow', 'orange', 'lightgreen', 'green'];
+const ordenStatus = ['Eliminado', 'Cargando en Origen', 'En Ruta', 'Recibiendo paquetes', 'Finalizada'];
+
+const Ordenes = (props) => {
+    const [loading, setLoading] = useState(false);
+    const [ordenes, setOrdenes] = useState([]);
+    const [centroId, setCentroId] = useState(props.dataUser.Centros?.length === 1 ? props.dataUser.Centros[0].WERKS:null);
+    const [centrosUser] = useState(props.dataUser.Centros?.length ? props.dataUser.Centros.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 ? [...prev, {label: d.NAME1, value: d.WERKS}]:prev,[]):[]);
+    const [almacenes, setAlmacenes] = useState([]);
+    const [almacenId, setAlmacenId] = useState(null);
+    const [filtrado, setFiltrado] = useState(10);
+    const [configOrden, setConfigOrden] = useState({});
+
+    useEffect(() => {
+        if(props.dataUser.Centros.length === 1) {
+            setCentroId(props.dataUser.Centros[0]?.WERKS);
+        }
+        if(centroId) {
+            let almacenesAux = [];
+            for(let centro of props.dataUser.Centros) {
+                if(centro.WERKS == centroId) {
+                    almacenesAux = centro.Almacenes?.reduce((prev, al) => [...prev, {label: al.LGOBE, value: al.LGORT}], []);
+                    break;
+                }
+            }
+            console.log(almacenesAux);
+            setAlmacenes(almacenesAux);
+            setAlmacenId(null);
+            setOrdenes([]);
+        }
+    }, [centroId]);
+
+    async function getOrdenes() {
+        return new Promise((resolve, reject) => {
+            let datos = [
+                `FWERK=${centroId}`,
+                `FLGOR=${almacenId}`,
+                `paletas=true`,
+                `pallettras=true`
+            ];
+            if(filtrado !== -1) {
+                datos.push(`limit=${filtrado}`);
+            }
+            if(props.dataUser.CAMIONERO) {
+                datos.push(`IDDRI=${props.dataUser.IDDRI}`)
+            }
+            setLoading(true);
+            setOrdenes([]);
+            fetchIvan(props.ipSelect).get('/crudOrdenes', datos.join('&'), props.token.token)
+            .then(({data}) => {
+                console.log("Ordenes: ", data.data.length);
+                setOrdenes(data.data);
+                setConfigOrden(data.extra);
+                resolve(data.data);
+            })
+            .catch(({status, error}) => {
+                console.log(error);
+                /*if(status === 401 && error.text.indexOf("autorización") !== -1) {
+                    //props.navigation.popToTop();
+                    props.navigation.navigate('Login', {hola : true});
+                }*/
+                ToastAndroid.show(
+                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                    ToastAndroid.SHORT
+                );
+                reject(false);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+        });
+    }
+
+    useEffect(() => {
+        if((centroId && almacenId) || props.dataUser.CAMIONERO) 
+            getOrdenes();
+    }, [almacenId, filtrado, props.dataUser.CAMIONERO === true]);
+
+    const setOrden = (orden) => {
+        let ordns = JSON.parse(JSON.stringify(ordenes));
+
+        for(let i=0;i < ordns.length;i++){
+            if(orden.IDTRG === ordns[i].IDTRG) {
+                ordns[i] = orden;
+                break; 
+            }
+        }
+
+        setOrdenes(ordns);
+    }
+    
+    return (
+        <Stack spacing={1} style={{ margin: 5, flex: 1 }}>
+            {!props.dataUser.CAMIONERO && <View style={styles.centros}>
+                <Text style={{fontWeight: '500'}}>Sucursal: </Text>
+                
+                <SelectInput
+                    searchable={false}
+                    data={centrosUser}
+                    value={centroId}
+                    setValue={setCentroId}
+                    title="Sucursal Origen"
+                    buttonStyle={{maxWidth: '70%', padding: 3}}
+                />
+                
+            </View>}
+        
+            {!props.dataUser.CAMIONERO && centroId && almacenes.length ?
+            <View style={styles.centros}>
+                <Text style={{fontWeight: '500'}}>División: </Text>
+                <SelectInput
+                    searchable={false}
+                    data={almacenes}
+                    value={almacenId}
+                    setValue={setAlmacenId}
+                    title="División origen"
+                    buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
+                />
+            </View>:''}
+            <ScrollView nestedScrollEnabled={true}  style={styles.scrollView} refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getOrdenes()}/>}>
+                {loading && <ActivityIndicator />}
+                <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}}>
+                    <Text>{"Lista de órdenes\n"}
+                        {!props.dataUser.CAMIONERO ? <Text style={styles.subtitle}>Origen: {centrosUser.filter(center => center.value === centroId)[0]?.label}</Text>:
+                        <Text style={styles.subtitle}>Para: {(props.dataUser.DNAME || "")+" "+(props.dataUser.DFNAM || "")}</Text>}
+                    </Text>
+                    <SelectInput
+                        data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
+                        value={filtrado}
+                        setValue={setFiltrado}
+                        title=""
+                    />
+                </HStack>
+                <Box style={styles.box}>
+                    {ordenes.map((orden, i) => 
+                        <ListItem
+                            key={i}
+                            overline={ordenStatus[orden.STSOR]}
+                            title={orden.DCONC} 
+                            secondaryText={
+                                "Nº Paletas: "+orden.Paletas.length+
+                                "\nOrigen: "+orden.Centro.NAME1+
+                                "\nNº Rutas destino: "+orden.Rutas.length+
+                                "\nFecha: "+orden.DATEC.split("T")[0]+" "+orden.DATEC.split("T")[1].substring(0,5)+
+                                "\nChofer: "+orden.Chofere?.DNAME+" "+orden.Chofere?.DFNAM+
+                                "\nVehículo: "+orden.Camione?.BRAND+" "+orden.Camione?.MODEL+" ("+orden.Camione?.PLATE+")"+
+                                "\nContenedor: "+orden.Container?.CLASC+" "+orden.Container?.CMODE+" ("+orden.Container?.CPLAT+")"
+                            }
+                            leading={<Entypo name="circle" size={24} backgroundColor={ordenStatusColor[orden.STSOR]} color={ordenStatusColor[orden.STSOR]} style={{borderRadius: 12}} />}
+                            onPress={() => props.navigation.navigate('Paletas', {
+                                orden: orden,
+                                setOrden: setOrden,
+                                configOrden: configOrden,
+                                updateOrden: getOrdenes,
+                                centroId: orden.FWERK,
+                                almacenId: orden.FLGOR
+                            })}
+                        />
+                    )}
+                    {!ordenes.length && <Text>No hay ordenes asignadas</Text>}
+                    <View style={{height: 100, width: 100}}></View>
+                </Box>
+            </ScrollView>
+        </Stack>
+    )
+}
+
+const styles = StyleSheet.create({
+    scrollView: {
+        marginTop: 10,
+        zIndex: 9
+    }, 
+    centros: {
+        width: "99%",
+        //alignSelf: 'flex-end',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end'
+    },
+    box: {
+        marginTop: 5,
+        padding: 5,
+        borderBottomLeftRadius: 5,
+        borderBottomRightRadius: 5,
+        borderTopLeftRadius: 5,
+        borderTopRightRadius: 5
+    }
+});
+
+export default Ordenes;
