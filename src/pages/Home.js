@@ -1,12 +1,41 @@
 import { ListItem, Stack, Text } from "@react-native-material/core";
 import { useEffect, useState } from "react";
-import { Alert, Image, ScrollView, StyleSheet } from "react-native";
+import { Alert, Image, PermissionsAndroid, Platform, ScrollView, StyleSheet } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialCI from "react-native-vector-icons/MaterialCommunityIcons";
 import Feather from "react-native-vector-icons/Feather";
 import Octicons from "react-native-vector-icons/Octicons";
 
 const Home = (props) => {
+    const requestPhoneState = async () => {
+        try {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                {
+                    title: 'Solicitud de permisos de ubicación',
+                    message: 'Necesitamos que hábilites el permiso para acceder a la ubicación de tu teléfono.',
+                    buttonNeutral: 'Pregunta más tarde',
+                    buttonNegative: 'No',
+                    buttonPositive: 'Permitir',
+                },
+            );
+            if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                console.log("PhoneSTATE permisos otorgado");
+            } else {
+                console.log('PhoneSTATE permisos denegado');
+            }
+
+        } catch (err) {
+          console.warn(err);
+        }
+    };
+    
+    useEffect(() => {
+        if(Platform.OS === 'android') {
+            requestPhoneState();
+        }
+    }, []);
+
     useEffect(() => 
         props.navigation.addListener('beforeRemove', (e) => {
             console.log(e.data.action);

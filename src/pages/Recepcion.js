@@ -394,7 +394,8 @@ const Recepcion = (props) => {
                                     <View>
                                         {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
                                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC, recepcion.RESTS === 'RECIBIDO' ? true:false)}/>:''}
-                                        {recepcion.SAP?.NUM_ENTRADA_MERC && recepcion.RecepcionArticulos?.reduce((prev, art) => prev+art.QUAND,0) > 0 ?
+                                        {recepcion.SAP?.NUM_ENTRADA_MERC && daysDiff(recepcion.DATEC) <= 7 && 
+                                        recepcion.RecepcionArticulos?.reduce((prev, art) => prev+art.QUAND,0) > 0 ?
                                         <IconButton disabled={loading} icon={p2=p2 => loading ? <ActivityIndicator/>:<MaterialCommunityIcons name={recepcion.SAP?.MAIL == 1 ? "email-check":"email-send"} {...p2}/> } onPress={() => mailSend(recepcion)}/>:''}
                                     </View>
                                 }
@@ -453,6 +454,23 @@ const Recepcion = (props) => {
         </Provider>
 
     )
+}
+
+function daysDiff(timeStart, timeEnd=null) {
+    if(!timeStart) return '';
+    let dateNow = timeEnd ? new Date(timeEnd.replace("Z","")):new Date();
+
+    let seconds = Math.floor((dateNow - (new Date(timeStart.replace("Z",""))))/1000);
+    let minutes = Math.floor(seconds/60);
+    let hours = Math.floor(minutes/60);
+    let days = Math.floor(hours/24);
+
+    hours = hours-(days*24);
+    minutes = minutes-(days*24*60)-(hours*60);
+    seconds = seconds-(days*24*60*60)-(hours*60*60)-(minutes*60);
+
+    console.log("DAYS ", timeStart, days);
+    return days;
 }
 
 export default Recepcion;

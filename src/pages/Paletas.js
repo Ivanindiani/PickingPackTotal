@@ -25,6 +25,77 @@ const rutaColor = {
     "Entregada": 'green'
 }
 
+const Rutas = ({dataUser, Orden, changeStatusRuta}) => {
+    const [location, setLocation] = useState({});
+
+    useEffect(() => {
+        let intentos = 0;
+        const get = () => {
+            if(intentos >= 5) return;
+            GetLocation.getCurrentPosition({
+                enableHighAccuracy: false,
+                timeout: 9000,
+            }).then(location => {
+                setLocation(location);
+            }).catch(error => {
+                console.log(error, intentos);
+                if(intentos < 5) {
+                    intentos++;
+                    setTimeout(() => get(),1000);
+                }
+            });
+        }
+        get();
+
+        return () => {
+            intentos = 10;
+            console.log("chao");
+        }
+    },[]);
+
+    const getDistance = (lat, lng) => {
+        let startingLat = degreesToRadians(location.latitude);
+        let startingLong = degreesToRadians(location.longitude);
+        let destinationLat = degreesToRadians(lat);
+        let destinationLong = degreesToRadians(lng);
+        
+        // Radius of the Earth in kilometers
+        let radius = 6571;
+        
+        // Haversine equation
+        let distanceInKilometers = Math.acos(Math.sin(startingLat) * Math.sin(destinationLat) +
+                                    Math.cos(startingLat) * Math.cos(destinationLat) *
+                                    Math.cos(startingLong - destinationLong)) * radius;
+                                    
+        console.log("Distancia final ", distanceInKilometers);
+        return distanceInKilometers.toFixed(2)+" Km.";
+    }
+
+    return (
+    <View style={styles.view}>
+        <FlatList
+            data={Orden?.Rutas}
+            renderItem={({item, index}) =>
+                <ListItem
+                    key={index}
+                    leading={<FontAwesome5 name="route" size={24} color={rutaColor[item.DROUT]}/>}
+                    title={"Destino "+item.Traslado?.HaciaCentro?.NAME1}
+                    overline={"Actualizado el: "+item.DATEU.split("T")[0]+" "+item.DATEU.split("T")[1].substring(0,5)}
+                    secondaryText={`${item.DROUT}\nCiudad: ${(item.Traslado?.HaciaCentro?.CentrosDescripcion?.CITNA ?? '')}\nDirección: ${(item.Traslado?.HaciaCentro?.CentrosDescripcion?.DIRAV ?? '')}`+
+                    `\nTraslado Nº: ${item.Traslado.IDTRA}`+
+                    `\nDistancia: ${location.latitude ? getDistance(item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS, item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS):'Calculando...'}`}
+                    trailing={dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
+                        //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
+                        Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}`);
+                    }}/>}
+                    onPress={() => changeStatusRuta(item, index)}
+                />
+            }
+            ListEmptyComponent={<Text>No hay rutas registradas</Text>}
+        />
+    </View>);
+};
+
 const Paletas = (props) => {
     const [loading, setLoading] = useState(false);
     const [Orden, setOrden] = useState(props.route.params.orden || {});
@@ -143,6 +214,8 @@ const Paletas = (props) => {
                 fetchIvan(props.ipSelect).post('/crudPaletas', datos, props.token.token)
                 .then(({data}) => {
                     console.log("Paleta creada: ", data.data);
+                    data.data.PESO = 0;
+                    data.data.VOLUMEN = 0;
                     let ordenProvi = JSON.parse(JSON.stringify(Orden));
                     ordenProvi.Paletas.push({...data.data, PaleticaTras: []});
                     props.route.params.setOrden(ordenProvi);
@@ -377,8 +450,8 @@ const Paletas = (props) => {
                         leading={<FontAwesome5 name="pallet" size={24}/>}
                         overline={"ID: "+item.IDPAL}
                         title={"Paleta "+item.IDPAL.substr(-3).padStart(3, '0')}
-                        secondaryText={"Peso artículos: "+(item.PESO?.toFixed(2) ?? 0)+" kg\n"+
-                            "Vol. artículos: "+(item.VOLUMEN?.toFixed(2) ?? 0)+" m3"+
+                        secondaryText={"Peso artículos: "+(parseFloat(item.PESO ?? 0).toFixed(2))+" kg\n"+
+                            "Vol. artículos: "+(parseFloat(item.VOLUMEN??0).toFixed(2))+" m3"+
                             "\nCreada el: "+item.DATEC.split("T")[0]+" "+item.DATEC.split("T")[1].substring(0,5)+
                             (item.WEIGH ? `\nPeso reportado: ${item.WEIGH} ${item.MSEHI}`:'')+
                             (item.DISTX && item.DISTY && item.DISTZ ? `\nVol. reportado: ${(item.DISTX*item.DISTY*item.DISTZ).toFixed(2)} m3 (${item.DISTX}x${item.DISTY}x${item.DISTZ})`:'')}
@@ -422,36 +495,12 @@ const Paletas = (props) => {
             />
         </View>;
     
-    const Rutas = () => 
-        <View style={styles.view}>
-            <FlatList
-                data={Orden?.Rutas}
-                renderItem={({item, index}) =>
-                    <ListItem
-                        key={index}
-                        leading={<FontAwesome5 name="route" size={24} color={rutaColor[item.DROUT]}/>}
-                        title={"Destino "+item.Traslado?.HaciaCentro?.NAME1}
-                        overline={"Actualizado el: "+item.DATEU.split("T")[0]+" "+item.DATEU.split("T")[1].substring(0,5)}
-                        secondaryText={`${item.DROUT}\nCiudad: ${(item.Traslado?.HaciaCentro?.CentrosDescripcion?.CITNA ?? '')}\nDirección: ${(item.Traslado?.HaciaCentro?.CentrosDescripcion?.DIRAV ?? '')}`+
-                        `\nTraslado Nº: ${item.Traslado.IDTRA}`+
-                        `\nDistancia: ${getDistance(item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS, item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS)}`}
-                        trailing={props.dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
-                            //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
-                            Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}`);
-                        }}/>}
-                        onPress={() => changeStatusRuta(item, index)}
-                    />
-                }
-                ListEmptyComponent={<Text>No hay rutas registradas</Text>}
-            />
-        </View>;
-
     const _renderScene = ({ route }) => {
         switch(route.key) {
             case 'paletas':
                 return <Paleta/>;
             case 'rutas':
-                return <Rutas />;
+                return <Rutas Orden={Orden} dataUser={props.dataUser} changeStatusRuta={changeStatusRuta}/>;
         }
     }
 
@@ -564,23 +613,6 @@ const Paletas = (props) => {
                 style: 'cancel',
             },
         ]);
-    }
-
-    const getDistance = (lat, lng) => {
-        let startingLat = degreesToRadians(Orden?.TLATI);
-        let startingLong = degreesToRadians(Orden?.TLONG);
-        let destinationLat = degreesToRadians(lat);
-        let destinationLong = degreesToRadians(lng);
-      
-        // Radius of the Earth in kilometers
-        let radius = 6571;
-      
-        // Haversine equation
-        let distanceInKilometers = Math.acos(Math.sin(startingLat) * Math.sin(destinationLat) +
-                                    Math.cos(startingLat) * Math.cos(destinationLat) *
-                                    Math.cos(startingLong - destinationLong)) * radius;
-                                    
-        return distanceInKilometers.toFixed(2)+" Km.";
     }
 
     const getColorVolumen = (valor) => {

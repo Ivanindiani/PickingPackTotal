@@ -220,6 +220,8 @@ const Traslados = (props) => {
                 USNAA: props.dataUser.USNAA,
             };
             data.data.ActualizadoPor = data.data.CreadoPor;
+            data.data.PESO = 0;
+            data.data.VOLUMEN = 0;
             data.data.DesdeCentro = centros.filter(s => s.WERKS === centroId)[0];
             data.data.HaciaCentro = centros.filter(s => s.WERKS === centroIdA)[0];
             setTraslados([data.data, ...traslados]);
