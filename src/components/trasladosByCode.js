@@ -140,8 +140,13 @@ const TrasladosByCode = (props) => {
                 <ListItem
                     title={traslado.TRCON}
                     overline={trasladosStatus[traslado.TRSTS]}
-                    secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+traslado.DATEU?.substr(0,16).replace("T"," ")+
-                        "\nPedido Nº: "+(traslado.IDPED ?? "Traslado MANUAL")}
+                    secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
+                        +"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
+                        +traslado.DATEU?.substr(0,16).replace("T"," ")
+                        +"\nPedido Nº: "+(traslado.IDPED ?? "Traslado MANUAL")
+                        +(traslado.TRSTS > 2 ? "\nNº Documento SAP: "+traslado.CodigosTraslado?.MBLNR:'')
+                        +`\nPeso: ${parseFloat(traslado.PESO??0).toFixed(2)} KG`
+                        +`\nVolumen: ${parseFloat(traslado.VOLUMEN??0).toFixed(2)} M3`}
                     leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[traslado.TRSTS]} color={trasStatusColor[traslado.TRSTS]} style={{borderRadius: 12}} />}
                     //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
                     onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {

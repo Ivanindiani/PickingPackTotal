@@ -35,7 +35,7 @@ const Scaneo = (props) => {
     const [loteSel, setLoteSel] = useState(null);
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [autosumar, setAutoSumar] = useState(true);
-    const [autoinsert, setAutoInsert] = useState(true);
+    const [autoinsert, setAutoInsert] = useState(false);
     const [showInfo, setShowInfo] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
     const [cant1, setCant1] = useState(cantidadInput1);
@@ -1264,7 +1264,7 @@ const Scaneo = (props) => {
                                                 />
                                         </VStack>
                                     </HStack>
-                                    <Button color="secondary" 
+                                    <Button color={Global.colorMundoTotal} 
                                         loading={loadingSave}
                                         title="Cargar"
                                         trailing={props => <MaterialCommunityIcons name="send" {...props} size={20}/>} 

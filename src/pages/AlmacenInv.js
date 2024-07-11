@@ -115,6 +115,7 @@ const AlmacenInv = (props) => {
                     setValue={setCentroId}
                     title="Sucursal Origen"
                     buttonStyle={{maxWidth: '70%', padding: 3}}
+                    autoFocus={false}
                 />
                 {!centrosUser.length ? <Text style={{fontWeight: '500'}}>No tienes centros asignados</Text>:''}
             </View>
@@ -129,6 +130,7 @@ const AlmacenInv = (props) => {
                     setValue={setAlmacenId}
                     title="División origen"
                     buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
+                    autoFocus={false}
                 />
             </View>:''}
             

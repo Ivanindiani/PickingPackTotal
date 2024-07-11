@@ -1,6 +1,6 @@
 import { Button, HStack, IconButton, Stack, Text, TextInput } from "@react-native-material/core";
 import { useRef, useState } from "react";
-import { StyleSheet, ToastAndroid } from "react-native";
+import { Alert, StyleSheet, ToastAndroid } from "react-native";
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Mi from 'react-native-vector-icons/MaterialCommunityIcons';
 import fetchIvan from "../components/_fetch";
@@ -141,7 +141,7 @@ const Login = (props) => {
                 <Stack center style={{marginTop: 20}}>
                     <Button loading={loading}
                         title="Iniciar Sesión" 
-                        color="secondary" 
+                        color={Global.colorMundoTotal} 
                         trailing={props2 => <Mi name="send" {...props2} />}
                         loadingIndicatorPosition="trailing"
                         disabled={loading || (!data.username)}
@@ -171,7 +171,7 @@ const Login = (props) => {
                 <Stack center style={{marginTop: 20}}>
                     <Button loading={loading}
                         title="Iniciar Sesión" 
-                        color="secondary" 
+                        color={Global.colorMundoTotal} 
                         trailing={props2 => <Mi name="send" {...props2} />}
                         loadingIndicatorPosition="trailing"
                         disabled={loading || (!data.username || !data.password)}
@@ -186,7 +186,9 @@ const Login = (props) => {
                 variant="text"
                 onPress={() => {setCamionero(!camionero); setData({username: '', password: '', tipoCedula: data.tipoCedula})}}
                 style={{marginTop: 10, padding: 10, alignSelf: 'center'}}/>
-            <Text style={styles.footer}><AntDesign name="infocirlce" color={Global.colorMundoTotal} size={16}/> V{props.deviceInfo.version} | {props.deviceInfo.id}</Text>
+                <Text style={styles.footer}><AntDesign name="infocirlce" color={Global.colorMundoTotal} size={18} onPress={() =>{
+                    return Alert.alert("TotalWMS", "Versión de la aplicación: V"+props.deviceInfo.version+"\n\nDevelop and report error: \nIvan Gulfo\nivansicol@gmail.com")
+                }}/> V{props.deviceInfo.version} | {props.deviceInfo.id}</Text>
         </Stack>
     )
 }

@@ -47,7 +47,7 @@ const dimensiones = Dimensions.get('window');
 
 console.log(dimensiones);
 
-const Calendario = memo(({ordenes, loading, getOrdenes, setOrden, navigation, almacenId}) => {
+const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId}) => {
     const items = ordenes.data?.reduce((prev, ord) => {
         if(prev[ord.DATE_FORMAT]) {
             prev[ord.DATE_FORMAT].push(ord);
@@ -62,21 +62,26 @@ const Calendario = memo(({ordenes, loading, getOrdenes, setOrden, navigation, al
             prev[ord.DATE_FORMAT].dots.push({
                 key: ord.IDTRG,
                 marked: true,
-                color: ordenStatusColor[ord.STSOR]
+                color: ordenStatusColor[ord.STSOR],
+                style: {
+                    border: 1
+                }
             });
         } else {
             prev[ord.DATE_FORMAT] = {
                     dots: [{
                     key: ord.IDTRG,
                     marked: true,
-                    color: ordenStatusColor[ord.STSOR]
+                    color: ordenStatusColor[ord.STSOR],
+                    style: {
+                        border: 1
+                    }
                 }]
             };
         }
         return prev;
     }, {});
 
-    console.log(marked ? marked['2024-06-17']:"Hola");
     return <Agenda 
             items={items}
             markedDates={marked}
@@ -90,8 +95,8 @@ const Calendario = memo(({ordenes, loading, getOrdenes, setOrden, navigation, al
             maxDate={maxDate}
             pastScrollRange={15}
             futureScrollRange={15}
-            onRefresh={() => getOrdenes(getDateDiff(-30), getDateDiff(30))}
-            refreshing={loading}
+            onRefresh={() => getOrdenes(getDateDiff(-30), getDateDiff(30)).catch((e) => console.log(e))}
+            //refreshing={loading}
             disabledByDefault={!almacenId}
             rowHasChanged={(r1, r2) => {
                 return r1.IDTRG !== r2.IDTRG;
@@ -130,6 +135,11 @@ const Calendario = memo(({ordenes, loading, getOrdenes, setOrden, navigation, al
                                 <Text style={[styles.th, styles.secondaryText]}>Tiendas: </Text>
                                 <Text style={[styles.td, styles.secondaryText]}>{orden.PlanedRoute?.PJWER.tiendas.join(', ') ?? ''}</Text>
                             </HStack>
+                            {orden.PlanedRoute?.PJWER.pedidos?.length ?
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Pedidos: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.PlanedRoute?.PJWER.pedidos.join(', ') ?? ''}</Text>
+                            </HStack>:''}
                         </View>
                         }
                         leading={<Entypo name="circle" size={20} backgroundColor={ordenStatusColor[orden.STSOR]} color={ordenStatusColor[orden.STSOR]} style={{borderRadius: 12, margin: 0, padding: 0}} />}
@@ -155,7 +165,7 @@ const Calendario = memo(({ordenes, loading, getOrdenes, setOrden, navigation, al
             }}
         />
 }, (prevProps, nextProps) => {
-    if(!_.isEqual(prevProps.ordenes, nextProps.ordenes) || !_.isEqual(prevProps.ordenes?.data, nextProps.ordenes?.data) || prevProps.loading !== nextProps.loading) return false;
+    if(!_.isEqual(prevProps.ordenes, nextProps.ordenes) || !_.isEqual(prevProps.ordenes?.data, nextProps.ordenes?.data)) return false;
     console.log("No RENDER");
     return true;
 });
@@ -190,7 +200,7 @@ const Ordenes = (props) => {
     useEffect(() => {
         console.log(centroId, almacenId);
         if((centroId && almacenId) || props.dataUser.CAMIONERO) {
-            getOrdenes(getDateDiff(-30), getDateDiff(30));
+            getOrdenes(getDateDiff(-30), getDateDiff(30)).catch((e) => console.log(e));
         }
     }, [almacenId, props.dataUser.CAMIONERO === true]);
 
@@ -210,7 +220,6 @@ const Ordenes = (props) => {
             if(props.dataUser.CAMIONERO) {
                 datos.push(`IDDRI=${props.dataUser.IDDRI}`)
             }
-            setOrdenes({});
             fetchIvan(props.ipSelect).get('/crudOrdenes', datos.join('&'), props.token.token)
             .then(({data}) => {
                 console.log("Ordenes: ", data.data.length);
@@ -269,7 +278,7 @@ const Ordenes = (props) => {
                     />
                     
                 </View>:<View style={styles.centros}>
-                    <Button onPress={()=> getOrdenes(getDateDiff(-30), getDateDiff(30))} title="Actualizar" color={Global.colorMundoTotal} loading={loading}/>
+                    <Button onPress={()=> getOrdenes(getDateDiff(-30), getDateDiff(30)).catch((e) => console.log(e))} title="Actualizar" color={Global.colorMundoTotal} loading={loading}/>
                 </View>}
             
                 {!props.dataUser.CAMIONERO && centroId && almacenes.length ?
@@ -286,7 +295,7 @@ const Ordenes = (props) => {
                 </View>:''}
                 {loading && <ActivityIndicator/>}
                 
-                <Calendario ordenes={ordenes} getOrdenes={getOrdenes} setOrden={setOrden} loading={loading} navigation={props.navigation} almacenId={almacenId || props.dataUser.CAMIONERO}/>
+                <Calendario ordenes={ordenes} getOrdenes={getOrdenes} setOrden={setOrden} navigation={props.navigation} almacenId={almacenId || props.dataUser.CAMIONERO}/>
             </Stack>
         </SafeAreaView>
     )

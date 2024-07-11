@@ -33,7 +33,7 @@ const ManagerProducts = (props) => {
 
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [autosumar, setAutoSumar] = useState(true);
-    const [autoinsert, setAutoInsert] = useState(true);
+    const [autoinsert, setAutoInsert] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [loadingSave, setLoadingSave] = useState(false);
@@ -60,7 +60,9 @@ const ManagerProducts = (props) => {
 
     useEffect(() => {
         getProductos();
+    }, []);
 
+    useEffect(() => {
         if(recepcion.RESTS === 'CREADO' && dialogVisible === -1) {
             //console.log("Mount listerner key")
             KeyEvent.onKeyDownListener(evento);
@@ -916,16 +918,18 @@ const ManagerProducts = (props) => {
                                 </Stack>
                             </HStack>
 
-                            <HStack border={0.5} mt={5} p={2} spacing={2} style={{borderRadius: 5}}>
-                                {preProduct.ProductosUnidads?.map((und, inx) => 
-                                    <Chip key={inx} 
-                                        variant="outlined" 
-                                        label={und.UnidadDescripcion.MSEHL+"\nx"+und.UMREZ} 
-                                        color={undSelect === und.MEINH ? Global.colorMundoTotal:'black'} 
-                                        onPress={() => setUndSelect(und.MEINH)}
-                                        labelStyle={{textAlign: 'center', fontSize: 12}}/>
-                                )}
-                            </HStack>
+                            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={{width: '100%'}}>
+                                <HStack border={0.5} p={2} spacing={2} style={{borderRadius: 5}}>
+                                    {preProduct.ProductosUnidads?.map((und, inx) => 
+                                        <Chip key={inx} 
+                                            variant="outlined" 
+                                            label={und.UnidadDescripcion.MSEHL+"\nx"+und.UMREZ} 
+                                            color={undSelect === und.MEINH ? Global.colorMundoTotal:'black'} 
+                                            onPress={() => setUndSelect(und.MEINH)}
+                                            labelStyle={{textAlign: 'center', fontSize: 12}}/>
+                                    )}
+                                </HStack>
+                            </ScrollView>
                         </Box>:''}
 
                         {preProduct.MATNR &&
@@ -995,7 +999,7 @@ const ManagerProducts = (props) => {
                         </VStack>:''
                         }
 
-                        <Button title="Cargar" onPress={() => mode?.mode === 'update' ? updateProduct(preProduct, cantidad):addProduct()} color={Global.colorMundoTotal} loading={loading}
+                        <Button title="Cargar" onPress={() => mode?.mode === 'update' ? updateProduct(preProduct, cantidad):addProduct({...preProduct, QUANT: cantidad})} color={Global.colorMundoTotal} loading={loading}
                             disabled={!cantidad || !Object.keys(preProduct).length || (preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' && !loteName) || (preProduct.UnidadBase?.XCHPF === 'X' && !lote) ? true:false} 
                             style={{marginTop: 10}}/>
                     </View>
@@ -1006,7 +1010,7 @@ const ManagerProducts = (props) => {
                 <Stack style={styles.escaneados} mt={1}>
                     <HStack spacing={1} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                         <Text style={styles.title2}>Prod. escaneados ({productos.length}):</Text>
-                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' && productos.length && <Button compact={true} color="secondary" title="Finalizar" onPress={finalizarRecepcion} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
+                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' && productos.length && <Button compact={true} color={Global.colorMundoTotal} title="Finalizar" onPress={finalizarRecepcion} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
                     </HStack>
                     <ListaPerform
                         items={productos} 
@@ -1079,7 +1083,7 @@ const ManagerProducts = (props) => {
                             maxLength={300}
                             returnKeyType="done"
                             blurOnSubmit={true}
-                            onEndEditing={(e) => updateProduct(productos[dialogVisible], productos[dialogVisible].QUANT, undefined, undefined, e.nativeEvent.text)}/>
+                            onEndEditing={(e) => e.nativeEvent.text !== productos[dialogVisible].COMEN ? updateProduct(productos[dialogVisible], productos[dialogVisible].QUANT, undefined, undefined, e.nativeEvent.text):''}/>
                     </Stack>
                 </DialogContent>
             </Dialog>:''}

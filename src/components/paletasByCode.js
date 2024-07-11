@@ -149,8 +149,13 @@ const PaletasByCode = (props) => {
                             key={index}
                             title={item.TRCON}
                             overline={trasladosStatus[item.TRSTS]}
-                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
-                            "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
+                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
+                                +"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
+                                +item.DATEU?.substr(0,16)?.replace("T"," ")
+                                +"\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
+                                +(item.TRSTS > 2 ? "\nNº Documento SAP: "+item.CodigosTraslado?.MBLNR:'')
+                                +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`
+                                +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`}
                             leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                             //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
                             onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? 

@@ -45,7 +45,7 @@ const ScaneoPedido = (props) => {
     /** CONFIG **/
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [autosumar, setAutoSumar] = useState(true);
-    const [autoinsert, setAutoInsert] = useState(true);
+    const [autoinsert, setAutoInsert] = useState(false);
     /** CONFIG **/
     
     const [trasladoItems, setTrasladoItems] = useState([]);
@@ -557,7 +557,7 @@ const ScaneoPedido = (props) => {
             );
         }
         let existe = trasladoItems.filter(f => (producto.force && f.IDTRI == producto.IDTRI) || (!producto.force && f.MATNR == producto.MATNR 
-            && f.CHARG == producto.CHARG && (rackSel !== null && producto.ubicaciones[rackSel].UBI == f.IDADW) && props.dataUser.IDUSR == f.UCRID && IDPAL == producto.IDPAL));
+            && f.CHARG == producto.CHARG && (rackSel !== null && producto.ubicaciones[rackSel].UBI == f.IDADW) && props.dataUser.IDUSR == f.UCRID && IDPAL == f.IDPAL));
 
         let sumado = trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG && (existe[0]?.IDTRI !== tra.IDTRI) ? (prev+tra.TCANT):prev,producto.TCANT);
         let maxCantP = pedido.reduce((prev, ped) => ped.MATNR === producto.MATNR && ped.CHARG === producto.CHARG ? (prev+ped.CANTP):prev, 0);
@@ -879,7 +879,7 @@ const ScaneoPedido = (props) => {
                     <Text style={styles.subtitle} numberOfLines={1}>{getMedidas(item.UnidadBase?.GROES)} ({(parseFloat(item.UnidadBase?.VOLUM ?? 0)*parseFloat(item.TCANT)).toFixed(2)} m3)</Text>
                </VStack>
 
-                {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
+               {traslado.TRSTS === 1 && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
                     <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
                     <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal}
                         variant="outlined" title="Comentario" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
@@ -893,7 +893,7 @@ const ScaneoPedido = (props) => {
                     {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
                     {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
                 </VStack>}
-                {traslado.TRSTS === 1 && cronometro.FINIC && !cronometro.FFEND ?
+                {traslado.TRSTS === 1 && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
                     <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item)} style={{alignSelf: 'center'}}/>:''
                 }
             </HStack>
@@ -1178,7 +1178,7 @@ const ScaneoPedido = (props) => {
                     <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
 
                     {traslado.TRSTS === 1 ? 
-                        cronometro.FINIC && !cronometro.FFEND ?
+                        cronometro.FINIC && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || !cronometro.FFEND) ?
                         <View> 
                             <VStack spacing={-8}>
                                 <TextInput placeholder="Pulsa y escanea o tipea el código de barras" 
@@ -1214,14 +1214,18 @@ const ScaneoPedido = (props) => {
                                                 <Text style={styles.title2}>Código:</Text>
                                                 <Text style={styles.subtitle}>{scanCurrent.unidad_index?.EAN11 ?? scanCurrent.MATNR}</Text>
                                             </HStack>
+                                            <HStack spacing={4} style={{width: '80%', flexWrap: 'nowrap'}}>
+                                                <Text style={styles.title2}>Producto:</Text>
+                                                <Text style={[styles.subtitle, {width: '80%', flexWrap: 'wrap'}]}>{scanCurrent.Producto.MAKTG}</Text>
+                                            </HStack>
+                                            <HStack spacing={4}>
+                                                <Text style={styles.title2}>Cod. Material:</Text>
+                                                <Text style={styles.subtitle}>{scanCurrent.Producto.MATNR}</Text>
+                                            </HStack>
                                             <HStack spacing={4} style={{width: '90%', flexWrap: 'wrap'}}>
                                                 <Text style={styles.title2}>Und. de escaneo:</Text>
                                                 <Text style={styles.subtitle}>{scanCurrent.unidad_index?.UnidadDescripcion?.MSEHL || ""}</Text>
                                                 {/*scanCurrent.noBase && <Text style={styles.small3}>({scanCurrent.maxQuantityLote ? scanCurrent.max_paquete[scanCurrent.CHARG]:scanCurrent.max_paquete} completos)</Text>*/}
-                                            </HStack>
-                                            <HStack spacing={4} style={{width: '80%', flexWrap: 'nowrap'}}>
-                                                <Text style={styles.title2}>Producto:</Text>
-                                                <Text style={[styles.subtitle, {width: '80%', flexWrap: 'wrap'}]}>{scanCurrent.Producto.MAKTG}</Text>
                                             </HStack>
                                         </VStack>
                                         <Stack w={"35%"}>
@@ -1229,16 +1233,20 @@ const ScaneoPedido = (props) => {
                                         </Stack>
                                     </HStack>
 
-                                    <Text style={styles.subtitle}>{scanCurrent.Producto?.MATNR}</Text><HStack border={0.5} p={2} spacing={2} style={{borderRadius: 5}}>
-                                        {scanCurrent.Producto?.ProductosUnidads?.map((und, inx) => 
-                                            <Chip key={inx} 
-                                                variant="outlined" 
-                                                label={und.UnidadDescripcion.MSEHL+"\nx"+und.UMREZ} 
-                                                color={undSelect === und.MEINH ? Global.colorMundoTotal:'black'} 
-                                                onPress={() => setUndSelect(und.MEINH)}
-                                                labelStyle={{textAlign: 'center', fontSize: 12}}/>
-                                        )}
-                                    </HStack>
+                                    <Text style={styles.subtitle}>{scanCurrent.Producto?.MATNR}</Text>
+
+                                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={{width: '100%'}}>
+                                        <HStack border={0.5} p={2} spacing={2} style={{borderRadius: 5}}>
+                                            {scanCurrent.Producto?.ProductosUnidads?.map((und, inx) => 
+                                                <Chip key={inx} 
+                                                    variant="outlined" 
+                                                    label={und.UnidadDescripcion.MSEHL+"\nx"+und.UMREZ} 
+                                                    color={undSelect === und.MEINH ? Global.colorMundoTotal:'black'} 
+                                                    onPress={() => setUndSelect(und.MEINH)}
+                                                    labelStyle={{textAlign: 'center', fontSize: 12}}/>
+                                            )}
+                                        </HStack>
+                                    </ScrollView>
 
                                     <HStack style={{justifyContent: 'space-between', alignItems: 'flex-end'}}>
                                         <Text style={styles.title1}>{getCantUnidades(scanCurrent)}</Text>
@@ -1302,7 +1310,7 @@ const ScaneoPedido = (props) => {
                                                 />
                                         </VStack>
                                     </HStack>
-                                    <Button color="secondary" 
+                                    <Button color={Global.colorMundoTotal} 
                                         loading={loadingSave}
                                         title="Cargar"
                                         trailing={props => <MaterialCommunityIcons name="send" {...props} size={20}/>} 
@@ -1326,7 +1334,7 @@ const ScaneoPedido = (props) => {
                             <Text style={styles.title2}>Productos escaneados ({trasladoItems?.filter(f => f.TCANT > 0).length}):</Text>
                             {(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
                             (cronometro.FINIC && !cronometro.FFEND) ? 
-                                <Button compact={true} variant="text" color="secondary" onPress={() => setOpenSheet(true)} 
+                                <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSheet(true)} 
                                     disabled={loading || loadingSave} loading={loading || loadingSave} 
                                     leading={<Entypo name="menu" size={24}/>}/>:
                                 ''

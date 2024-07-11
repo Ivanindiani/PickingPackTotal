@@ -74,9 +74,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.pistoleoapp"
+    namespace "com.totalwms"
     defaultConfig {
-        applicationId "com.pistoleoapp"
+        applicationId "com.totalwms"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -115,7 +115,6 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-    implementation("com.facebook.react:flipper-integration")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
@@ -124,7 +123,6 @@ dependencies {
     }
     implementation project(':react-native-vector-icons')
     implementation project(':react-native-keyevent')
-
 }
 
 apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

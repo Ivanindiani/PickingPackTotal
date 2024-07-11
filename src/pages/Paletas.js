@@ -425,18 +425,13 @@ const Paletas = (props) => {
             {loading && <ActivityIndicator />}
             <FlatList
                 ListHeaderComponent={<HStack style={{justifyContent: 'space-between', alignItems: 'center', padding: 1, paddingBottom: 3}}>
-                    <Text style={{fontSize: 12}}>Estimado{"\n"}
+                    <Text style={styles.small}>
                         Nº Pal restantes: {paletasRestantesMemo}{"\n"}
                         Total Paletas: {Orden?.Paletas.length}
                     </Text>
                     {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && Orden?.STSOR === 1 ?
-                    <Button title="Agregar paleta" color="secondary" 
+                    <Button title="Agregar paleta" color={Global.colorMundoTotal} 
                         leading={p2 => <FontAwesome5 name="pallet" {...p2} size={14}/>} 
-                        trailing={p2 => <HStack>
-                                <FontAwesome5 name="truck-loading" {...p2} size={14}/>
-                                <MI name="truck-delivery-outline" {...p2} size={16}/>
-                            </HStack>
-                        }
                         pressableContainerStyle={{padding: 0}}
                         onPress={addPalet}
                         uppercase={false}
@@ -638,13 +633,12 @@ const Paletas = (props) => {
                 <Box style={[styles.box, {marginTop: -2}]}>
                     <HStack style={{justifyContent: 'space-between'}}>
                         <Text style={{fontSize: 12}}>Centro: {Centro.NAME1}</Text>
-                        <Text style={{fontSize: 12}}>Sucursal: {Almacen.LGOBE}</Text>
                     </HStack>
                     <Text style={{alignSelf: 'center', fontWeight: '600', fontSize: 12}}>Orden: {Orden?.DCONC}</Text>
                 </Box>
                 <Box style={styles.box}>
                     <VStack style={{alignSelf: 'flex-end', position: 'absolute', zIndex: 10}}>
-                        <Button variant="text" color="secondary"
+                        <Button variant="text" color={Global.colorMundoTotal} 
                             title={<MI name="reload" size={24}/>} 
                             onPress={() => {
                                 setLoading(true);
@@ -676,18 +670,12 @@ const Paletas = (props) => {
                             <Text style={styles.td}>{Orden?.Container?.XLONG}m X {Orden?.Container?.YWIDT}m X {Orden?.Container?.ZHEIG}m</Text>
                         </HStack>
                         <HStack style={{alignItems: 'flex-end'}}>
-                            <Text style={styles.th}>Salida: </Text>
-                            <Text style={styles.td}>{new Date(Orden?.PlanedRoute?.POUTP ?? Orden?.DATEC).toLocaleString()}</Text>
+                            <Text style={styles.th}>F. Salida: </Text>
+                            <Text style={styles.td}>{(Orden?.PlanedRoute?.POUTP ?? Orden?.DATEC)?.substr(0,16)?.replace("T"," ")}</Text>
                         </HStack>
                     </VStack>
                     <VStack border={0} p={5} spacing={3}>
                         <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                            <VStack>
-                                <Text style={styles.th}>Peso act.</Text>
-                                <Text style={styles.td}>{Orden?.Paletas?.reduce((prev, val) => prev+parseFloat(val.WEIGH ?? val.PESO ?? 0),0)?.toFixed(2)} {Orden?.Camione?.DDMSG}</Text>
-                                <Text style={styles.th}>Peso max.</Text>
-                                <Text style={styles.td}>{Orden?.PESO_MAX} {Orden?.Camione?.DDMSG}</Text>
-                            </VStack>
                             <PieChart
                                 donut
                                 radius={32}
@@ -733,11 +721,24 @@ const Paletas = (props) => {
                                 }]}
                                 centerLabelComponent={() => <Text style={styles.percentage}>{getVolumen.toFixed(1)}%</Text>}
                             />
+                            
+                        </HStack>
+                        <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <VStack>
-                                <Text style={styles.th}>Vol act.</Text>
-                                <Text style={styles.td}>{Orden?.Paletas.reduce((prev, val) => prev+parseFloat(val.DISTX && val.DISTY && val.DISTZ ? (val.DISTX*val.DISTY*val.DISTZ):(val.VOLUMEN ?? 0)),0)?.toFixed(2)} {Orden?.Camione?.DDMSM}</Text>
-                                <Text style={styles.th}>Vol max.</Text>
-                                <Text style={styles.td}>{Orden?.VOLUMEN_MAX} {Orden?.Camione?.DDMSM}</Text>
+                                <Text style={styles.th}>Peso act: 
+                                    <Text style={styles.td}>{Orden?.Paletas?.reduce((prev, val) => prev+parseFloat(val.WEIGH ?? val.PESO ?? 0),0)?.toFixed(2)} {Orden?.Camione?.DDMSG}</Text>
+                                </Text>
+                                <Text style={styles.th}>Peso max: 
+                                    <Text style={styles.td}>{Orden?.PESO_MAX} {Orden?.Camione?.DDMSG}</Text>
+                                </Text>
+                            </VStack>
+                            <VStack>
+                                <Text style={styles.th}>Vol act: 
+                                    <Text style={styles.td}>{Orden?.Paletas.reduce((prev, val) => prev+parseFloat(val.DISTX && val.DISTY && val.DISTZ ? (val.DISTX*val.DISTY*val.DISTZ):(val.VOLUMEN ?? 0)),0)?.toFixed(2)} {Orden?.Camione?.DDMSM}</Text>
+                                </Text>
+                                <Text style={styles.th}>Vol max: 
+                                    <Text style={styles.td}>{Orden?.VOLUMEN_MAX} {Orden?.Camione?.DDMSM}</Text>
+                                </Text>
                             </VStack>
                         </HStack>
                     </VStack>
@@ -747,11 +748,8 @@ const Paletas = (props) => {
                         onPress={() => Linking.openURL(`https://www.google.com/maps/place/${Orden?.TLATI},${Orden?.TLONG}`)}
                         //onPress={() => console.log(`https://www.google.com/maps?q=${Orden?.TLATI},${Orden?.TLONG}+(${Orden?.DCONC.replaceAll(' ','+')})`)}
                     />:''}
-                    <Text style={styles.title1}>
-                        Estado de orden: {ordenStatus[Orden?.STSOR]} 
-                    </Text>
                     {props.dataUser.CAMIONERO && Orden?.STSOR === 1 ?
-                    <Button title="Salir a ruta" color="secondary" disabled={loading} onPress={() => salirOrden()} trailing={<MI name="truck-fast" size={24}/>}/>:''}
+                    <Button title="Salir a ruta" color={Global.colorMundoTotal}  disabled={loading} onPress={() => salirOrden()} trailing={<MI name="truck-fast" size={24}/>}/>:''}
                 </Box>
 
             </Stack>
@@ -972,11 +970,12 @@ const styles = StyleSheet.create({
         fontSize: 12
     },
     th: {
-        fontSize: 11,
+        fontSize: 11.5,
         fontWeight: '500'
     },
     td: {
-        fontSize: 10
+        fontSize: 10.5,
+        fontWeight: '400'
     },
     th2: {
         fontSize: 13,

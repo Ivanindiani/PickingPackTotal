@@ -4,11 +4,8 @@ import SelectInput from './_virtualSelect';
 import { useState } from 'react';
 
 const ipDefaults = [{
-    label: '172.16.10.78',
+    label: '172.16.10.78 (local)',
     value: '172.16.10.78:8888'
-}, {
-    label: '200.35.195.130',
-    value: '200.35.195.130:8888'
 }, {
     label: '201.249.133.34 (develop)',
     value: '201.249.133.34:8888'
@@ -29,15 +26,18 @@ const HeaderMundo = (props) => {
             count = 0;
             setAdmin(true);
         }
-        console.log(count);
     }
 
     return (
         <View style={styles.container}>
+           {/*<Image
+                style={styles.image2}
+                source={require('../assets/images/gunbarcode.png') }
+                resizeMode='center'
+            />*/}
             <Text style={styles.text} onPress={logoAdmin}>
-                {props.title.split("\n")[0]}{"\n"}
+                TotalWMS{"\n"}
                 <Text style={styles.text2}>{props.title.split("\n")[1]}</Text>
-                
             </Text>
             <Image
                 style={styles.image}
@@ -67,7 +67,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between'
     },
     text: {
-        marginLeft: -3,
+        //width: 100,
+        //marginLeft: 60,
+        marginLeft: -5,
         color: 'white',
         fontWeight: 'bold',
         paddingTop: 7,
@@ -80,7 +82,12 @@ const styles = StyleSheet.create({
     },  
     image: {
         height: 45,
-        marginEnd: 5,
+        marginEnd: 19,
         alignSelf: 'center',
+    },
+    image2: {
+        position: 'absolute',
+        width: 60,
+        height: 60
     }
 });

@@ -35,7 +35,7 @@ const ManagerProducts = (props) => {
     }, [props.almacenId]);
 
     useEffect(() => {
-        if(estructura?.paleta) {
+        if(estructura?.paleta >= 0) {
             console.log(estructura.nivel, estructura.pasillo, estructura.columna, estructura.rack, estructura.paleta);
             setCodeID(bodega?.extra?.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.IDDWA)
         } else {
@@ -116,6 +116,7 @@ const ManagerProducts = (props) => {
         if(code.length) {
             let codigo = code.split(',')[0].match(/([A-Z|a-z|0-9])/g);
             setCodeID(codigo?.join("") || "");
+            console.log("Hola code")
         } else {
             setCodeID("");
         }
@@ -136,7 +137,7 @@ const ManagerProducts = (props) => {
             setPreProduct({});
             setEstructura({});
             setCantidad(0);
-            setProducto({...datos.create, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: estructura.paleta, MAKTG: preProduct.MAKTG, ...data.data});
+            setProducto({...datos.create, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.PALETA, MAKTG: preProduct.MAKTG, ...data.data});
             ToastAndroid.show('Producto agregado correctamente', ToastAndroid.LONG);
         }).catch(({status, error}) => {
             console.log(error);
@@ -395,7 +396,7 @@ const ManagerProducts = (props) => {
 
                     <Button title="Cargar" onPress={addProduct} color={Global.colorMundoTotal} loading={loading}
                         disabled={!codeID || !estructura.columna || !estructura.nivel || !estructura.pasillo || !estructura.rack ||
-                            !estructura.paleta || !cantidad || !Object.keys(preProduct).length || bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU} 
+                            estructura.paleta < 0 || !cantidad || !Object.keys(preProduct).length || bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU} 
                         style={{marginTop: 10}}/>
                 </VStack>
             :<Text>Selecciona un almacén para continuar</Text>}

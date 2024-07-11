@@ -14,7 +14,8 @@ const statusColor = {
     RECIBIDO: 'lightgreen',
     CONFIRMADO: 'green',
     REENVIAR: 'orange',
-    CANCELADO: 'red'
+    CANCELADO: 'red',
+    DISP_STOCK: 'blue'
 };
 
 const Recepcion = (props) => {
@@ -366,7 +367,7 @@ const Recepcion = (props) => {
                         </HStack>
                         <Button loading={loading}
                             title="Crear" 
-                            color="secondary" 
+                            color={Global.colorMundoTotal} 
                             onPress={crearRecepcion}
                             disabled={!descripcion.length || !tipo_proveedor_id || !grupo_proveedor_id || !proveedor_id?.length || loading || !almacenId}
                             style={{marginTop: 5, zIndex: -1}}/>
@@ -386,7 +387,7 @@ const Recepcion = (props) => {
                                 key={i}
                                 overline={recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS}
                                 title={recepcion.DESCR}
-                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+new Date(recepcion.DATEC.replace('Z','')).toLocaleString()+
+                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
                                 (recepcion.SAP?.NUM_ORDEN_COMPRA ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
                                 (recepcion.SAP?.NUM_ENTRADA_MERC ? `\nNº Entrada Stock: ${recepcion.SAP?.NUM_ENTRADA_MERC}`:"")}
                                 leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
@@ -444,7 +445,7 @@ const Recepcion = (props) => {
                                 />:''}
                                 <HStack style={{justifyContent: 'space-between'}}>
                                     <Button title="Cancelar" color="lightgray" onPress={() => setModalRif(false)}/>
-                                    <Button title="Aceptar" color="secondary" onPress={() => setModalRif(false)}/>
+                                    <Button title="Aceptar" color={Global.colorMundoTotal} onPress={() => setModalRif(false)}/>
                                 </HStack>
                             </View>
                         </View>

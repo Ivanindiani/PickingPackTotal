@@ -34,7 +34,7 @@ const veryIntensiveTask = async (taskDataArguments) => {
 
 const options = {
     taskName: 'Route',
-    taskTitle: 'PistoleoApp en ruta',
+    taskTitle: 'TotalWMS en ruta',
     taskDesc: 'Estás en modo ruta, recuerda reportar en la aplicación a donde te diriges y reportar cuando finalice las entregas',
     taskIcon: {
         name: 'ic_launcher',

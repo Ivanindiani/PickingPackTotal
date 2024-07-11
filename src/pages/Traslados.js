@@ -183,7 +183,7 @@ const Traslados = (props) => {
         .then(({data}) => {
             console.log("Centros y almacenes: ", data.data.length);
             setCentros(data.data);
-            setCentrosHacia(data.data.reduce((prev, d) => d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
+            setCentrosHacia(data.data.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 || d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
         })
         .catch(({status, error}) => {
             console.log(error);
@@ -379,13 +379,13 @@ const Traslados = (props) => {
             <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}} mt={5} mb={5}>
                 <VStack border={0} p={2} spacing={4}>
                     <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso art: {parseFloat(paleta.PESO??0).toFixed(2)} KG</Text>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso: {parseFloat(paleta.PESO??0).toFixed(2)} KG</Text>
                     </HStack>
                     <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen art: {parseFloat(paleta.VOLUMEN??0).toFixed(2)} M3</Text>
+                        <Text style={{fontSize: 11, fontWeight: '600'}}>Vol: {parseFloat(paleta.VOLUMEN??0).toFixed(2)} M3</Text>
                     </HStack>
                 </VStack>
-                <VStack border={0} p={2} spacing={4}>
+                {/*<VStack border={0} p={2} spacing={4}>
                     {paleta.WEIGH ?
                     <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
                         <Text style={{fontSize: 11, fontWeight: '600'}}>Peso reportado: {parseFloat(paleta.WEIGH??0).toFixed(2)} KG</Text>
@@ -394,7 +394,7 @@ const Traslados = (props) => {
                     <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
                         <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen reportado: {parseFloat((paleta.DISTX*paleta.DISTY*paleta.DISTZ) ?? 0).toFixed(2)} M3</Text>
                     </HStack>:''}
-                </VStack>
+                </VStack>*/}
                 <SelectInput
                     data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
                     value={filtrado}
@@ -408,8 +408,10 @@ const Traslados = (props) => {
                     key={index}
                     overline={trasladosStatus[item.TRSTS]}
                     title={item.TRCON}
-                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
+                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
+                        +item.DATEU?.substr(0,16)?.replace("T"," ")+
                         "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
+                        +(item.TRSTS > 2 ? "\nNº Documento SAP: "+item.CodigosTraslado?.MBLNR:'')
                     //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
                             //+")\n"+item.DATEU?.substr(0,16).replace("T"," ")
                             //+"\nAmpliado en: "+(item.Paletas.reduce((pr, pl) => (pr.length ? (pr+","):pr)+pl.IDPAL?.padStart(3, "0"), ""))
@@ -497,7 +499,9 @@ const Traslados = (props) => {
         <Provider>
             <Stack spacing={1} style={{margin: 2, flex: 1 }}>
                 <Text style={styles.subtitle}>Origen: {centroName+` (${almacenName})`}</Text>
+                <Text style={styles.subtitle}>Ruta: {props.route.params.planed?.PNPLR ?? ''}</Text>
                 <Text style={styles.subtitle}>Tiendas en ruta: {props.route.params.planed?.PJWER.tiendas.join(',') ?? ''}</Text>
+                <Text style={styles.subtitle}>Pedidos asignados: {props.route.params.planed?.PJWER.pedidos?.join(',') ?? ''}</Text>
 
                 {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && props.route.params.STSOR === 1 ?
                 <Button style={styles.title1} title="Crear traslado manual" color="white" tintColor={Global.colorMundoTotal} onPress={() => setShowCrear(!showCrear)}
@@ -512,6 +516,7 @@ const Traslados = (props) => {
                         onChangeText={(text) => setNameTras(text)}
                         maxLength={32}></TextInput>
                     <Text style={styles.subtitle}>Sucursal origen: {centroName+` (${almacenName})`}</Text>
+                    
                     <Text style={styles.subtitle}>Sucursal destino: {centroIdA ? centrosHacia?.filter(s => s.value == centroIdA)[0]?.label:''}{almacenIdA ? '('+almacenesA.filter(al => al.value === almacenIdA)[0]?.label+')':''}</Text>
                     <HStack style={{justifyContent: 'space-between'}}>
                         <SelectInput
@@ -533,7 +538,7 @@ const Traslados = (props) => {
                     </HStack>
                     <Button loading={loading}
                         title="Crear" 
-                        color="secondary" 
+                        color={Global.colorMundoTotal} 
                         onPress={crearTraslado}
                         disabled={!nameTras.length || loading || !almacenId || !almacenIdA}
                         style={{marginTop: 5, zIndex: -1}}/>
@@ -601,7 +606,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     subtitle: {
-        fontSize: 13,
+        fontSize: 12,
     },
     centros: {
         width: "99%",

@@ -5,7 +5,9 @@ import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialCI from "react-native-vector-icons/MaterialCommunityIcons";
 import Feather from "react-native-vector-icons/Feather";
 import Octicons from "react-native-vector-icons/Octicons";
+import AntDesign from 'react-native-vector-icons/AntDesign';
 
+const Global = require('../../app.json');
 const Home = (props) => {
     const requestPhoneState = async () => {
         try {
@@ -55,9 +57,9 @@ const Home = (props) => {
     }), [props.navigation]);
     
     return (
-        <Stack spacing={4} style={{ margin: 14 }}>
+        <Stack spacing={4} style={{ margin: 14, flex: 1 }}>
             <ScrollView style={styles.scrollView}>
-                <Image source={require('../assets/images/PistoleoAppIcon.png') } style={styles.icon} resizeMode="center"/>
+                <Image source={require('../assets/images/Logo.png') } style={styles.icon} resizeMode="cover"/>
                 <Text>Menú Inicio</Text>
                 {(props.dataUser.USSCO?.indexOf('RECEPCION_FIND') !== -1 || props.dataUser.USSCO?.indexOf('ADMIN_RECEPCION') !== -1) 
                     && !props.dataUser.CAMIONERO ?
@@ -110,6 +112,9 @@ const Home = (props) => {
                     onPress={() => props.navigation.goBack()}
                 />
             </ScrollView>
+            <Text style={styles.footer}><AntDesign name="infocirlce" color={Global.colorMundoTotal} size={18} onPress={() =>{
+                return Alert.alert("TotalWMS", "Versión de la aplicación: V"+props.deviceInfo.version+"\n\nDevelop and report error: \nIvan Gulfo\nivansicol@gmail.com")
+            }}/> V{props.deviceInfo.version} | {props.deviceInfo.id}</Text>
         </Stack>
 
     )
@@ -124,8 +129,19 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     icon: {
-        width: 200,
-        height: 150,
-        alignSelf: 'center'
+        width: 190,
+        height: 140,
+        alignSelf: 'center',
+        borderRadius: 20
+    },
+    scrollView: {
+        borderRadius: 20
+    },
+    footer: {
+        position: 'absolute',
+        left: 0,
+        bottom: -5,
+        fontSize: 12,
+        zIndex: 100
     }
 })

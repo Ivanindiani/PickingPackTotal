@@ -124,7 +124,13 @@ const RecibirTraslados = (props) => {
                             key={i}
                             title={tras.TRCON}
                             overline={trasladosStatus[tras.TRSTS]}
-                            secondaryText={"Origen: "+tras.DesdeCentro?.NAME1+" ("+tras.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+tras.DATEU?.substr(0,16).replace("T"," ")}
+                            secondaryText={"Origen: "+tras.DesdeCentro?.NAME1+" ("+tras.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
+                                +tras.DATEU?.substr(0,16).replace("T"," ")
+                                +"\nPedido Nº: "+(tras.IDPED ?? "Traslado MANUAL")
+                                +(tras.TRSTS > 2 ? "\nNº Documento SAP: "+tras.CodigosTraslado?.MBLNR:'')
+                                +`\nPeso: ${parseFloat(tras.PESO??0).toFixed(2)} KG`
+                                +`\nVolumen: ${parseFloat(tras.VOLUMEN??0).toFixed(2)} M3`
+                            }
                             leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[tras.TRSTS]} color={trasStatusColor[tras.TRSTS]} style={{borderRadius: 12}} />}
                             //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (tras.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(tras.TRCON, tras.IDTRA)}/>}
                             onPress={() => props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
