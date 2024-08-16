@@ -1,6 +1,6 @@
-import { ListItem, Provider, Stack, Text } from "@react-native-material/core";
+import { HStack, Provider, Text, VStack } from "@react-native-material/core";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
-import { Alert, FlatList, RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
+import { RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
 import ListaPerform from "../components/_virtualList";
 
@@ -79,35 +79,35 @@ const Pedidos = (props, ref) => {
     const getMedidas = (medida) => {
         if(medida?.length > 5) {
             let medidas = medida.replaceAll(",",'.').split("/");
-            return `${parseFloat(medidas[0] ?? 0).toFixed(2)}x${parseFloat(medidas[1] ?? 0).toFixed(2)}x${parseFloat(medidas[2] ?? 0).toFixed(2)}`;
+            return `Medidas: ${parseFloat(medidas[0] ?? 0).toFixed(2)}x${parseFloat(medidas[1] ?? 0).toFixed(2)}x${parseFloat(medidas[2] ?? 0).toFixed(2)}`;
         }
-        return "-";
+        return "Medidas: ";
     }
 
     const rows = (item, index) => 
-    <ListItem
-        style={{backgroundColor:'black'}}
-        key={index}
-        overline={<Text style={styles.overlay}>Cant. Requerida: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.CANTP}</Text> | Total Escaneado: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.ESCANEADO ?? 0}</Text>
-                    {"\n"}Usuario: {item.UsuarioAsignado.USNAM+" "+item.UsuarioAsignado.USLAS}</Text>}
-        title={item.MAKTG}
-        secondaryText={<Text style={styles.subtitle}>{item.Producto.MAKTG} {item.UnidadBase.XCHPF === 'X' ? <Text style={styles.lote}>{"\n"}LOTE: {item.CHARG}</Text>:''}
-            {traslado.TRSTS === 1 ? `\nCant. Max. Disponible: ${getDisponible(item)}\n`:''}
-        {traslado.TRSTS === 1 ? getUbicaciones(item):''}
-        {"\n"}Peso: {item.UnidadBase?.BRGEW} kg
-        {"\n"}{getMedidas(item.UnidadBase?.GROES)} ({item.UnidadBase?.VOLUM} m3)</Text>}
-    />
-
+        <VStack key={index} style={{backgroundColor: 'white', borderBottomWidth: 1, width: '100%', height: 'auto'}}>
+            <Text style={styles.overlay}>
+                Cant. Requerida: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.CANTP} </Text> 
+                | Total Escaneado: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.ESCANEADO ?? 0}</Text>
+            </Text>
+            <Text style={styles.overlay}>Usuario: {item.UsuarioAsignado.USNAM+" "+item.UsuarioAsignado.USLAS}</Text>
+            <Text style={[{fontWeight: '600', fontSize: 13}]}>{item.MATNR}</Text>
+            <Text style={styles.subtitle}>{item.Producto.MAKTG} {item.UnidadBase.XCHPF === 'X' ? <Text style={styles.lote}>{"\n"}LOTE: {item.CHARG}</Text>:''}</Text>
+            {traslado.TRSTS === 1 && <Text style={styles.subtitle}>Cant. Max. Disponible: {getDisponible(item)}</Text>}
+            {traslado.TRSTS === 1 && <Text style={styles.subtitle}>{getUbicaciones(item)}</Text>}
+            <Text style={styles.subtitle}>Peso: {item.UnidadBase?.BRGEW} kg</Text>
+            <Text style={styles.subtitle}>{getMedidas(item.UnidadBase?.GROES)} ({item.UnidadBase?.VOLUM} m3)</Text>
+        </VStack>
     return (
         <Provider>
-            <View style={{margin: 2, flex: 1, width: '100%' }}>
+            <View style={{margin: 2, flex: 1 }}>
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
                 <ListaPerform
                     items={pedido}
                     renderItems={rows}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={getItems}/>}
-                    height={traslado.TRSTS === 1 ? 136:122}
-                    forceHeight={false}
+                    height={132}
+                    //forceHeight={false}
                 />
             </View>
         </Provider>)
@@ -122,7 +122,8 @@ const styles = StyleSheet.create({
     },
     overlay: {
         fontSize: 11,
-        color: 'grey'
+        color: 'grey',
+        textTransform: 'uppercase'
     },
     ubicaciones: {
         fontSize: 11,

@@ -2,6 +2,7 @@ import { Button, HStack, IconButton, Stack, Text, TextInput } from "@react-nativ
 import { useRef, useState } from "react";
 import { Alert, StyleSheet, ToastAndroid } from "react-native";
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import Entypo from 'react-native-vector-icons/Entypo';
 import Mi from 'react-native-vector-icons/MaterialCommunityIcons';
 import fetchIvan from "../components/_fetch";
 import SelectInput from "../components/_virtualSelect";
@@ -165,7 +166,7 @@ const Login = (props) => {
                     onChangeText={(text) => setData({...data, password: text})}
                     autoCapitalize='none'
                     trailing={props2 => (
-                        <IconButton icon={props3 => <AntDesign name="eye" {...props3} />} {...props2} onPressIn={()=>setVisiblePass(false)} onPressOut={() => setVisiblePass(true)}/>
+                        <IconButton icon={props3 => !visiblePass ? <AntDesign name="eye" {...props3} />:<Entypo name="eye-with-line" {...props3} />} {...props2} onPressIn={()=>setVisiblePass(!visiblePass)}/>
                     )}
                 />
                 <Stack center style={{marginTop: 20}}>

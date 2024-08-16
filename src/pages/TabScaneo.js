@@ -1,4 +1,4 @@
-import { useWindowDimensions } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { TabView, TabBar } from 'react-native-tab-view';
 import { useRef, useState } from 'react';
 import ScaneoPedido from './ScaneoPedido';

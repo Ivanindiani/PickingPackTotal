@@ -249,11 +249,12 @@ const ManagerProducts = (props) => {
             }
             if(preProduct && unidadFindScan.EAN11) {
                 if(preProduct.UnidadBase.XCHPF !== 'X' && autosumar) {
+                //if(autosumar) {
                     let prod = JSON.parse(JSON.stringify(preProduct));
 
                     console.log("ENTRAMOS EN PREPRODUCT", mode)
                     let unidad_index = prod.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? prod.unidad_index;
-                    prod.QUANT += parseInt(unidad_index.UMREZ);
+                    prod.QUANT = parseInt(prod.QUANT ?? 0)+parseInt(unidad_index.UMREZ);
                     setCantidad(prod.QUANT);
                     if(!inputCantidad.current) {
                         let recursivo = () => {
@@ -756,9 +757,9 @@ const ManagerProducts = (props) => {
 
             {recepcion.RESTS === 'CREADO' ? 
             <VStack w="25%" style={{alignSelf: 'flex-end'}}>
-                {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && 
+                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <Text style={[styles.subtitle2]} mt={0}>Costo ({recepcion.ProveedoresFijo?.WAERS}):</Text>}
-                {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && 
+                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <TextInput
                     containerStyle={{fontSize: 5}} 
                     defaultValue={item.MONTO.toString()} 
@@ -855,7 +856,7 @@ const ManagerProducts = (props) => {
             {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_DELETE') !== -1) &&
                 <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item.MAKTG, item.IDREA, item.MATNR)} style={{alignSelf: 'center'}}/>
             }
-            {recepcion.RESTS === 'CREADO' && props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 &&
+            {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_DEVOLUCION') !== -1) &&
                 <IconButton icon={p2=p2 => <Entypo name="back" {...p2}/> } onPress={() => setDialogVisible(index)}/>
             }
             {recepcion.RESTS === 'CREADO' && <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>}

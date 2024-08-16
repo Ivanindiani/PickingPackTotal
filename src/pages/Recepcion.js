@@ -1,6 +1,6 @@
 import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text, TextInput, VStack } from "@react-native-material/core";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
+import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
 import Entypo from "react-native-vector-icons/Entypo";
 import Feather from "react-native-vector-icons/Feather";
@@ -318,7 +318,7 @@ const Recepcion = (props) => {
                     />
                 </View>:''}
                 
-                <ScrollView nestedScrollEnabled={true}  style={styles.scrollView}>
+                <ScrollView nestedScrollEnabled={true} style={styles.scrollView} refreshControl={<RefreshControl onRefresh={() => centroId && almacenId ? getRecepciones():''} refreshing={loading}/>}>
                     {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 &&
                     <Button style={styles.title1} title="Crear Recepción" color="white" tintColor={Global.colorMundoTotal} onPress={() => setShowCrear(!showCrear)}
                         leading={props => <MaterialCommunityIcons name={showCrear ? "menu-down":"menu-right"} {...props} size={24}/> } />}
@@ -387,7 +387,7 @@ const Recepcion = (props) => {
                                 key={i}
                                 overline={recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS}
                                 title={recepcion.DESCR}
-                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\n"+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
+                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")+"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
                                 (recepcion.SAP?.NUM_ORDEN_COMPRA ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
                                 (recepcion.SAP?.NUM_ENTRADA_MERC ? `\nNº Entrada Stock: ${recepcion.SAP?.NUM_ENTRADA_MERC}`:"")}
                                 leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}

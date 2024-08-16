@@ -342,7 +342,7 @@ const Scaneo = (props) => {
             setScanCurrent({});
             setRackSel(null);
             setUndSelect(null);
-            let producto = {};
+            //let producto = {};
             /*for(const tri of trasladoItems) {
                 producto = JSON.parse(JSON.stringify(tri));
                 for(const unidad of producto.Producto.ProductosUnidads) {
@@ -756,16 +756,20 @@ const Scaneo = (props) => {
             <DialogContent>
                 <Text style={styles.title2}>Paleta ID: {IDPAL}</Text>
                 <Text>
-                    <Text style={styles.title2}>Creado Por: </Text>
+                    <Text style={styles.title2}>Creado por: </Text>
                     <Text style={styles.subtitle}>{`${traslado.CreadoPor?.USNAM||""} ${traslado.CreadoPor?.USLAS||""}`}</Text>
                 </Text>
                 {traslado.ActualizadoPor ? <Text>
-                    <Text style={styles.title2}>Actualizado Por: </Text>
+                    <Text style={styles.title2}>Actualizado por: </Text>
                     <Text style={styles.subtitle}>{`${traslado.ActualizadoPor?.USNAM||""} ${traslado.ActualizadoPor?.USLAS||""}`}</Text>
                 </Text>:''}
                 <Text style={{textAlign: 'justify'}}>
-                    <Text style={styles.title2}>Fecha: </Text>
+                    <Text style={styles.title2}>Fecha creación: </Text>
                     <Text style={styles.subtitle}>{traslado.DATEC.split("T")[0]+" "+traslado.DATEC.split("T")[1].substring(0,5)}</Text>
+                </Text>
+                <Text style={{textAlign: 'justify'}}>
+                    <Text style={styles.title2}>Fecha contable: </Text>
+                    <Text style={styles.subtitle}>{traslado.DATEU.split("T")[0]+" "+traslado.DATEU.split("T")[1].substring(0,5)}</Text>
                 </Text>
                 <Text style={{textAlign: 'justify'}}>
                     <Text style={styles.title2}>Origen: </Text>
