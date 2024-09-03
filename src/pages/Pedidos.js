@@ -1,4 +1,4 @@
-import { HStack, Provider, Text, VStack } from "@react-native-material/core";
+import { ActivityIndicator, HStack, Provider, Text, VStack } from "@react-native-material/core";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
@@ -12,14 +12,14 @@ const Pedidos = (props, ref) => {
     const [msgConexion, setMsgConex] = useState('');
 
     useImperativeHandle(ref, () => ({
-        getItems: () => getItems(),
+        getItems: (a) => getItems(a),
     }));
 
     useEffect(() => {
-        getItems();
+        getItems(true);
     }, []);
 
-    function getItems(show=true) {
+    function getItems(show=false) {
         return new Promise((resolve) => {
             let datos = [
                 `IDPED=${traslado.IDPED}`,
@@ -37,7 +37,7 @@ const Pedidos = (props, ref) => {
                 
                 resolve(data.data);
                 if(show)
-                    ToastAndroid.show("Productos del pedido listado correctamente", ToastAndroid.SHORT)
+                    ToastAndroid.show("Productos del pedido listado correctamente", ToastAndroid.LONG)
             })
             .catch(({status, error}) => {
                 //console.log(error);
@@ -46,7 +46,7 @@ const Pedidos = (props, ref) => {
                 }
                 ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
                 resolve(false);
             })
@@ -101,11 +101,12 @@ const Pedidos = (props, ref) => {
     return (
         <Provider>
             <View style={{margin: 2, flex: 1 }}>
+                {loading && <ActivityIndicator />}
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
                 <ListaPerform
                     items={pedido}
                     renderItems={rows}
-                    refreshControl={<RefreshControl refreshing={loading} onRefresh={getItems}/>}
+                    refreshControl={<RefreshControl refreshing={loading} onRefresh={() => getItems(true)}/>}
                     height={132}
                     //forceHeight={false}
                 />

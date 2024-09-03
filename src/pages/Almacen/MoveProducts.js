@@ -107,7 +107,7 @@ const MoveProducts = (props) => {
                 }
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -297,7 +297,7 @@ const MoveProducts = (props) => {
                                     temp[dialogVisible].IDDWA = moveCode;
                                     temp[dialogVisible].Bodega = bodega?.data?.filter((a) => a.IDDWA === moveCode)[0];
                                     setFindProduct(temp);
-                                    ToastAndroid.show("Cambios realizados éxitosamente!", ToastAndroid.SHORT);
+                                    ToastAndroid.show("Cambios realizados éxitosamente!", ToastAndroid.LONG);
                                     if(showKeyBoard){
                                         setShowKeyBoard(false);
                                     }
@@ -309,7 +309,7 @@ const MoveProducts = (props) => {
                                     }
                                     return ToastAndroid.show(
                                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                                        ToastAndroid.SHORT
+                                        ToastAndroid.LONG
                                     );
                                 })
                                 .finally(() => {

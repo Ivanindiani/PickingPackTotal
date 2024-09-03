@@ -86,7 +86,7 @@ const Rutas = ({dataUser, Orden, changeStatusRuta}) => {
                     `\nDistancia: ${location.latitude ? getDistance(item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS, item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS):'Calculando...'}`}
                     trailing={dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
                         //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
-                        Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}`);
+                        Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}&hl=es`);
                     }}/>}
                     onPress={() => changeStatusRuta(item, index)}
                 />
@@ -102,6 +102,7 @@ const Paletas = (props) => {
     const configOrden = props.route.params.configOrden;
     const [modalPallet, setModalPallet] = useState(null);
     const [inputs, setInputs] = useState({});
+    const [show, setShow] = useState(true);
 
     /* Variables configurar paletas */
     const [dividirAncho, setDividirAncho] = useState(2);
@@ -118,7 +119,9 @@ const Paletas = (props) => {
             const contenedor = [Orden?.Container.XLONG*divAncho*divAlto, Orden?.Container.YWIDT, Orden?.Container.ZHEIG];
             const anchoMaximo = (Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*divAncho*2))/divAncho;
             const altoMaximo = (Orden?.Container.ZHEIG-(Orden?.Container.ZHEIG*configOrden?.p_espacio_alto))/divAlto;
-            const paletaEstandar = [configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[palIDX]?.l:1.2, configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[palIDX].a:0.8, altoMaximo];
+            const paletaEstandar = [configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[palIDX]?.l:1.2, 
+            configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[palIDX].a:0.8, 
+            configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[palIDX].h_force ? configOrden?.paletas_estandar[palIDX].h:altoMaximo];
     
             let sumas = [0, 0, 0];
             for(let paleta of Orden?.Paletas) {
@@ -149,6 +152,7 @@ const Paletas = (props) => {
 
         let maximas = 0, maximasAux = 0; let maximaA = 1; let maximaH = 1; let plidx = 0;
         for(let i=0; i < configOrden?.paletas_estandar?.length; i++) {
+            if(configOrden?.paletas_estandar[i].h_force) continue;
             maximasAux = fullRestante(1, 1, i);
             if(maximasAux > maximas) {
                 plidx = i;
@@ -199,6 +203,12 @@ const Paletas = (props) => {
         }
     }, [props.navigation, modalPallet, modalTruck]);
 
+    useEffect(() => {
+        if(configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force) {
+            setDividirAlto(1);
+        }
+    }, [paletaIDX]);
+
     const addPalet = () => {
         Alert.alert('Confirmar', `¿Deseas agregar una nueva paleta?`, [
             {
@@ -225,7 +235,7 @@ const Paletas = (props) => {
                     console.log(error);
                     return ToastAndroid.show(
                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .finally(() => {
@@ -258,13 +268,13 @@ const Paletas = (props) => {
                     ordenProvi.Paletas = ordenProvi.Paletas.filter((palet) => palet.IDPAL !== id);
                     props.route.params.setOrden(ordenProvi);
                     setOrden(ordenProvi);
-                    ToastAndroid.show("Paleta eliminada con éxito, "+(data.traslados?.length || 0)+" Traslados eliminados", ToastAndroid.SHORT);
+                    ToastAndroid.show("Paleta eliminada con éxito, "+(data.traslados?.length || 0)+" Traslados eliminados", ToastAndroid.LONG);
                 })
                 .catch(({status, error}) => {
                     console.log(error);
                     return ToastAndroid.show(
                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .finally(() => {
@@ -383,7 +393,9 @@ const Paletas = (props) => {
         const contenedor = [Orden?.Container.XLONG*dividirAncho*dividirAlto, Orden?.Container.YWIDT, Orden?.Container.ZHEIG];
         const anchoMaximo = (Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*dividirAncho*2))/dividirAncho;
         const altoMaximo = (Orden?.Container.ZHEIG-(Orden?.Container.ZHEIG*configOrden?.p_espacio_alto))/dividirAlto;
-        const paletaEstandar = [configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[paletaIDX]?.l:1.2, configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[paletaIDX].a:0.8, altoMaximo];
+        const paletaEstandar = [configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[paletaIDX]?.l:1.2, 
+            configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[paletaIDX].a:0.8, 
+            configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force ? configOrden?.paletas_estandar[paletaIDX].h:altoMaximo];
 
         let sumas = [0, 0, 0];
         for(let paleta of Orden?.Paletas) {
@@ -429,7 +441,7 @@ const Paletas = (props) => {
                         Nº Pal restantes: {paletasRestantesMemo}{"\n"}
                         Total Paletas: {Orden?.Paletas.length}
                     </Text>
-                    {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && Orden?.STSOR === 1 ?
+                    {props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ?
                     <Button title="Agregar paleta" color={Global.colorMundoTotal} 
                         leading={p2 => <FontAwesome5 name="pallet" {...p2} size={14}/>} 
                         pressableContainerStyle={{padding: 0}}
@@ -445,16 +457,18 @@ const Paletas = (props) => {
                         leading={<FontAwesome5 name="pallet" size={24}/>}
                         overline={"ID: "+item.IDPAL}
                         title={"Paleta "+item.IDPAL.substr(-3).padStart(3, '0')}
-                        secondaryText={"Peso artículos: "+(parseFloat(item.PESO ?? 0).toFixed(2))+" kg\n"+
+                        secondaryText={
+                            //"Nº Traslados: "+item.Traslados?.length+"\n"+
+                            "Peso artículos: "+(parseFloat(item.PESO ?? 0).toFixed(2))+" kg\n"+
                             "Vol. artículos: "+(parseFloat(item.VOLUMEN??0).toFixed(2))+" m3"+
                             "\nCreada el: "+item.DATEC.split("T")[0]+" "+item.DATEC.split("T")[1].substring(0,5)+
                             (item.WEIGH ? `\nPeso reportado: ${item.WEIGH} ${item.MSEHI}`:'')+
                             (item.DISTX && item.DISTY && item.DISTZ ? `\nVol. reportado: ${(item.DISTX*item.DISTY*item.DISTZ).toFixed(2)} m3 (${item.DISTX}x${item.DISTY}x${item.DISTZ})`:'')}
                         trailing={p2 => 
                             !props.dataUser.CAMIONERO && <View>
-                                {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && Orden?.STSOR === 1 ? 
+                                {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ? 
                                     <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2} color="red"/> } onPress={() => delPalet(item.IDPAL)}/>:''}
-                                {Orden?.STSOR === 1 ? <IconButton icon={p2=p2 => <MaterialIcons name="settings" {...p2}/> } onPress={() => {
+                                {props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ? <IconButton icon={p2=p2 => <MaterialIcons name="settings" {...p2}/> } onPress={() => {
                                     setInputs({
                                         largo: item.DISTX,
                                         ancho: item.DISTY,
@@ -526,13 +540,13 @@ const Paletas = (props) => {
                         ordenProvi.Rutas[index].DROUT = ruta.DROUT === 'Creada' ? 'En Ruta':'Entregada';
                         props.route.params.setOrden(ordenProvi);
                         setOrden(ordenProvi);
-                        ToastAndroid.show(`Ruta (${ruta.Traslado?.HaciaCentro?.NAME1}), puesta en ${ordenProvi.Rutas[index].DROUT}. Gracias por reportar ¡feliz viaje!`, ToastAndroid.SHORT);
+                        ToastAndroid.show(`Ruta (${ruta.Traslado?.HaciaCentro?.NAME1}), puesta en ${ordenProvi.Rutas[index].DROUT}. Gracias por reportar ¡feliz viaje!`, ToastAndroid.LONG);
                     })
                     .catch(({status, error}) => {
                         console.log(error);
                         return ToastAndroid.show(
                             error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                            ToastAndroid.SHORT
+                            ToastAndroid.LONG
                         );
                     })
                     .finally(() => {
@@ -558,7 +572,6 @@ const Paletas = (props) => {
     };
 
     const salirOrden = () => {
-
         Alert.alert('Confirmar', `¿Deseas comenzar la salida del traslado?`, [
             {
               text: 'Sí',
@@ -633,10 +646,13 @@ const Paletas = (props) => {
                 <Box style={[styles.box, {marginTop: -2}]}>
                     <HStack style={{justifyContent: 'space-between'}}>
                         <Text style={{fontSize: 12}}>Centro: {Centro.NAME1}</Text>
+                        <Button color="lightgrey" tintColor={Global.colorMundoTotal} onPress={() => setShow(!show)}
+                                title={props => <MI name={show ? "menu-down":"menu-right"} {...props} size={24}/> } style={{height: 25}} contentContainerStyle={{height: 25}}/>
                     </HStack>
                     <Text style={{alignSelf: 'center', fontWeight: '600', fontSize: 12}}>Orden: {Orden?.DCONC}</Text>
                 </Box>
                 <Box style={styles.box}>
+                    {show &&
                     <VStack style={{alignSelf: 'flex-end', position: 'absolute', zIndex: 10}}>
                         <Button variant="text" color={Global.colorMundoTotal} 
                             title={<MI name="reload" size={24}/>} 
@@ -650,7 +666,8 @@ const Paletas = (props) => {
                             trailing={<MaterialIcons name="settings" color={Orden?.STSOR !== 1 ? "lightgrey":"black"} size={20} style={{marginLeft: -8}}/>} 
                             onPress={() => setModalTruck(true)}
                             disabled={Orden?.STSOR !== 1}/>
-                    </VStack>
+                    </VStack>}
+                    {show &&
                     <VStack style={{border: 1}}>
                         <HStack style={{alignItems: 'flex-end'}}>
                             <Text style={styles.th}>Chofer: </Text>
@@ -673,7 +690,7 @@ const Paletas = (props) => {
                             <Text style={styles.th}>F. Salida: </Text>
                             <Text style={styles.td}>{(Orden?.PlanedRoute?.POUTP ?? Orden?.DATEC)?.substr(0,16)?.replace("T"," ")}</Text>
                         </HStack>
-                    </VStack>
+                    </VStack>}
                     <VStack border={0} p={5} spacing={3}>
                         <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <PieChart
@@ -745,7 +762,7 @@ const Paletas = (props) => {
                     {Orden?.TLATI && Orden?.TLONG ?
                     <Button title="Última Ubicación" color={Global.colorMundoTotal} variant="outlined" style={{fontSize: 12, marginTop: -2, alignSelf: 'flex-end'}}
                         trailing={<MI name="google-maps" size={24} />}
-                        onPress={() => Linking.openURL(`https://www.google.com/maps/place/${Orden?.TLATI},${Orden?.TLONG}`)}
+                        onPress={() => Linking.openURL(`https://www.google.com/maps/place/${Orden?.TLATI},${Orden?.TLONG}&hl=es`)}
                         //onPress={() => console.log(`https://www.google.com/maps?q=${Orden?.TLATI},${Orden?.TLONG}+(${Orden?.DCONC.replaceAll(' ','+')})`)}
                     />:''}
                     {props.dataUser.CAMIONERO && Orden?.STSOR === 1 ?
@@ -848,16 +865,16 @@ const Paletas = (props) => {
                             for(let pal of ordenProvi.Paletas) {
                                 if(pal.IDPAL === modalPallet) {
                                     if(ordenProvi.PESO_MAX && inputs.peso > ordenProvi.PESO_MAX) {
-                                        return ToastAndroid.show("Error, no puedes colocar un peso mayor al soportado por el camión.", ToastAndroid.SHORT);
+                                        return ToastAndroid.show("Error, no puedes colocar un peso mayor al soportado por el camión.", ToastAndroid.LONG);
                                     }
                                     if(ordenProvi.Container?.XLONG && inputs.largo > ordenProvi.Container?.XLONG) {
-                                        return ToastAndroid.show("Error, no puedes colocar un largo mayor al soportado por el camión.", ToastAndroid.SHORT);
+                                        return ToastAndroid.show("Error, no puedes colocar un largo mayor al soportado por el camión.", ToastAndroid.LONG);
                                     }
                                     if(ordenProvi.Container?.YWIDT && inputs.ancho > ordenProvi.Container?.YWIDT) {
-                                        return ToastAndroid.show("Error, no puedes colocar un ancho mayor al soportado por el camión.", ToastAndroid.SHORT);
+                                        return ToastAndroid.show("Error, no puedes colocar un ancho mayor al soportado por el camión.", ToastAndroid.LONG);
                                     }
                                     if(ordenProvi.Container?.ZHEIG && inputs.alto > ordenProvi.Container?.ZHEIG) {
-                                        return ToastAndroid.show("Error, no puedes colocar un alto mayor al soportado por el camión.", ToastAndroid.SHORT);
+                                        return ToastAndroid.show("Error, no puedes colocar un alto mayor al soportado por el camión.", ToastAndroid.LONG);
                                     }
                                     pal.WEIGH = inputs.peso;
                                     pal.DISTX = inputs.largo;
@@ -891,7 +908,7 @@ const Paletas = (props) => {
                                 console.log(error);
                                 return ToastAndroid.show(
                                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                                    ToastAndroid.SHORT
+                                    ToastAndroid.LONG
                                 );
                             })
                             .finally(() => {
@@ -920,7 +937,7 @@ const Paletas = (props) => {
                     <VStack mt={5} mb={5}>
                         <Text style={styles.th2}>Medidas Estandar de Paletas:</Text>
                         <SelectInput
-                            data={configOrden?.paletas_estandar.reduce((p, pal, idx) => [...p, {value: idx, label: `L: ${pal.l}m, A: ${pal.a}, H: ${parseFloat(((Orden?.Container?.ZHEIG)-(Orden?.Container?.ZHEIG*configOrden?.p_espacio_alto))/dividirAlto).toFixed(2)}m`}], [])}
+                            data={configOrden?.paletas_estandar.reduce((p, pal, idx) => [...p, {value: idx, label: `L: ${pal.l}m, A: ${pal.a}, H: ${pal.h_force ? pal.h:(parseFloat(((Orden?.Container?.ZHEIG)-(Orden?.Container?.ZHEIG*configOrden?.p_espacio_alto))/dividirAlto).toFixed(2))}m`}], [])}
                             value={paletaIDX}
                             setValue={(val) => setPaletaIDX(val)}
                             title="Sel. Paleta estandar"
@@ -936,7 +953,7 @@ const Paletas = (props) => {
                     </HStack> 
                     <HStack mb={5} style={{alignItems: 'center'}}>
                         <Text style={styles.small}>Dividir Alto</Text>
-                        <Switch value={dividirAlto === 2 ? true:false} onValueChange={() => setDividirAlto(dividirAlto === 1 ? 2:1)} />
+                        <Switch value={dividirAlto === 2 ? true:false} onValueChange={() => setDividirAlto(dividirAlto === 1 ? 2:1)} disabled={configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force ? true:false}/>
                     </HStack>
                     <Text style={styles.small}>Max. Pal en estandar: {paletasRestantesMemo+(Orden?.Paletas?.length ?? 0)}</Text>
                     <Text style={styles.small}>Nº Paletas: {Orden?.Paletas?.length ?? 0}</Text>

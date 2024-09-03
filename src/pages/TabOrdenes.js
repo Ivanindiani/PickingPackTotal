@@ -13,8 +13,8 @@ const TabOrdenes = (props) => {
     const [index, setIndex] = useState(0);
     const [routes] = useState([
         { key: 'normal', title: 'Por\nÓrdenes' },
-        { key: 'code', title: 'Códigos\nde Paletas' },
-        { key: 'traslado', title: 'Por código\nde barra' },
+        { key: 'code', title: 'Código\nde Paletas' },
+        { key: 'traslado', title: 'Código\nde Traslado' },
     ]);
     
     /*const _renderScene = useCallback(SceneMap({

@@ -1,5 +1,5 @@
 import { ListItem, Stack, Text } from "@react-native-material/core";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Alert, Image, PermissionsAndroid, Platform, ScrollView, StyleSheet } from "react-native";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import MaterialCI from "react-native-vector-icons/MaterialCommunityIcons";
@@ -50,7 +50,11 @@ const Home = (props) => {
                     {
                     text: 'Confirmar',
                     style: 'destructive',
-                    onPress: () => props.navigation.dispatch(e.data.action),
+                        onPress: () => {
+                            props.navigation.dispatch(e.data.action);
+                            props.setDataToken({});
+                            props.setDataUser({});
+                        }
                     }]
                 );
             }
@@ -59,6 +63,7 @@ const Home = (props) => {
     return (
         <Stack spacing={4} style={{ margin: 14, flex: 1 }}>
             <ScrollView style={styles.scrollView}>
+                <Text style={styles.title2}>Hola{"\n"}{props.dataUser.CAMIONERO ? props.dataUser.DNAME+" "+(props.dataUser.DFNAM??''):props.dataUser.USNAM+" "+(props.dataUser.USLAS??'')}</Text>
                 <Image source={require('../assets/images/Logo.png') } style={styles.icon} resizeMode="cover"/>
                 <Text>Menú Inicio</Text>
                 {(props.dataUser.USSCO?.indexOf('RECEPCION_FIND') !== -1 || props.dataUser.USSCO?.indexOf('ADMIN_RECEPCION') !== -1) 
@@ -126,7 +131,15 @@ const styles = StyleSheet.create({
     title1: {
         alignSelf: 'center',
         fontSize: 16,
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        textAlign: 'center'
+    },
+    title2: {
+        alignSelf: 'center',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+        margin: 5
     },
     icon: {
         width: 190,

@@ -29,7 +29,7 @@ const ImagesAsync = memo(({imageCode, imageStyle = {}, token, ipSelect, msg = tr
             if(msg) {
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && error?.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             }
         })

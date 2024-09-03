@@ -43,10 +43,13 @@ const RecibirTraslados = (props) => {
             `orden=true`,
             props.route.params.type_tras === 'crear_tras' ?
             `find={"FWERK": "${centroId}", "FLGOR": "${almacenId}", "TRSTS": "[1,2,3,4,5]"}`:
-            `find={"TWERK": "${centroId}", "TLGOR": "${almacenId}", "TRSTS": "[1,2,3,4,5]"}`
+            `find={"TWERK": "${centroId}", "TLGOR": "${almacenId}", "TRSTS": "[3,4,5]"}`
         ]
         if(props.route.params.IDPAL) {
             data.push(`IDPAL=${props.route.params.IDPAL}`)
+        }
+        if(props.route.params.type_tras !== 'crear_tras') {
+            data.push(`recepcion=true`);
         }
         setLoading(true);
         setTraslados([]);
@@ -59,7 +62,7 @@ const RecibirTraslados = (props) => {
             console.log(error);
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -123,10 +126,11 @@ const RecibirTraslados = (props) => {
                         <ListItem
                             key={i}
                             title={tras.TRCON}
-                            overline={trasladosStatus[tras.TRSTS]}
+                            overline={"#"+tras.IDTRA+"\n"+trasladosStatus[tras.TRSTS]}
                             secondaryText={"Origen: "+tras.DesdeCentro?.NAME1+" ("+tras.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
-                                +tras.DATEU?.substr(0,16).replace("T"," ")
-                                +"\nPedido Nº: "+(tras.IDPED ?? "Traslado MANUAL")
+                                +"Fecha Creación: "+tras.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
+                                +"Fecha Contable: "+tras.DATEU?.substr(0,16)?.replace("T"," ")+"\n"
+                                +"Pedido Nº: "+(tras.IDPED ?? "Traslado MANUAL")
                                 +(tras.TRSTS > 2 ? "\nNº Documento SAP: "+tras.CodigosTraslado?.MBLNR:'')
                                 +`\nPeso: ${parseFloat(tras.PESO??0).toFixed(2)} KG`
                                 +`\nVolumen: ${parseFloat(tras.VOLUMEN??0).toFixed(2)} M3`

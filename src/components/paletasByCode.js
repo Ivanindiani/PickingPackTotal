@@ -98,7 +98,7 @@ const PaletasByCode = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -148,10 +148,11 @@ const PaletasByCode = (props) => {
                         <ListItem
                             key={index}
                             title={item.TRCON}
-                            overline={trasladosStatus[item.TRSTS]}
+                            overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
                             secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
                                 +"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
                                 +item.DATEU?.substr(0,16)?.replace("T"," ")
+                                +"\nTraslado Nº: "+item.IDTRA
                                 +"\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
                                 +(item.TRSTS > 2 ? "\nNº Documento SAP: "+item.CodigosTraslado?.MBLNR:'')
                                 +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`

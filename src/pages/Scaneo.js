@@ -186,7 +186,7 @@ const Scaneo = (props) => {
             }
             ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
             if(mounted.current)
                 sesionTimout = setTimeout(() => getSesionScan(), 3000); // Retry for 3 seconds
@@ -215,7 +215,7 @@ const Scaneo = (props) => {
             }
             ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -263,7 +263,7 @@ const Scaneo = (props) => {
                 setTrasladoItems(data.data);
                 resolve(falla ? false:data.data);
                 if(show)
-                    ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.SHORT)
+                    ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.LONG)
             })
             .catch(({status, error}) => {
                 //console.log(error);
@@ -272,7 +272,7 @@ const Scaneo = (props) => {
                 }
                 ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
                 resolve(false);
             })
@@ -317,7 +317,7 @@ const Scaneo = (props) => {
 
                 if(maximoPosible <= 0) {
                     RNBeep.beep(false);
-                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
+                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
                 }
                 let unidad_index = producto.Producto?.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? producto.unidad_index;
                 producto.TCANT = parseInt(producto.TCANT ?? 0) + (maximoPosible < parseInt(unidad_index.UMREZ) ? maximoPosible:parseInt(unidad_index.UMREZ));
@@ -332,7 +332,7 @@ const Scaneo = (props) => {
                 }
                 if(producto.TCANT >= maximoPosible) {
                     RNBeep.beep(false);
-                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
+                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
                 }
                 return RNBeep.beep(true);
             } else {
@@ -455,7 +455,7 @@ const Scaneo = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -584,7 +584,7 @@ const Scaneo = (props) => {
             RNBeep.beep(false);
             return ToastAndroid.show(
                 "Por favor establece una cantidad dentro de los limites de lote y ubicación.",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         }
         let existe = trasladoItems.filter(f => (producto.force && f.IDTRI == producto.IDTRI) || (!producto.force && f.MATNR == producto.MATNR 
@@ -621,7 +621,7 @@ const Scaneo = (props) => {
                 setTrasladoItems(prod);
                 ToastAndroid.show(
                     "Producto actualizado con éxito",
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .catch(({status, error}) => {
@@ -635,7 +635,7 @@ const Scaneo = (props) => {
                 }
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -664,7 +664,7 @@ const Scaneo = (props) => {
 
                 ToastAndroid.show(
                     "Producto creado con éxito",
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
                 inputScan.current?.focus();
             })
@@ -688,7 +688,7 @@ const Scaneo = (props) => {
                 }*/
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -851,7 +851,7 @@ const Scaneo = (props) => {
                         onPress={() => {
                             let comentarioText = inputComentario.current?.value ?? '';
                             if(comentarioText.length < 10) {
-                                return ToastAndroid.show("Tu comentario debe contener al menos 10 carácteres", ToastAndroid.SHORT);
+                                return ToastAndroid.show("Tu comentario debe contener al menos 10 carácteres", ToastAndroid.LONG);
                             }
                             setComentario(-2);
                             if(comentario === -1) {
@@ -888,7 +888,7 @@ const Scaneo = (props) => {
             >
                 <VStack w="55%">
                     <Text style={styles.title2} numberOfLines={2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
-                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.MATNR}</Text>
+                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.MATNR || item.unidad_index?.EAN11}</Text>
                     {item.CHARG && traslado.TRSTS === 1 && <Text style={styles.subtitle} color="primary" numberOfLines={1}>Lote: {item.CHARG}</Text>}
                     <Text style={styles.subtitle} numberOfLines={1}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                     <Text style={[styles.small3, {fontWeight: 'bold'}]} color="primary" numberOfLines={1}>Ubicación: {!item.Ubicacion ? 'S/N':(item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET)}</Text>
@@ -934,7 +934,7 @@ const Scaneo = (props) => {
                 if(!result) return;
 
                 for(const ped of result) {
-                    let sumaTra1 = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.CHARG === tri.CHARG ? (prev+tri.TCANT):prev, 0);
+                    let sumaTra1 = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.CHARG === tri.CHARG ? (prev+parseInt(tri.TCANT)):prev, 0);
 
                     if(ped.CHARG) {
                         console.log(sumaTra1, ped.maxQuantityLote[ped.CHARG]+sumaTra1);
@@ -948,7 +948,7 @@ const Scaneo = (props) => {
                         }
                     }
                     for(const ubi of ped.ArticulosBodegas) { // Verificar cantidades en ubicacion
-                        let sumaTra = result.reduce((prev, tri) => ubi.MATNR === tri.MATNR && ubi.LOTEA === tri.CHARG && ubi.IDADW === tri.IDADW ? (prev+tri.TCANT):prev, 0);
+                        let sumaTra = result.reduce((prev, tri) => ubi.MATNR === tri.MATNR && ubi.LOTEA === tri.CHARG && ubi.IDADW === tri.IDADW ? (prev+parseInt(tri.TCANT)):prev, 0);
                         console.log(sumaTra, (sumaTra+(ubi.QUANT-ubi.RESERVADOS)), ubi.MATNR);
                         if(sumaTra > (sumaTra+(ubi.QUANT-ubi.RESERVADOS))) {
                             return Alert.alert(`Error en ubicación ${ubi.IDADW}`, `El artículo ${ped.Producto.MAKTG} (${ubi.MATNR}), sobre pasa la cantidad disponible de la ubicación por favor verifica`);
@@ -989,7 +989,7 @@ const Scaneo = (props) => {
 
             ToastAndroid.show(
                 "Carga de traslado finalizado con éxito",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .catch(({status, error}) => {
@@ -1009,7 +1009,7 @@ const Scaneo = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -1039,7 +1039,7 @@ const Scaneo = (props) => {
                     
                     ToastAndroid.show(
                         "Producto eliminado con éxito",
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .catch(({status, error}) => {
@@ -1059,7 +1059,7 @@ const Scaneo = (props) => {
                     }
                     return ToastAndroid.show(
                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .finally(() => {
@@ -1098,7 +1098,7 @@ const Scaneo = (props) => {
             }
             ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         });
     }

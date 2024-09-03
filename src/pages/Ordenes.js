@@ -63,20 +63,18 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId})
                 key: ord.IDTRG,
                 marked: true,
                 color: ordenStatusColor[ord.STSOR],
-                style: {
-                    border: 1
-                }
             });
         } else {
             prev[ord.DATE_FORMAT] = {
-                    dots: [{
+                dots: [{
                     key: ord.IDTRG,
                     marked: true,
                     color: ordenStatusColor[ord.STSOR],
-                    style: {
-                        border: 1
-                    }
-                }]
+                }],
+                /*container: {
+                    backgroundColor: 'grey',
+                    elevation: 4
+                }*/
             };
         }
         return prev;
@@ -108,7 +106,7 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId})
                 return (
                     <ListItem
                         key={orden.IDTRG}
-                        overline={ordenStatus[orden.STSOR]}
+                        overline={"#"+orden.IDTRG+"\n"+ordenStatus[orden.STSOR]}
                         title={orden.DCONC} 
                         secondaryText={<View style={{maxWidth: dimensiones.width*0.45}}>
                             <HStack>
@@ -161,7 +159,14 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId})
                 agendaDayNumColor: 'green',
                 agendaTodayColor: 'red',
                 agendaKnobColor: Global.colorMundoTotal,
-                selectedDayBackgroundColor: Global.colorMundoTotal
+                selectedDayBackgroundColor: Global.colorMundoTotal,
+                dotStyle: {
+                    border: 1,
+                    width: 7,
+                    height: 7,
+                    borderRadius: 50,
+                    borderColor: 'black'
+                }
             }}
         />
 }, (prevProps, nextProps) => {
@@ -234,7 +239,7 @@ const Ordenes = (props) => {
                 }*/
                 ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
                 reject(error);
             })

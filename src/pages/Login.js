@@ -56,13 +56,13 @@ const Login = (props) => {
         if(!camionero && (!data.username || !data.password)) {
             return ToastAndroid.show(
                 "Debes ingresar usuario y contraseña",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         }
         if(camionero && !data.username) {
             return ToastAndroid.show(
                 "Debes ingresar tu cédula",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         }
         const datos = {

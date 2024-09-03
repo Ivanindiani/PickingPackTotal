@@ -29,7 +29,7 @@ const TabScaneo = (props) => {
             case 'pedido':
                 return <Pedidos {...props} pedido={pedido} setPedido={setPedido} ref={pedidoRef}/>;
             case 'scan':
-                return <ScaneoPedido {...props} pedido={pedido} setPedido={setPedido} updatePedido={(show=true) => pedidoRef.current?.getItems(show)}/>;
+                return <ScaneoPedido {...props} pedido={pedido} setPedido={setPedido} updatePedido={(show=false) => pedidoRef.current?.getItems(show)}/>;
         }
     }
 

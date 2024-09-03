@@ -1,6 +1,6 @@
 import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, ListItem, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { memo, useEffect, useState } from "react";
-import { Alert, FlatList, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
+import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
 import fetchIvan from "../components/_fetch";
 import Entypo from "react-native-vector-icons/Entypo";
 import AntDesign from "react-native-vector-icons/AntDesign";
@@ -139,7 +139,7 @@ const Traslados = (props) => {
             }*/
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -169,7 +169,7 @@ const Traslados = (props) => {
             }*/
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -189,7 +189,7 @@ const Traslados = (props) => {
             console.log(error);
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -225,6 +225,7 @@ const Traslados = (props) => {
             data.data.DesdeCentro = centros.filter(s => s.WERKS === centroId)[0];
             data.data.HaciaCentro = centros.filter(s => s.WERKS === centroIdA)[0];
             setTraslados([data.data, ...traslados]);
+            setShowCrear(false);
             setNameTras("");
             setCentroIdA(null);
             let PaletAux = JSON.parse(JSON.stringify(paletas));
@@ -241,7 +242,7 @@ const Traslados = (props) => {
             console.log(error);
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -268,12 +269,14 @@ const Traslados = (props) => {
                 console.log("Traslado eliminado: ", data.data);
                 let newTras = JSON.parse(JSON.stringify(traslados));
                 setTraslados(newTras.filter(t => t.IDTRA != id));
+                let newTras2 = JSON.parse(JSON.stringify(pending));
+                setPending(newTras2.filter(t => t.IDTRA != id));
             })
             .catch(({status, error}) => {
                 console.log(error);
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -323,17 +326,19 @@ const Traslados = (props) => {
                         setPending(pending.filter(p => p.IDTRA !== IDTRA));
                     })
                     .catch(({status, error}) => {
-                        console.log(error);
+                        console.log(error, typeof(error));
                         PaletAux[i].PaleticaTras = PaletAux[i].PaleticaTras.filter((p) => p.IDTRA !== IDTRA);
+                        console.log("hola")
                         return ToastAndroid.show(
                             error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                            ToastAndroid.SHORT
+                            ToastAndroid.LONG
                         );
                     })
                     .finally(() => {
+                        console.log("Finally", PaletAux);
                         props.route.params.setPaletas(PaletAux);
-                        setLoading(false);
                         setPaletas(PaletAux);
+                        setLoading(false);
                     });
                     break;
                 } else {
@@ -357,7 +362,7 @@ const Traslados = (props) => {
                         PaletAux[i].PaleticaTras.map((p) => p.IDTRA === IDTRA ? p.loading = false:'');
                         return ToastAndroid.show(
                             error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                            ToastAndroid.SHORT
+                            ToastAndroid.LONG
                         );
                     })
                     .finally(() => {
@@ -406,11 +411,12 @@ const Traslados = (props) => {
             renderItem={({item, index}) =>
                 <ListItem
                     key={index}
-                    overline={trasladosStatus[item.TRSTS]}
+                    overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
                     title={item.TRCON}
-                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
-                        +item.DATEU?.substr(0,16)?.replace("T"," ")+
-                        "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
+                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.WERKS+")\n"
+                        +"Fecha Creación: "+item.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
+                        +"Fecha Contable: "+item.DATEU?.substr(0,16)?.replace("T"," ")+"\n"
+                        +"Pedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
                         +(item.TRSTS > 2 ? "\nNº Documento SAP: "+item.CodigosTraslado?.MBLNR:'')
                     //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
                             //+")\n"+item.DATEU?.substr(0,16).replace("T"," ")
@@ -423,7 +429,7 @@ const Traslados = (props) => {
                         <View>
                             {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
                             <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
+                            {props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
                             <IconButton icon={p2=p2 => <MaterialCommunityIcons name="folder-move" {...p2}/> } onPress={() => setModalPallet(item)} />:''}
                         </View>
                     }
@@ -443,6 +449,7 @@ const Traslados = (props) => {
                 />
             }
             ListEmptyComponent={<Text>No hay traslados creados</Text>}
+            refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getTraslados()}/>}
         />;
 
     const Pendientes = () => 
@@ -461,10 +468,11 @@ const Traslados = (props) => {
         renderItem={({item, index}) =>
             <ListItem
                 key={index}
-                overline={trasladosStatus[item.TRSTS]}
+                overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
                 title={item.TRCON}
-                secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"+item.DATEU?.substr(0,16).replace("T"," ")+
-                            "\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
+                secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.WERKS+")\n"
+                            +"Fecha Creación: "+item.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
+                            +"Pedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
                 leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                 trailing={(p2) => 
                     <View>
@@ -477,6 +485,7 @@ const Traslados = (props) => {
             />
         }
         ListEmptyComponent={<Text>No hay pedidos pendientes</Text>}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getPending()}/>}
     />;
 
     const _renderScene = ({ route }) => {
@@ -521,7 +530,7 @@ const Traslados = (props) => {
                     <HStack style={{justifyContent: 'space-between'}}>
                         <SelectInput
                             searchable={true}
-                            data={centrosHacia}
+                            data={centrosHacia.filter(f => props.route.params.planed?.PJWER.tiendas.indexOf(f.value) !== -1)}
                             value={centroIdA}
                             setValue={setCentroIdA}
                             title="Sucursal Destino"

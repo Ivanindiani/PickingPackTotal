@@ -94,7 +94,7 @@ const FindProducts = (props) => {
                 }
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -117,7 +117,7 @@ const FindProducts = (props) => {
                     .then(({data}) => {
                         console.log(data);
                         setFindProduct(findProduct.filter((a) => a.IDADW !== item.IDADW));
-                        ToastAndroid.show("Producto eliminado con éxito", ToastAndroid.SHORT);
+                        ToastAndroid.show("Producto eliminado con éxito", ToastAndroid.LONG);
                     }).catch(({status, error}) => {
                         console.log(error);
                         if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
@@ -125,7 +125,7 @@ const FindProducts = (props) => {
                         }
                         return ToastAndroid.show(
                             error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                            ToastAndroid.SHORT
+                            ToastAndroid.LONG
                         );
                     })
                     .finally(() => {

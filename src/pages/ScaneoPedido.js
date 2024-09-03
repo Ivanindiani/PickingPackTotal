@@ -185,7 +185,7 @@ const ScaneoPedido = (props) => {
             }
             ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
             if(mounted.current)
                 sesionTimout = setTimeout(() => getSesionScan(), 3000); // Retry for 3 seconds
@@ -214,7 +214,7 @@ const ScaneoPedido = (props) => {
             }
             ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -237,6 +237,7 @@ const ScaneoPedido = (props) => {
         return new Promise((resolve) => {
             fetchIvan(props.ipSelect).get('/crudTrasladoItems', datos.join('&'), props.token.token, undefined, undefined, 60000) // 1 minuto para probar
             .then(({data}) => {
+                let resolver = false;
                 if(traslado.TRSTS == 1) {
                     let pesos = 0;
                     let volumenes = 0;
@@ -254,19 +255,24 @@ const ScaneoPedido = (props) => {
                             producto.noBase = false;
                             pesos += (producto.UnidadBase?.BRGEW ?? 0)*producto.TCANT;
                             volumenes += (producto.UnidadBase?.VOLUM ?? 0)*producto.TCANT;
-                        
                             
                             if(forceCheck) {
                                 if(producto.CHARG) {//Lote
-                                    
                                     if(producto.TCANT > producto.maxQuantityLote[producto.CHARG]) {
                                         Alert.alert("Exceso de cantidad", "El producto: "+producto.MAKTG+". Lote: "+producto.CHARG+"\nExcede la cantidad disponible, por favor chequea la lista.");
-                                        return resolve(false)
+                                        if(!resolver) {
+                                            resolver = true;
+                                            resolve(false);
+                                        }
                                     }
                                 } else {
                                     if(producto.TCANT > producto.maxQuantity) {
+                                        console.log(producto.TCANT, producto.maxQuantity)
                                         Alert.alert("Exceso de cantidad", "El producto: "+producto.MAKTG+". Excede la cantidad disponible, por favor chequea la lista.");
-                                        return resolve(false)
+                                        if(!resolver) {
+                                            resolver = true;
+                                            resolve(false);
+                                        }
                                     }
                                 }
                             }
@@ -275,10 +281,11 @@ const ScaneoPedido = (props) => {
                         }
                     }
                 }
-                resolve(data.data);
+                if(!resolver)
+                    resolve(data.data);
                 setTrasladoItems(data.data);
                 if(show)
-                    ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.SHORT)
+                    ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.LONG)
             })
             .catch(({status, error}) => {
                 //console.log(error);
@@ -287,7 +294,7 @@ const ScaneoPedido = (props) => {
                 }
                 ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
                 resolve(false);
             })
@@ -341,7 +348,7 @@ const ScaneoPedido = (props) => {
 
                 if(maximoPosible <= 0) {
                     RNBeep.beep(false);
-                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
+                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
                 }
                 let unidad_index = producto.Producto?.ProductosUnidads?.filter((p) => p.MEINH === undSelect)[0] ?? producto.unidad_index;
                 producto.TCANT = parseInt(producto.TCANT ?? 0) + (maximoPosible < parseInt(unidad_index.UMREZ) ? maximoPosible:parseInt(unidad_index.UMREZ));
@@ -356,7 +363,7 @@ const ScaneoPedido = (props) => {
                 }
                 if(producto.TCANT >= maximoPosible) {
                     RNBeep.beep(false);
-                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
+                    return ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
                 }
                 return RNBeep.beep(true);
             } else {
@@ -381,6 +388,7 @@ const ScaneoPedido = (props) => {
                             producto.maxQuantityLote = {};
                             producto.maxQuantityLote[producto.CHARG] = parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0);
                             if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1) {
+                                producto.CANTP = pedido.reduce((prev, it) => it.MATNR===producto.MATNR && it.CHARG == producto.CHARG ? (prev+parseInt(it.CANTP)):prev,0);
                                 producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0)
                             }
 
@@ -399,6 +407,7 @@ const ScaneoPedido = (props) => {
                         } else {
                             producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
                             if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1) {
+                                producto.CANTP = pedido.reduce((prev, it) => it.MATNR===producto.MATNR ? (prev+parseInt(it.CANTP)):prev,0);
                                 producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0)
                             }
                             if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
@@ -422,7 +431,7 @@ const ScaneoPedido = (props) => {
                             }
                             if(producto.TCANT >= parseInt(producto.maxQuantity)) {
                                 RNBeep.beep(false);
-                                ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
+                                ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
                             }
                         } else {
                             if(producto.noBase) { // No es es la BASE si no otra unidad
@@ -432,7 +441,7 @@ const ScaneoPedido = (props) => {
                             }
                             if(producto.TCANT >= parseInt(producto.maxQuantityLote[producto.CHARG])) {
                                 RNBeep.beep(false);
-                                ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.SHORT);
+                                ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
                             }
                         }*/
                     } catch (e) {
@@ -442,7 +451,7 @@ const ScaneoPedido = (props) => {
             }
         }
         RNBeep.beep(false);
-        ToastAndroid.show("No hemos encontrado el artículo en la lista del pedido", ToastAndroid.SHORT);
+        ToastAndroid.show("No hemos encontrado el artículo en la lista del pedido", ToastAndroid.LONG);
     }
 
     const editarProducto = (find) => {
@@ -458,11 +467,11 @@ const ScaneoPedido = (props) => {
                     if(producto.UnidadBase.XCHPF === 'X') { // Con lote
                         producto.maxQuantityLote = {};
                         producto.maxQuantityLote[producto.CHARG] = parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0);
-                        if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
+                        /*if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
                             producto.maxQuantityLote[producto.CHARG] +=parseInt(find.TCANT);
                             if(producto.UCRID == props.dataUser.IDUSR)
                                 producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0);
-                        }
+                        }*/
                         producto.lotes = [{
                             label: producto.CHARG,
                             value: producto.CHARG,
@@ -470,11 +479,11 @@ const ScaneoPedido = (props) => {
                         }];
                     } else {
                         producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
-                        if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
-                            producto.maxQuantity +=parseInt(find.TCANT);
+                        /*if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
+                            producto.maxQuantity += parseInt(find.TCANT);
                             if(producto.UCRID == props.dataUser.IDUSR)
                                 producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0);
-                        }
+                        }*/
                     }
                     producto.ubicaciones = getUbicaciones(producto, find.UCRID, true);
                     producto.TCANT = find.TCANT;
@@ -553,7 +562,7 @@ const ScaneoPedido = (props) => {
             RNBeep.beep(false);
             return ToastAndroid.show(
                 "Por favor establece una cantidad dentro de los limites de lote y ubicación.",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         }
         let existe = trasladoItems.filter(f => (producto.force && f.IDTRI == producto.IDTRI) || (!producto.force && f.MATNR == producto.MATNR 
@@ -567,7 +576,7 @@ const ScaneoPedido = (props) => {
             RNBeep.beep(false);
             return ToastAndroid.show(
                 "La cantidad colocada es mayor a la cantidad requerida.",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         }
         console.log(existe);
@@ -601,7 +610,7 @@ const ScaneoPedido = (props) => {
                 setTrasladoItems([...prod]);
                 ToastAndroid.show(
                     "Producto actualizado con éxito",
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .catch(({status, error}) => {
@@ -615,7 +624,7 @@ const ScaneoPedido = (props) => {
                 }
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -644,7 +653,7 @@ const ScaneoPedido = (props) => {
 
                 ToastAndroid.show(
                     "Producto creado con éxito",
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
                 inputScan.current?.focus();
             })
@@ -668,7 +677,7 @@ const ScaneoPedido = (props) => {
                 }*/
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -832,7 +841,7 @@ const ScaneoPedido = (props) => {
                         onPress={() => {
                             let comentarioText = inputComentario.current?.value ?? '';
                             if(comentarioText.length < 10) {
-                                return ToastAndroid.show("Tu comentario debe contener al menos 10 carácteres", ToastAndroid.SHORT);
+                                return ToastAndroid.show("Tu comentario debe contener al menos 10 carácteres", ToastAndroid.LONG);
                             }
                             setComentario(-2);
                             if(comentario === -1) {
@@ -862,6 +871,7 @@ const ScaneoPedido = (props) => {
             <HStack
                 spacing={4}
                 style={[styles.items,(
+                    (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW) ||
                     (scanCurrent.IDTRI === item.IDTRI && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW && scanCurrent.force) || 
                     (rackSel !== null && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && IDPAL === item.IDPAL
                         && scanCurrent.ubicaciones[rackSel].UBI === item.IDADW && props.dataUser.IDUSR === item.UCRID && !scanCurrent.force) 
@@ -869,7 +879,7 @@ const ScaneoPedido = (props) => {
             >
                 <VStack w="55%">
                     <Text style={styles.title2} numberOfLines={2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
-                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.unidad_index?.EAN11 || item.MATNR}</Text>
+                    <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]} numberOfLines={1}>{item.MATNR || item.unidad_index?.EAN11}</Text>
                     {item.CHARG && traslado.TRSTS === 1 && <Text style={styles.subtitle} color="primary" numberOfLines={1}>Lote: {item.CHARG}</Text>}
                     <Text style={styles.subtitle} numberOfLines={1}>Usuario: {item.CreadoPor?.USNAM+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                     <Text style={[styles.small3, {fontWeight: 'bold'}]} color="primary" numberOfLines={1}>Ubicación: {!item.Ubicacion ? 'S/N':(item.Ubicacion?.Bodega?.FLOOR+"-"+item.Ubicacion?.Bodega?.AISLE+"-"+item.Ubicacion?.Bodega?.COLUM+"-"+item.Ubicacion?.Bodega?.RACKS+"-"+item.Ubicacion?.Bodega?.PALET)}</Text>
@@ -911,6 +921,7 @@ const ScaneoPedido = (props) => {
               text: 'Si deseo finalizar',
               style: 'destructive',
               onPress: async () => {
+                //finalizarPost();
                 let result = await getTrasladoItems(true, false);
                 if(!result) return;
     
@@ -918,7 +929,7 @@ const ScaneoPedido = (props) => {
                 if(!result2) return;
 
                 for(const ped of result) {
-                    let sumaTra1 = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.CHARG === tri.CHARG ? (prev+tri.TCANT):prev, 0);
+                    let sumaTra1 = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.CHARG === tri.CHARG ? (prev+parseInt(tri.TCANT)):prev, 0);
 
                     if(ped.CHARG) {
                         console.log(sumaTra1, ped.maxQuantityLote[ped.CHARG]);
@@ -934,18 +945,19 @@ const ScaneoPedido = (props) => {
                 }
                 let checkPedido = false;
                 for(const ped of result2) {
-                    let sumar = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.LOTEA === tri.CHARG ? (prev+tri.TCANT):prev, 0);
-                    let cantp_total = result2.reduce((prev, it) => it.MATNR===ped.MATNR && it.CHARG === ped.CHARG ? (prev+it.CANTP):prev,0);
+                    let sumar = result.reduce((prev, tri) => ped.MATNR === tri.MATNR && ped.LOTEA == tri.CHARG ? (prev+parseInt(tri.TCANT)):prev, 0);
+                    let cantp_total = result2.reduce((prev, it) => it.MATNR===ped.MATNR && it.CHARG == ped.CHARG ? (prev+parseInt(it.CANTP)):prev,0);
                     if(sumar < cantp_total) {
                         checkPedido = true;
                         //break;
                     } else if(sumar > cantp_total) {
+                        console.log(ped.MATNR, ped.CHARG, sumar, cantp_total);
                         return ToastAndroid.show('Hay productos mayores a los solicitados por favor verifica', ToastAndroid.LONG);
                     }
                     
                     //console.log(ped.ArticulosBodegas);
                     for(const ubi of ped.ArticulosBodegas) { // Verificar cantidades en ubicacion
-                        let sumaTra = result.reduce((prev, tri) => ubi.MATNR === tri.MATNR && ubi.LOTEA === tri.CHARG && ubi.IDADW === tri.IDADW ? (prev+tri.TCANT):prev, 0);
+                        let sumaTra = result.reduce((prev, tri) => ubi.MATNR === tri.MATNR && ubi.LOTEA === tri.CHARG && ubi.IDADW === tri.IDADW ? (prev+parseInt(tri.TCANT)):prev, 0);
                         console.log(sumaTra, ubi.QUANT-ubi.RESERVADOS, ubi.MATNR);
                         if(sumaTra > ubi.QUANT-ubi.RESERVADOS) {
                             return Alert.alert(`Error en ubicación ${ubi.IDADW}`, `El artículo ${ped.Producto.MAKTG} (${ubi.MATNR}), sobre pasa la cantidad disponible de la ubicación por favor verifica`);
@@ -953,7 +965,7 @@ const ScaneoPedido = (props) => {
                     }
                 }
                 if(checkPedido) {
-                    ToastAndroid.show('Faltan productos por escanear', ToastAndroid.LONG);
+                    //ToastAndroid.show('Faltan productos por escanear', ToastAndroid.SHORT);
                     Alert.alert('Confirmar', `Faltan productos por escanear\n¿Deseas cerrar igualmente?`, [
                         {
                             text: 'Si deseo finalizar',
@@ -961,8 +973,8 @@ const ScaneoPedido = (props) => {
                             onPress: () => finalizarPost() // Debemos obligar un comentario
                         },
                         {
-                        text: 'No',
-                        style: 'cancel',
+                            text: 'No',
+                            style: 'cancel',
                         }
                     ]);
                 } else {
@@ -1000,7 +1012,7 @@ const ScaneoPedido = (props) => {
             }
             ToastAndroid.show(
                 "Carga de traslado finalizado con éxito",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .catch(({status, error}) => {
@@ -1020,7 +1032,7 @@ const ScaneoPedido = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -1050,7 +1062,7 @@ const ScaneoPedido = (props) => {
                     
                     ToastAndroid.show(
                         "Producto eliminado con éxito",
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .catch(({status, error}) => {
@@ -1070,7 +1082,7 @@ const ScaneoPedido = (props) => {
                     }
                     return ToastAndroid.show(
                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .finally(() => {
@@ -1109,7 +1121,7 @@ const ScaneoPedido = (props) => {
             }
             ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         });
     }

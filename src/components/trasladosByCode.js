@@ -103,7 +103,7 @@ const TrasladosByCode = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -139,7 +139,7 @@ const TrasladosByCode = (props) => {
                 {traslado.IDTRA && 
                 <ListItem
                     title={traslado.TRCON}
-                    overline={trasladosStatus[traslado.TRSTS]}
+                    overline={"#"+traslado.IDTRA+"\n"+trasladosStatus[traslado.TRSTS]}
                     secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
                         +"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
                         +traslado.DATEU?.substr(0,16).replace("T"," ")

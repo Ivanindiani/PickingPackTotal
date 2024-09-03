@@ -80,7 +80,7 @@ const Recepcion = (props) => {
             console.log(status, error);
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -108,7 +108,7 @@ const Recepcion = (props) => {
             console.log(status, error);
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -118,7 +118,7 @@ const Recepcion = (props) => {
 
     const getRif = () => {
         if(rif_input?.length < 3) {
-            return ToastAndroid.show('Ingresa al menos 3 carácteres', ToastAndroid.SHORT);
+            return ToastAndroid.show('Ingresa al menos 3 carácteres', ToastAndroid.LONG);
         }
         let datos = [
             `RIF=${rif_input}`,
@@ -132,14 +132,14 @@ const Recepcion = (props) => {
             if(data.data.length)
                 setLista(data.data.reduce((prev, val) => [...prev, {value: val.LIFNR, label: val.Proveedor.NAME1, subLabel: "RIF: "+val.Proveedor.STCD1+"\nID: "+val.LIFNR+"\nMoneda: "+val.WAERS}], []));
             else {
-                ToastAndroid.show('No hay resultados con esa búsqueda', ToastAndroid.SHORT);
+                ToastAndroid.show('No hay resultados con esa búsqueda', ToastAndroid.LONG);
             }
         })
         .catch(({status, error}) => {
             console.log(status, error);
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -181,17 +181,17 @@ const Recepcion = (props) => {
         .catch(({status, error}) => {
             console.log(error);
             if(error?.message?.indexOf('FK_ZSD_RECEPCIONS_LFA1_MANDT_LIFNR') !== -1) {
-                return ToastAndroid.show('Compruebe el ID del proveedor, el ingresado no existe', ToastAndroid.SHORT);
+                return ToastAndroid.show('Compruebe el ID del proveedor, el ingresado no existe', ToastAndroid.LONG);
             }
             if(error?.message?.indexOf('FK_ZSD_RECEPCIONS_T024E_MANDT_EKORG') !== -1) {
-                return ToastAndroid.show('Compruebe el tipo de proveedor, el ingresado no existe', ToastAndroid.SHORT);
+                return ToastAndroid.show('Compruebe el tipo de proveedor, el ingresado no existe', ToastAndroid.LONG);
             }
             if(error?.message?.indexOf('FK_ZSD_RECEPCIONS_T024_MANDT_EKGRP') !== -1) {
-                return ToastAndroid.show('Compruebe el grupo de proveedor, el ingresado no existe', ToastAndroid.SHORT);
+                return ToastAndroid.show('Compruebe el grupo de proveedor, el ingresado no existe', ToastAndroid.LONG);
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -223,7 +223,7 @@ const Recepcion = (props) => {
                 console.log(error);
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -273,7 +273,7 @@ const Recepcion = (props) => {
                 console.log(error);
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {

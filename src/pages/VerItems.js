@@ -20,7 +20,7 @@ LogBox.ignoreLogs([
 
 
 const VerItems = (props) => {
-
+    const soloPaleta = props.route.params.fixpallet ?? null;
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState([]);
     const [dialogItem, setDialogItem] = useState({});
@@ -32,7 +32,7 @@ const VerItems = (props) => {
     const [scanSelect, setScan] = useState({});
     const [showInfo, setShowInfo] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
-    const [onlyPalet, setOnlyPalet] = useState(props.route.params.IDPAL ? true:false);
+    const [onlyPalet, setOnlyPalet] = useState(soloPaleta ? true:false);
 
     const elInput = useRef(null);
 
@@ -108,7 +108,7 @@ const VerItems = (props) => {
     async function getItems() {
         //console.log("TRASLADO", traslado);
         let data = [
-            props.route.params.fixpallet ? `find={"IDTRA": ${traslado.IDTRA}, "IDPAL": ${props.route.params.fixpallet}}`:`find={"IDTRA": ${traslado.IDTRA}}`,
+            `find={"IDTRA": ${traslado.IDTRA}}`,
             `checkProducts=false`,
             `unidadBase=true`,
             `simpleData=true`,
@@ -117,7 +117,7 @@ const VerItems = (props) => {
         fetchIvan(props.ipSelect).get('/crudTrasladoItems', data.join('&'), props.token.token)
         .then(({data}) => {
             setItems(data.data);
-            ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.SHORT)
+            ToastAndroid.show("Productos actualizados correctamente", ToastAndroid.LONG)
             console.log("Productos: ", data.data.length);
         })
         .catch(({status, error}) => {
@@ -127,7 +127,7 @@ const VerItems = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -258,7 +258,7 @@ const VerItems = (props) => {
                     break;
                 }
             }
-            if(!found) return ToastAndroid.show("El producto que escaneó no está en la lista", ToastAndroid.SHORT);
+            if(!found) return ToastAndroid.show("El producto que escaneó no está en la lista", ToastAndroid.LONG);
 
             for(let unidad of producto.Producto.ProductosUnidads) {
                 if(unidad.EAN11 === scancode) {
@@ -291,7 +291,7 @@ const VerItems = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -327,7 +327,7 @@ const VerItems = (props) => {
             underlayColor="#DDDDDD"
             key={index}
             onPress={() => {
-                if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3) {
+                if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3) {
                     //console.log(item)
                     setDialogItem({...item, CANTR: item.CANTR || item.TCANT})
                     setDialogVisible(true);
@@ -341,7 +341,8 @@ const VerItems = (props) => {
                     <Text style={styles.title2}>{item.MAKTG || ""}</Text>
                     <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
                     <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL.substr(-3).padStart(3, '0')}</Text>
-                    {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3 ? <Text style={styles.small2}>Pulse para confirmar la cantidad real del producto:</Text>:''}
+                    {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 ? 
+                        <Text style={styles.small2}>Pulse para confirmar la cantidad real del producto:</Text>:''}
                 </VStack>
 
                 <VStack w={traslado.TRSTS >= 3 ? "22.5%":"35%"}>
@@ -388,7 +389,7 @@ const VerItems = (props) => {
                 <Text style={styles.subtitle}>{traslado.Paletas?.length && traslado.Paletas[0].Ordene?.TLATI && traslado.Paletas[0].Ordene?.TLATI ?
                 <Button title="Ver en maps" color={Global.colorMundoTotal} variant="outlined" style={{fontSize: 13, marginTop: -10, alignSelf: 'flex-end'}}
                     trailing={<MI name="google-maps" size={24} />}
-                    onPress={() => Linking.openURL('https://www.google.com/maps/place/'+traslado.Paletas[0].Ordene.TLATI+','+traslado.Paletas[0].Ordene.TLONG)}
+                    onPress={() => Linking.openURL('https://www.google.com/maps/place/'+traslado.Paletas[0].Ordene.TLATI+','+traslado.Paletas[0].Ordene.TLONG+'&hl=es')}
                 />:'Aún no tenemos información\nde la ubicación actual'
                 }</Text>
             </HStack>
@@ -425,7 +426,7 @@ const VerItems = (props) => {
             
             ToastAndroid.show(
                 "Cantidad actualizada con éxito",
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .catch(({status, error}) => {
@@ -445,7 +446,7 @@ const VerItems = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -537,7 +538,7 @@ const VerItems = (props) => {
                                                 activeOpacity={0.6}
                                                 underlayColor="#DDDDDD"
                                                 onPress={() => {
-                                                    if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3) {
+                                                    if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3) {
                                                         console.log(item)
                                                         setDialogItem({...item, CANTR: item.CANTR || item.TCANT})
                                                         setDialogVisible(true);
@@ -587,18 +588,18 @@ const VerItems = (props) => {
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({items.length}):</Text>
                             
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 3 && items.length && 
-                                <Button compact={true} title="Recibir" onPress={recibirTraslado} disabled={loading}/>}
+                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 && !onlyPalet && items.length ? 
+                                <Button compact={true} title="Recibir" onPress={recibirTraslado} disabled={loading}/>:''}
                         </HStack>
 
-                        {props.route.params.IDPAL &&
+                        {soloPaleta ?
                         <HStack style={{alignItems:'center'}}>
-                            <Text style={styles.small2}>Ver solo paleta {props.route.params.IDPAL.substr(-3).padStart(3, '0')}</Text>
+                            <Text style={styles.small2}>Ver solo paleta {soloPaleta.toString().substr(-3).padStart(3, '0')}</Text>
                             <Switch value={onlyPalet} onValueChange={() => setOnlyPalet(!onlyPalet)} autoFocus={false}/> 
-                        </HStack>}
+                        </HStack>:''}
 
                         <ListaPerform
-                            items={onlyPalet ? items.filter((v) => v.IDPAL == props.route.params.IDPAL):items} 
+                            items={onlyPalet ? items.filter((v) => v.IDPAL == soloPaleta):items} 
                             renderItems={memoRows} 
                             heightRemove={traslado.TRSTS >= 3 && traslado.TRSTS < 5 ? ((scanSelect && scanSelect.Producto ) ? 125:260):160}
                             //refreshGet={memoGet}

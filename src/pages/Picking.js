@@ -226,7 +226,7 @@ const ManagerProducts = (props) => {
                 reject(error);
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -421,7 +421,7 @@ const ManagerProducts = (props) => {
                     RNBeep.beep(false);
                     return ToastAndroid.show(
                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .finally(() => {
@@ -469,7 +469,7 @@ const ManagerProducts = (props) => {
             }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -596,7 +596,7 @@ const ManagerProducts = (props) => {
                     console.log(error);
                     return ToastAndroid.show(
                         error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                        ToastAndroid.SHORT
+                        ToastAndroid.LONG
                     );
                 })
                 .finally(() => {
@@ -672,7 +672,7 @@ const ManagerProducts = (props) => {
 
             ToastAndroid.show(
                 comentario ? "Comentario reflejado con éxito":(monto ? "Costo actualizado con éxito":"Cantidad actualizada con éxito"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .catch(({status, error}) => {
@@ -692,7 +692,7 @@ const ManagerProducts = (props) => {
                 
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.SHORT
+                ToastAndroid.LONG
             );
         })
         .finally(() => {
@@ -724,7 +724,7 @@ const ManagerProducts = (props) => {
                 console.log(error);
                 return ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.SHORT
+                    ToastAndroid.LONG
                 );
             })
             .finally(() => {
@@ -1067,7 +1067,7 @@ const ManagerProducts = (props) => {
 
                                 if(parseFloat(cant) > productos[dialogVisible].QUANT) {
                                     cant = productos[dialogVisible].QUANT?.toString();
-                                    ToastAndroid.show('La cantidad de devolución no puede ser mayor a la recibida', ToastAndroid.SHORT);
+                                    ToastAndroid.show('La cantidad de devolución no puede ser mayor a la recibida', ToastAndroid.LONG);
                                 }
                                 console.log(cant, "cant")
                                 otroInput3.current?.setNativeProps({text: cant ?? '0'});

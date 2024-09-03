@@ -14,7 +14,7 @@ const createDataProvider = () => {
     return new DataProvider((r1, r2) => r1 !== r2);
 };
 
-const ListaPerform = memo(({items, renderItems, heightRemove=null, refreshGet, height = 90, refreshControl = null, forceHeight=true, header = '', ListEmptyComponent = <Text>...</Text>}) => {
+const ListaPerform = memo(({items, renderItems, heightRemove=null, refreshGet, height = 90, refreshControl = null, forceHeight=true, header = '', ListEmptyComponent = <Text>Nada por aquí</Text>}) => {
     const [dataProvider, setDataProvider] = useState(createDataProvider());
 
     const _layoutProvider = new LayoutProvider(

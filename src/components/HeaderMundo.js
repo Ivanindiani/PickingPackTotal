@@ -39,10 +39,15 @@ const HeaderMundo = (props) => {
                 TotalWMS{"\n"}
                 <Text style={styles.text2}>{props.title.split("\n")[1]}</Text>
             </Text>
-            <Image
-                style={styles.image}
-                source={require('../assets/images/LOGO-MUT.png') }
-            />
+            <View style={{justifyContent: 'center', textAlign: 'center', marginEnd: 5, alignItems: 'center'}}> 
+                <Image
+                    style={styles.image}
+                    source={require('../assets/images/LOGO-MUT.png') }
+                    resizeMode='contain'
+                />
+                {props.dataUser?.USNAA ? <Text style={styles.text3}>{props.dataUser.USNAM+" "+(props.dataUser.USLAS)}</Text>:
+                props.dataUser?.CAMIONERO ? <Text style={styles.text3}>Conductor: {props.dataUser.DNAME+" "+(props.dataUser.DFNAM)}</Text>:''}
+            </View>
             {openAdmin && <SelectInput
                 data={ipDefaults}
                 value={props.ipSelect}
@@ -80,10 +85,14 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '600'
     },  
+    text3: {
+        fontSize: 10,
+        color: 'white',
+        fontWeight: '600',
+        fontStyle: 'italic'
+    },  
     image: {
-        height: 45,
-        marginEnd: 19,
-        alignSelf: 'center',
+        height: 35,
     },
     image2: {
         position: 'absolute',
