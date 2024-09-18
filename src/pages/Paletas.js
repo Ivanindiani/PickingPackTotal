@@ -1,3 +1,4 @@
+import {Sumar, Restar, Multiplicar, Dividir} from "../components/_globals";
 import { useEffect, useMemo, useState } from "react";
 import fetchIvan from "../components/_fetch";
 import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, 
@@ -105,7 +106,7 @@ const Paletas = (props) => {
     const [show, setShow] = useState(true);
 
     /* Variables configurar paletas */
-    const [dividirAncho, setDividirAncho] = useState(2);
+    const [dividirAncho, setDividirAncho] = useState(1);
     const [dividirAlto, setDividirAlto] = useState(1);
     const [paletaIDX, setPaletaIDX] = useState(0);
     /* Variables configurar paletas */
@@ -115,54 +116,53 @@ const Paletas = (props) => {
     const Almacen = Centro.Almacenes?.filter((alm) => alm.LGORT === props.route.params.almacenId)[0] || {};
 
     useEffect(() => { // Init configure more palets
-        const fullRestante = (divAncho, divAlto, palIDX) => {
-            const contenedor = [Orden?.Container.XLONG*divAncho*divAlto, Orden?.Container.YWIDT, Orden?.Container.ZHEIG];
-            const anchoMaximo = (Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*divAncho*2))/divAncho;
-            const altoMaximo = (Orden?.Container.ZHEIG-(Orden?.Container.ZHEIG*configOrden?.p_espacio_alto))/divAlto;
-            const paletaEstandar = [configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[palIDX]?.l:1.2, 
-            configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[palIDX].a:0.8, 
-            configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[palIDX].h_force ? configOrden?.paletas_estandar[palIDX].h:altoMaximo];
+        const fullRestante = (divAlto, palIDX) => {
+            const contenedor = {
+                X: Orden?.Container.XLONG,
+                Y: Orden?.Container.YWIDT,
+                Z: Orden?.Container.ZHEIG
+            };
     
-            let sumas = [0, 0, 0];
-            for(let paleta of Orden?.Paletas) {
-                if(paleta.DISTX && paleta.DISTY && paleta.DISTZ) {
-                    sumas[0] += parseFloat(paleta.DISTX);
-                    if(divAncho === 2 && paleta.DISTY > anchoMaximo) {
-                        sumas[0] += parseFloat(paleta.DISTX);
-                    }
-                    if(divAlto === 2 && paleta.DISTZ > altoMaximo) {
-                        sumas[0] += parseFloat(paleta.DISTX);
-                    }
-                    sumas[1] += parseFloat(paleta.DISTY);
-                    sumas[2] += parseFloat(paleta.DISTZ);
-                }
-            }
+            const anchoMaximo = (Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*2));
+            const altoMaximo = (Orden?.Container.ZHEIG-(Orden?.Container.ZHEIG*configOrden?.p_espacio_alto*divAlto));
     
-            let estandarMaximas = (contenedor[0]-sumas[0])/paletaEstandar[0];
-            if(divAncho === 2) {
-                for(let i=0;i < estandarMaximas;i+=paletaEstandar[0]){
-                    if(paletaEstandar[1] > anchoMaximo) {
-                        estandarMaximas-=paletaEstandar[0];
-                    }
-                }
-            }
+            const paletaEstandar = !configOrden?.paletas_estandar?.length ? {
+                    X: 1.2, 
+                    Y: 0.8, 
+                    Z: altoMaximo/divAlto,
+                    W: 1000
+                }:{
+                    X: configOrden.paletas_estandar[palIDX].l, 
+                    Y: configOrden.paletas_estandar[palIDX].a-(configOrden.paletas_estandar[palIDX].a*configOrden?.p_espacio_ancho*2), 
+                    Z: !configOrden.paletas_estandar[palIDX].h_force ? altoMaximo/divAlto:configOrden.paletas_estandar[palIDX].h-(configOrden.paletas_estandar[palIDX].h*configOrden?.p_espacio_ancho*2),
+                    W: configOrden.paletas_estandar[palIDX].w
+                };
             
-            return Math.floor(estandarMaximas) ?? 0;
+            
+            const divisionesX = Math.floor(contenedor.X/paletaEstandar.X);
+            const divisionesY = Math.floor(contenedor.Y/paletaEstandar.Y);
+            const divisionesZ = Math.floor(contenedor.Z/paletaEstandar.Z);
+            const maximasPromedio = Math.floor(divisionesX*divisionesY*divisionesZ);
+            const maximasPorPeso = Math.floor(Orden?.PESO_MAX/paletaEstandar.W);
+            console.log("Maximas idx", palIDX, maximasPromedio, maximasPorPeso);
+            
+            //return maximasPromedio < maximasPorPeso ? maximasPromedio:maximasPorPeso;
+            return maximasPromedio;
         }
 
-        let maximas = 0, maximasAux = 0; let maximaA = 1; let maximaH = 1; let plidx = 0;
+        let maximas = 0, maximasAux = 0; let maximaH = 1; let plidx = 0;
         for(let i=0; i < configOrden?.paletas_estandar?.length; i++) {
             if(configOrden?.paletas_estandar[i].h_force) continue;
-            maximasAux = fullRestante(1, 1, i);
+            maximasAux = fullRestante(1, i);
             if(maximasAux > maximas) {
                 plidx = i;
-                maximaA = 1;
+                maximaH = 1;
                 maximas = maximasAux;
             }
-            maximasAux = fullRestante(2, 1, i);
+            maximasAux = fullRestante(2, i);
             if(maximasAux > maximas) {
                 plidx = i;
-                maximaA = 2;
+                maximaH = 2;
                 maximas = maximasAux;
             }
         }
@@ -179,7 +179,9 @@ const Paletas = (props) => {
             maximas = maximasAux;
         }
         setDividirAlto(maximaH);*/
-        setDividirAncho(maximaA);
+        console.log("Idx final", plidx);
+        console.log("Alto max", maximaH)
+        setDividirAlto(maximaH);
         setPaletaIDX(plidx);
 
     }, []);
@@ -205,9 +207,12 @@ const Paletas = (props) => {
 
     useEffect(() => {
         if(configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force) {
-            setDividirAlto(1);
+            if(dividirAlto === 2) 
+                setDividirAlto(1);
+            /*if(dividirAncho === 2) 
+                setDividirAncho(1);*/
         }
-    }, [paletaIDX]);
+    }, [paletaIDX, dividirAlto]);
 
     const addPalet = () => {
         Alert.alert('Confirmar', `¿Deseas agregar una nueva paleta?`, [
@@ -251,7 +256,7 @@ const Paletas = (props) => {
     }
 
     const delPalet = (id) => {
-        Alert.alert('Confirmar', `¿Deseas eliminar esta paleta?\n\nRecuerda que esta paleta puede contener traslados y artículos cargados.`, [
+        Alert.alert('Confirmar', `¿Deseas eliminar esta paleta?\n\nSe eliminaran los artículos asociados a la paleta ${id.toString().substr(-3).padStart(3, '0')}.`, [
             {
               text: 'Sí',
               style: 'destructive',
@@ -298,7 +303,7 @@ const Paletas = (props) => {
     ]);
 
     useEffect(() => {
-        if(props.dataUser.CAMIONERO && (Orden?.STSOR >= 2 && Orden?.STSOR < 3)) {
+        if(props.dataUser.CAMIONERO && Orden?.STSOR == 2) {
             const getGPS = () => {
                 GetLocation.getCurrentPosition({
                     enableHighAccuracy: false,
@@ -389,48 +394,167 @@ const Paletas = (props) => {
         }
     }, [Orden]);
 
-    const paletasRestantes = (dinamico = false) => {
-        const contenedor = [Orden?.Container.XLONG*dividirAncho*dividirAlto, Orden?.Container.YWIDT, Orden?.Container.ZHEIG];
-        const anchoMaximo = (Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*dividirAncho*2))/dividirAncho;
-        const altoMaximo = (Orden?.Container.ZHEIG-(Orden?.Container.ZHEIG*configOrden?.p_espacio_alto))/dividirAlto;
-        const paletaEstandar = [configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[paletaIDX]?.l:1.2, 
-            configOrden?.paletas_estandar?.length ? configOrden?.paletas_estandar[paletaIDX].a:0.8, 
-            configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force ? configOrden?.paletas_estandar[paletaIDX].h:altoMaximo];
+    const paletasRestantes = () => {
+        const contenedor = {
+            X: Orden?.Container.XLONG,
+            Y: Orden?.Container.YWIDT,
+            Z: Orden?.Container.ZHEIG
+        };
 
-        let sumas = [0, 0, 0];
-        for(let paleta of Orden?.Paletas) {
-            if(paleta.DISTX && paleta.DISTY && paleta.DISTZ) {
-                sumas[0] += parseFloat(paleta.DISTX);
-                if(dividirAncho === 2 && paleta.DISTY > anchoMaximo) {
-                    sumas[0] += parseFloat(paleta.DISTX);
-                }
-                if(dividirAlto === 2 && paleta.DISTZ > altoMaximo) {
-                    sumas[0] += parseFloat(paleta.DISTX);
-                }
-                sumas[1] += parseFloat(paleta.DISTY);
-                sumas[2] += parseFloat(paleta.DISTZ);
-            }
-        }
+        const anchoMaximo = (Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*2));
+        const altoMaximo = (Orden?.Container.ZHEIG-(Orden?.Container.ZHEIG*configOrden?.p_espacio_alto*dividirAlto));
 
-        let estandarMaximas = (contenedor[0]-sumas[0])/paletaEstandar[0];
-        console.log("Paletas máximas: "+estandarMaximas);
-        if(dividirAncho === 2) {
-            for(let i=0;i < estandarMaximas;i+=paletaEstandar[0]){
-                if(paletaEstandar[1] > anchoMaximo) {
-                    estandarMaximas-=paletaEstandar[0];
-                }
-            }
-        }
-        console.log("Ancho máximo: "+anchoMaximo, anchoMaximo*dividirAncho);
-        console.log("Alto máximo: "+altoMaximo, paletaEstandar[1]);
-        console.log("Paletas máximas: "+estandarMaximas);
+        const paletaEstandar = !configOrden?.paletas_estandar?.length ? {
+                X: 1.2, 
+                Y: 0.8, 
+                Z: altoMaximo/dividirAlto,
+                W: configOrden.paletas_estandar[paletaIDX].w
+            }:{
+                X: configOrden.paletas_estandar[paletaIDX].l, 
+                Y: configOrden.paletas_estandar[paletaIDX].a-(configOrden.paletas_estandar[paletaIDX].a*configOrden?.p_espacio_ancho*2), 
+                Z: !configOrden.paletas_estandar[paletaIDX].h_force ? altoMaximo/dividirAlto:(configOrden.paletas_estandar[paletaIDX].h-(configOrden.paletas_estandar[paletaIDX].h*configOrden?.p_espacio_ancho*2)),
+                W: configOrden.paletas_estandar[paletaIDX].w
+            };
         
-        let estatico = Math.floor(contenedor[0]/paletaEstandar[0]);
+        
+        /* Esto saca el maximo en estandar sin contar las que ya metieron */
+        const divisionesX = Math.floor(Dividir(contenedor.X,paletaEstandar.X));
+        const divisionesY = Math.floor(Dividir(contenedor.Y,paletaEstandar.Y));
+        const divisionesZ = Math.floor(Dividir(contenedor.Z,paletaEstandar.Z));
+        const maximasPromedio = Math.floor(Multiplicar(Multiplicar(divisionesX,divisionesY),divisionesZ));
+        const maximasPorPeso = Math.floor(Dividir(Orden?.PESO_MAX,paletaEstandar.W));
+        /* Esto saca el maximo en estandar sin contar las que ya metieron */
 
-        return !dinamico ? (Math.floor(estandarMaximas) ?? estatico):estatico;
+        const volContenedorMax = contenedor.X*contenedor.Y*contenedor.Z;
+        const volPaletasEstandar = paletaEstandar.X*paletaEstandar.Y*paletaEstandar.Z;
+        
+        // Ordenamos de mayor volumen a menor
+        let paletasSort = Orden?.Paletas.sort((a, b) => {
+            const X1=parseFloat(a.DISTX ?? paletaEstandar.X);
+            const Y1=parseFloat(a.DISTY ?? paletaEstandar.Y);
+            const Z1=parseFloat(a.DISTZ ?? paletaEstandar.Z);
+            const X2=parseFloat(b.DISTX ?? paletaEstandar.X);
+            const Y2=parseFloat(b.DISTY ?? paletaEstandar.Y);
+            const Z2=parseFloat(b.DISTZ ?? paletaEstandar.Z);
+            let volA = X1*Y1*Z1;
+            let volB = X2*Y2*Z2;
+            if(volA > volB) {
+                return -1;
+            }
+        });
+
+        let volumenPaletasFisicas = 0;
+
+        let sumas = {
+            X: 0,
+            Y: 0,
+            Z: 0
+        };
+
+        let contenedorSum = {
+            X: contenedor.X,
+            Y: anchoMaximo,
+            Z: altoMaximo,
+            W: 0
+        }
+        let primero = true;  
+        let xMax = 0;
+        let yMax = 0;
+
+        for(let paleta of paletasSort) {
+            const X=parseFloat(paleta.DISTX ?? paletaEstandar.X);
+            const Y=parseFloat(paleta.DISTY ?? paletaEstandar.Y);
+            const Z=parseFloat(paleta.DISTZ ?? paletaEstandar.Z);
+            const W=parseFloat(paleta.WEIGH ?? paletaEstandar.W);
+            contenedorSum.W += W;
+            volumenPaletasFisicas += X*Y*Z;
+
+            console.log(sumas);
+            
+            if(primero) {
+                contenedorSum.X -= X;
+                xMax = X;
+                sumas.X += X;
+                sumas.Y += Y;
+                yMax = Y;
+                sumas.Z += Z;
+                primero = false;
+            } else {
+                if(X > xMax) {
+                    contenedorSum.X += xMax;
+                    xMax = X;
+                    contenedorSum.X -= xMax;
+                }
+                if(sumas.Z+Z > altoMaximo) {
+                    if(sumas.Y+Y > anchoMaximo) {
+                        contenedorSum.X -= X;
+                        xMax = X;
+                        sumas.Y = Y;
+                        yMax = Y;
+                        sumas.Z = Z;
+                        //primero = true;
+                        continue;
+                    } else {
+                        sumas.Z = Z;
+                        sumas.Y += Y;
+                        if(Y > yMax) {
+                            sumas.Y -= yMax;
+                            yMax = Y;
+                            sumas.Y += yMax;
+                        }
+                    }
+                } else {
+                    // ¿Que pasa si una paleta que viene arriba es mas ancha del contenedor?
+                    if(Y > yMax) {
+                        sumas.Y -= yMax;
+                        yMax = Y;
+                        sumas.Y += yMax;
+                    }
+                    sumas.Z += Z;
+                }
+            }
+        }
+
+        console.log("Sumas", contenedorSum, paletaEstandar);
+        /* Cuadrante restante */
+        const divisionesX1 = Math.floor(Dividir(contenedorSum.X,paletaEstandar.X));
+        const divisionesY1 = Math.floor(Dividir(contenedor.Y,paletaEstandar.Y));
+        const divisionesZ1 = Math.floor(Dividir(contenedor.Z,paletaEstandar.Z));
+        const maximasPromedioRestante = Math.floor(Multiplicar(Multiplicar(divisionesX1,divisionesY1),divisionesZ1));
+        console.log("Maximas en cuadro grande", maximasPromedioRestante, divisionesX1, divisionesY1, divisionesZ1);
+        /* Cuadrante restante */
+
+        /* Pedazos restante altura */
+        const divisionesXZ = Math.floor(Dividir(Restar(contenedor.X,contenedorSum.X),paletaEstandar.X));
+        const divisionesYZ = Math.floor(Dividir(yMax,paletaEstandar.Y));
+        const divisionesZZ = Math.floor(Dividir(Restar(contenedor.Z,sumas.Z),paletaEstandar.Z));
+        const maximasPromedioRestanteZ = sumas.Z > 0 ? Math.floor(Multiplicar(Multiplicar(divisionesXZ,divisionesYZ),divisionesZZ)):0;
+        console.log("Maximas en cuadrito altura", maximasPromedioRestanteZ, divisionesXZ, divisionesYZ, divisionesZZ);
+        /* Pedazos restante altura */
+
+        /* Pedazos restante ancho */
+        const divisionesXY = Math.floor(Dividir(Restar(contenedor.X,contenedorSum.X),paletaEstandar.X));
+        const divisionesYY = Math.floor(Dividir(Restar(contenedor.Y,sumas.Y),paletaEstandar.Y));
+        const divisionesZY = Math.floor(Dividir(contenedor.Z,paletaEstandar.Z));
+        const maximasPromedioRestanteY = sumas.Y > 0 ? Math.floor(Multiplicar(Multiplicar(divisionesXY,divisionesYY),divisionesZY)):0;
+        console.log("Maximas en cuadrito ancho", maximasPromedioRestanteY, divisionesXY, divisionesYY, divisionesZY);
+        /* Pedazos restante ancho */
+
+        const volumenRestante = volContenedorMax-volumenPaletasFisicas;
+        
+        //const maxRestantes = Math.floor(volumenRestante/volPaletasEstandar);
+        console.log("Volumen restante", Math.floor(Dividir(volumenRestante, volPaletasEstandar)));
+
+        const maximasPorPesoRestante = Math.floor(Dividir(Restar(Orden?.PESO_MAX,contenedorSum.W),paletaEstandar.W));
+
+        const maxRestantes = maximasPromedioRestante+maximasPromedioRestanteZ+maximasPromedioRestanteY;
+
+        console.log("Paletas máximas: "+maxRestantes, maximasPorPesoRestante);
+
+        return maxRestantes;
     }
 
-    const paletasRestantesMemo = useMemo(paletasRestantes, [Orden, dividirAlto, dividirAncho, configOrden, paletaIDX]);
+    const paletasRestantesMemo = useMemo(paletasRestantes, [Orden, dividirAlto, configOrden, paletaIDX]);
 
     const Paleta = () => 
         <View style={styles.view}>
@@ -686,6 +810,11 @@ const Paletas = (props) => {
                             <Text style={styles.th}>Medidas: </Text>
                             <Text style={styles.td}>{Orden?.Container?.XLONG}m X {Orden?.Container?.YWIDT}m X {Orden?.Container?.ZHEIG}m</Text>
                         </HStack>
+                        {configOrden?.paletas_estandar?.length ?
+                        <HStack style={{alignItems: 'flex-end'}}>
+                            <Text style={styles.th}>Pal. Estandar Sel.: </Text>
+                            <Text style={styles.td}>{configOrden.paletas_estandar[paletaIDX].l}m X {configOrden.paletas_estandar[paletaIDX].a}m X {configOrden.paletas_estandar[paletaIDX].h_force ? configOrden.paletas_estandar[paletaIDX].h:parseFloat(((Orden?.Container?.ZHEIG)-(Orden?.Container?.ZHEIG*configOrden?.p_espacio_alto))/dividirAlto).toFixed(2)}m</Text>
+                        </HStack>:''}
                         <HStack style={{alignItems: 'flex-end'}}>
                             <Text style={styles.th}>F. Salida: </Text>
                             <Text style={styles.td}>{(Orden?.PlanedRoute?.POUTP ?? Orden?.DATEC)?.substr(0,16)?.replace("T"," ")}</Text>
@@ -719,7 +848,7 @@ const Paletas = (props) => {
                                 radius={32}
                                 data={[
                                     {value: (paletasRestantesMemo+Orden?.Paletas.length) <= 0 ? Orden?.Paletas.length:(Orden?.Paletas.length/(paletasRestantesMemo+Orden?.Paletas.length))*100, color: '#ff4a4a', text: Orden?.Paletas?.length+' pal', textSize: 9.5, fontWeight: '600'},
-                                    {value: (paletasRestantesMemo+Orden?.Paletas.length) <= 0 ? 0:100-((Orden?.Paletas.length/(paletasRestantesMemo+Orden?.Paletas.length))*100), color: '#00894a', text: (paletasRestantesMemo)+' max', textSize: 9.5, fontWeight: '600'}
+                                    {value: (paletasRestantesMemo+Orden?.Paletas.length) <= 0 ? 1:100-((Orden?.Paletas.length/(paletasRestantesMemo+Orden?.Paletas.length))*100), color: '#00894a', text: (paletasRestantesMemo)+' max', textSize: 9.5, fontWeight: '600'}
                                 ]}
                             />
                             <PieChart 
@@ -939,18 +1068,21 @@ const Paletas = (props) => {
                         <SelectInput
                             data={configOrden?.paletas_estandar.reduce((p, pal, idx) => [...p, {value: idx, label: `L: ${pal.l}m, A: ${pal.a}, H: ${pal.h_force ? pal.h:(parseFloat(((Orden?.Container?.ZHEIG)-(Orden?.Container?.ZHEIG*configOrden?.p_espacio_alto))/dividirAlto).toFixed(2))}m`}], [])}
                             value={paletaIDX}
-                            setValue={(val) => setPaletaIDX(val)}
+                            setValue={(val) => {console.log(val); setPaletaIDX(val)}}
                             title="Sel. Paleta estandar"
                         />
                     </VStack>
                     {/*<Text style={styles.td2}>{configOrden?.p_espacio_ancho*100}% ({(((configOrden?.paletas_estandar[paletaIDX].a*dividirAncho*2))*100).toFixed(2)}cm) de espacio de ancho/paletas</Text>*/}
-                    <Text style={[styles.td2, , {textAlign: 'justify'}]}>{configOrden?.p_espacio_ancho*100}% ({((Orden?.Container.YWIDT*configOrden?.p_espacio_ancho)*100).toFixed(2)}cm) de espacio de ancho/paletas/paredes</Text>
+                    {configOrden?.paletas_estandar?.length && !configOrden?.paletas_estandar[paletaIDX].h_force ? 
+                        <Text style={[styles.td2, , {textAlign: 'justify'}]}>
+                            {configOrden?.p_espacio_ancho*100}% ({((Orden?.Container.YWIDT*configOrden?.p_espacio_ancho)*100).toFixed(2)}cm) de espacio de ancho/paletas/paredes
+                        </Text>:''}
                     <Text style={[styles.td2, , {textAlign: 'justify'}]}>{configOrden?.p_espacio_alto*100}% ({((Orden?.Container.ZHEIG*configOrden?.p_espacio_alto)*100).toFixed(2)}cm) de espacio contra el techo recomendado</Text>
-                    <HStack mt={5} style={{alignItems: 'center'}}>
+                    {/*<HStack mt={5} style={{alignItems: 'center'}}>
                         <Text style={styles.small}>Dividir Ancho</Text>
-                        <Switch value={dividirAncho === 2 ? true:false} onValueChange={() => setDividirAncho(dividirAncho === 1 ? 2:1)} />
+                        <Switch value={dividirAncho === 2 ? true:false} onValueChange={() => setDividirAncho(dividirAncho === 1 ? 2:1)} disabled={configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force ? true:false}/>
                         <Text style={styles.small}>max. {((Orden?.Container.YWIDT-(Orden?.Container.YWIDT*configOrden?.p_espacio_ancho*dividirAncho*2))/dividirAncho).toFixed(2)}m</Text>
-                    </HStack> 
+                    </HStack> */}
                     <HStack mb={5} style={{alignItems: 'center'}}>
                         <Text style={styles.small}>Dividir Alto</Text>
                         <Switch value={dividirAlto === 2 ? true:false} onValueChange={() => setDividirAlto(dividirAlto === 1 ? 2:1)} disabled={configOrden?.paletas_estandar?.length && configOrden?.paletas_estandar[paletaIDX].h_force ? true:false}/>

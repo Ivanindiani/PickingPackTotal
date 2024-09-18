@@ -91,7 +91,7 @@ const Pedidos = (props, ref) => {
                 | Total Escaneado: <Text style={[styles.overlay, {fontWeight: 'bold', fontSize: 12}]}>{item.ESCANEADO ?? 0}</Text>
             </Text>
             <Text style={styles.overlay}>Usuario: {item.UsuarioAsignado.USNAM+" "+item.UsuarioAsignado.USLAS}</Text>
-            <Text style={[{fontWeight: '600', fontSize: 13}]}>{item.MATNR}</Text>
+            <Text style={[{fontWeight: '500', fontSize: 13, color: 'black'}]}>{item.MATNR}</Text>
             <Text style={styles.subtitle}>{item.Producto.MAKTG} {item.UnidadBase.XCHPF === 'X' ? <Text style={styles.lote}>{"\n"}LOTE: {item.CHARG}</Text>:''}</Text>
             {traslado.TRSTS === 1 && <Text style={styles.subtitle}>Cant. Max. Disponible: {getDisponible(item)}</Text>}
             {traslado.TRSTS === 1 && <Text style={styles.subtitle}>{getUbicaciones(item)}</Text>}
