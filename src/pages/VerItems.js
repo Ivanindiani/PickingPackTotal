@@ -586,7 +586,7 @@ const VerItems = (props) => {
                     {loading && <ActivityIndicator />}
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                            <Text style={styles.title2}>Productos escaneados ({items.length}):</Text>
+                            <Text style={styles.title2}>Productos ({onlyPalet ? items.filter((v) => v.IDPAL == soloPaleta).length:items.length}):</Text>
                             
                             {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 && !onlyPalet && items.length ? 
                                 <Button compact={true} title="Recibir" onPress={recibirTraslado} disabled={loading}/>:''}
