@@ -389,7 +389,7 @@ const VerItems = (props) => {
                 <Text style={styles.subtitle}>{traslado.Paletas?.length && traslado.Paletas[0].Ordene?.TLATI && traslado.Paletas[0].Ordene?.TLATI ?
                 <Button title="Ver en maps" color={Global.colorMundoTotal} variant="outlined" style={{fontSize: 13, marginTop: -10, alignSelf: 'flex-end'}}
                     trailing={<MI name="google-maps" size={24} />}
-                    onPress={() => Linking.openURL('https://www.google.com/maps/place/'+traslado.Paletas[0].Ordene.TLATI+','+traslado.Paletas[0].Ordene.TLONG+'&hl=es')}
+                    onPress={() => Linking.openURL('https://www.google.com/maps/place/'+traslado.Paletas[0].Ordene.TLATI+','+traslado.Paletas[0].Ordene.TLONG+'?hl=es&travelmode=driving')}
                 />:'Aún no tenemos información\nde la ubicación actual'
                 }</Text>
             </HStack>

@@ -47,7 +47,7 @@ const dimensiones = Dimensions.get('window');
 
 console.log(dimensiones);
 
-const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId}) => {
+const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId, chofer}) => {
     const items = ordenes.data?.reduce((prev, ord) => {
         if(prev[ord.DATE_FORMAT]) {
             prev[ord.DATE_FORMAT].push(ord);
@@ -97,7 +97,7 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId})
             //refreshing={loading}
             disabledByDefault={!almacenId}
             rowHasChanged={(r1, r2) => {
-                return r1.IDTRG !== r2.IDTRG;
+                return r1.IDTRG !== r2.IDTRG || r1.STSOR !== r2.STSOR;
             }} 
             renderEmptyData={() => {
                 return <Text>No hay ordenes para este día</Text>;
@@ -129,6 +129,11 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId})
                                 <Text style={[styles.th, styles.secondaryText]}>Vol max: </Text>
                                 <Text style={[styles.td, styles.secondaryText]}>{orden.PESO_MAX} M3</Text>
                             </HStack>
+                            {chofer ?
+                            <HStack>
+                                <Text style={[styles.th, styles.secondaryText]}>Almacén de origen: </Text>
+                                <Text style={[styles.td, styles.secondaryText]}>{orden.Centro.NAME1} ({orden.Centro.WERKS})</Text>
+                            </HStack>:''}
                             <HStack>
                                 <Text style={[styles.th, styles.secondaryText]}>Tiendas: </Text>
                                 <Text style={[styles.td, styles.secondaryText]}>{orden.PlanedRoute?.PJWER.tiendas.join(', ') ?? ''}</Text>
@@ -228,6 +233,7 @@ const Ordenes = (props) => {
             fetchIvan(props.ipSelect).get('/crudOrdenes', datos.join('&'), props.token.token)
             .then(({data}) => {
                 console.log("Ordenes: ", data.data.length);
+                ToastAndroid.show("Orden(es) actualizada, con éxito", ToastAndroid.SHORT);
                 setOrdenes(data);
                 resolve(data.data);
             })
@@ -300,7 +306,7 @@ const Ordenes = (props) => {
                 </View>:''}
                 {loading && <ActivityIndicator/>}
                 
-                <Calendario ordenes={ordenes} getOrdenes={getOrdenes} setOrden={setOrden} navigation={props.navigation} almacenId={almacenId || props.dataUser.CAMIONERO}/>
+                <Calendario ordenes={ordenes} getOrdenes={getOrdenes} setOrden={setOrden} navigation={props.navigation} almacenId={almacenId || props.dataUser.CAMIONERO} chofer={props.dataUser.CAMIONERO ? true:false}/>
             </Stack>
         </SafeAreaView>
     )

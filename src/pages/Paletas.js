@@ -87,7 +87,7 @@ const Rutas = ({dataUser, Orden, changeStatusRuta}) => {
                     `\nDistancia: ${location.latitude ? getDistance(item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS, item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS):'Calculando...'}`}
                     trailing={dataUser.CAMIONERO && <MI name="google-maps" size={28} color="red" onPress={() => {
                         //Linking.openURL('https://www.google.com/maps/dir/10.43759598764664,-66.8640156895606/10.504786089464462,-66.91516573649994')
-                        Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}&hl=es`);
+                        Linking.openURL(`https://www.google.com/maps/dir/Your+location/${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LATIS},${item.Traslado?.HaciaCentro?.CentrosDescripcion?.LONGS}?hl=es&travelmode=driving`);
                     }}/>}
                     onPress={() => changeStatusRuta(item, index)}
                 />
@@ -891,7 +891,7 @@ const Paletas = (props) => {
                     {Orden?.TLATI && Orden?.TLONG ?
                     <Button title="Última Ubicación" color={Global.colorMundoTotal} variant="outlined" style={{fontSize: 12, marginTop: -2, alignSelf: 'flex-end'}}
                         trailing={<MI name="google-maps" size={24} />}
-                        onPress={() => Linking.openURL(`https://www.google.com/maps/place/${Orden?.TLATI},${Orden?.TLONG}&hl=es`)}
+                        onPress={() => Linking.openURL(`https://www.google.com/maps/place/${Orden?.TLATI},${Orden?.TLONG}?hl=es&travelmode=driving`)}
                         //onPress={() => console.log(`https://www.google.com/maps?q=${Orden?.TLATI},${Orden?.TLONG}+(${Orden?.DCONC.replaceAll(' ','+')})`)}
                     />:''}
                     {props.dataUser.CAMIONERO && Orden?.STSOR === 1 ?
