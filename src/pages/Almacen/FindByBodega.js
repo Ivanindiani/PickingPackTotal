@@ -71,8 +71,9 @@ const FindProducts = (props) => {
     },[showKeyBoard, props.tabActive]);
 
     const codeFind = (code) => {
-        let codigo = code.split(',')[0].match(/([0-9])/g);
-        codigo = codigo?.join("") || "";
+        //let codigo = code.split(',')[0].match(/([0-9])/g);
+        //codigo = codigo?.join("") || "";
+        let codigo = code.split(',')[0];
         if(codigo) {
             inputScan.current?.clear();
             inputScan.current?.focus();
@@ -83,62 +84,101 @@ const FindProducts = (props) => {
                 return Alert.alert("El código o la búsqueda deben contener 1 caracter como mínimo.");
             }
             let find = false;
-            for(let space of bodega.data) {
-                if(space.IDDWA == codigo) {
-                    setEstructura({
-                        nivel: space.FLOOR,
-                        pasillo: space.AISLE,
-                        columna: space.COLUM.toString(),
-                        rack: space.RACKS.toString(),
-                        paleta: bodega.extra.Niveles[space.FLOOR].Pasillos[space.AISLE].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
-                    });
-                    find = true;
-                    break;
-                }
-            }
-            if(!find) {
-                return Alert.alert("El código no corresponde a un identificador de paleta");
-            }
+            console.log(codigo);
+            if(codigo.indexOf("floor=") !== -1) {
+                let estruct = {
+                };
+                let codigos = codigo.split(";");
 
-            setFindProduct([]);
-            setLoading(true);
-            let datos = [
-                `IDDWA=${codigo}`,
-                `WERKS=${props.centroId}`,
-                `LGORT=${props.almacenId}`,
-            ];
-            fetchIvan(props.ipSelect).get('/administrative/crudArtBodegas', datos.join('&'), props.token.token)
-            .then(({data}) => {
-                console.log(data);
-                setFindProduct(data.data);
-            }).catch(({status, error}) => {
-                console.log(error);
-                if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
-                    setMsgConex("¡Ups! Parece que no hay conexión a internet");
+                let nivel = codigos[0].split('=');
+                if(nivel[0] === 'floor') {
+                    estruct.nivel = parseInt(nivel[1]) ?? 0;
                 }
-                return ToastAndroid.show(
-                    error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.LONG
-                );
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+                if(codigos.length > 1) {
+                    let pasillo = codigos[1].split('=');
+                    if(pasillo[0] === 'aisle') {
+                        estruct.pasillo = parseInt(pasillo[1]) ?? 0;
+                    }
+                    if(codigos.length > 2) {
+                        let columna = codigos[2].split('=');
+                        if(columna[0] === 'column') {
+                            estruct.columna = columna[1];
+                        }
+                    }
+                    if(codigos.length > 3) {
+                        let rack = codigos[3].split('=');
+                        if(rack[0] === 'rack') {
+                            estruct.rack = rack[1];
+                        }
+                    }
+                }
+                console.log(estruct);
+                if(!bodega.extra.Niveles[estruct.nivel] || 
+                    (estruct.pasillo && !bodega.extra.Niveles[estruct.nivel]?.Pasillos[estruct.pasillo]) || 
+                    (estruct.columna && !bodega.extra.Niveles[estruct.nivel].Pasillos[estruct.pasillo].Columnas[estruct.columna]) ||
+                    (estruct.rack && !bodega.extra.Niveles[estruct.nivel].Pasillos[estruct.pasillo].Columnas[estruct.columna].Racks[estruct.rack])) {
+                    return Alert.alert("El código no corresponde a un identificador en el almacen");
+                }
+                setEstructura(estruct);
+                return buscarBodega(estruct);
+            } else {
+                for(let space of bodega.data) {
+                    if(space.IDDWA == codigo) {
+                        setEstructura({
+                            nivel: space.FLOOR,
+                            pasillo: space.AISLE,
+                            columna: space.COLUM.toString(),
+                            rack: space.RACKS.toString(),
+                            paleta: bodega.extra.Niveles[space.FLOOR].Pasillos[space.AISLE].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
+                        });
+                        find = true;
+                        break;
+                    }
+                }
+                if(!find) {
+                    return Alert.alert("El código no corresponde a un identificador en el almacen");
+                }
+
+                setFindProduct([]);
+                setLoading(true);
+                let datos = [
+                    `IDDWA=${codigo}`,
+                    `WERKS=${props.centroId}`,
+                    `LGORT=${props.almacenId}`,
+                ];
+                fetchIvan(props.ipSelect).get('/administrative/crudArtBodegas', datos.join('&'), props.token.token)
+                .then(({data}) => {
+                    console.log(data);
+                    setFindProduct(data.data);
+                }).catch(({status, error}) => {
+                    console.log(error);
+                    if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
+                        setMsgConex("¡Ups! Parece que no hay conexión a internet");
+                    }
+                    return ToastAndroid.show(
+                        error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                        ToastAndroid.LONG
+                    );
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
+            }
         }
     }
 
-    const buscarBodega = () => {
+    const buscarBodega = (esctruc) => {
         setFindProduct([]);
         setLoading(true);
         let datos = [
             `WERKS=${props.centroId}`,
             `LGORT=${props.almacenId}`
         ];
-        if(estructura.nivel) datos.push(`FLOOR=${estructura.nivel}`);
-        if(estructura.pasillo) datos.push(`AISLE=${estructura.pasillo}`);
-        if(estructura.columna) datos.push(`COLUM=${estructura.columna}`);
-        if(estructura.racks) datos.push(`RACKS=${estructura.racks}`);
-        if(estructura.paleta) datos.push(`PALET=${estructura.paleta}`);
+        if(esctruc.nivel) datos.push(`FLOOR=${esctruc.nivel}`);
+        if(esctruc.pasillo) datos.push(`AISLE=${esctruc.pasillo}`);
+        if(esctruc.columna) datos.push(`COLUM=${esctruc.columna}`);
+        if(esctruc.racks) datos.push(`RACKS=${esctruc.racks}`);
+        if(esctruc.paleta) datos.push(`PALET=${esctruc.paleta}`);
 
         fetchIvan(props.ipSelect).get('/administrative/crudArtBodegas', datos.join('&'), props.token.token)
         .then(({data}) => {
@@ -228,9 +268,8 @@ const FindProducts = (props) => {
                     <Text style={[styles.th, {color: 'red', textAlign: 'center', width: '100%'}]}>¡Ubicación BLOQUEADA!</Text>
                     <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{item.Bodega?.COMEB}</Text>
                 </VStack>}
-                <HStack style={[styles.row, {alignItems: 'center', justifyContent: 'space-between', left: -16}]}>
-                    <Text style={styles.th}>ID:</Text>
-                    <Text style={[styles.td, {backgroundColor: 'lightgreen', width: 'auto', maxWidth: '45%', textAlign: 'center', fontSize: 12}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
+                <HStack style={[styles.row, {alignItems: 'center', justifyContent: 'flex-end', left: -16}]} spacing={5}>
+                    <Text style={[styles.td, {backgroundColor: 'lightgreen', width: 'auto', maxWidth: '75%', textAlign: 'center', fontSize: 12, padding: 3}]} numberOfLines={2}>{item.IDDWA}{"\n"}{getConcatItem(item)}</Text>
                     {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 && !item.RESERVADOS ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
@@ -278,8 +317,8 @@ const FindProducts = (props) => {
                     <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.AINAM || "Pasillo"}:</Text>
                     <SelectInput
                         searchable={true}
-                        data={!bodega.extra || !estructura.nivel ? 
-                            []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[{value: null, label: ""}])}
+                        data={!bodega.extra || !estructura.nivel || !bodega.extra.Niveles[estructura.nivel] ? 
+                            []:Object.keys(bodega.extra.Niveles[estructura.nivel]?.Pasillos).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[{value: null, label: ""}])}
                         value={estructura.pasillo}
                         setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: val})}
                         title={bodega.extra?.Nombres?.AINAM || "Pasillo"}
@@ -289,8 +328,8 @@ const FindProducts = (props) => {
                     <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.CONAM || "Columna"}:</Text>
                     <SelectInput
                         searchable={true}
-                        data={!bodega.extra || !estructura.nivel || !estructura.pasillo ? 
-                            []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas).reduce((p,i) => [...p, {value: i, label: i}],[{value: null, label: ""}])}
+                        data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !bodega.extra.Niveles[estructura.nivel] || !bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo] ?
+                            []:Object.keys(bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas).reduce((p,i) => [...p, {value: i, label: i}],[{value: null, label: ""}])}
                         value={estructura.columna}
                         setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: estructura.pasillo, columna: val})}
                         title={bodega.extra?.Nombres?.CONAM || "Columna"}
@@ -318,7 +357,7 @@ const FindProducts = (props) => {
                     />
                 </HStack>
 
-                <Button title="Buscar" onPress={buscarBodega} color={Global.colorMundoTotal} loading={loading}
+                <Button title="Buscar" onPress={() => buscarBodega(estructura)} color={Global.colorMundoTotal} loading={loading}
                     disabled={(!estructura.columna && !estructura.nivel && !estructura.pasillo && !estructura.rack &&
                         !estructura.paleta) || !props.almacenId} 
                     style={{marginTop: 10}}/>
