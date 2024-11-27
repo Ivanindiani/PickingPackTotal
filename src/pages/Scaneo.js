@@ -707,7 +707,7 @@ const Scaneo = (props) => {
             for(const ubi of producto.ArticulosBodegas) {
                 if(producto.CHARG != ubi.LOTEA) continue;
 
-                const escaneados = props.dataUser.USSCO.indexOf('ADMIN_SCAN') == -1 && force ? 
+                const escaneados = props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') == -1 && force ? 
                     trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG == producto.CHARG &&
                         tra.IDADW == ubi.IDADW && (tra.IDPAL != IDPAL || tra.UCRID != ucrid) ? (prev+tra.TCANT):prev, 0):0;
                 let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0)//-parseInt(escaneados);
@@ -718,7 +718,7 @@ const Scaneo = (props) => {
                         //cantDisp -= parseInt(producto.ESCANEADO ?? 0);
                 }
                 contar += cantDisp;
-                console.log(ubi.QUANT, ubi.RESERVADOS, escaneados, cantDisp, props.dataUser.USSCO.indexOf('ADMIN_SCAN'), producto.TCANT)
+                console.log(ubi.QUANT, ubi.RESERVADOS, escaneados, cantDisp, props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN'), producto.TCANT)
                 ubicaciones.push({
                     label: "Paleta: "+ubi.IDDWA+(ubi.Bodega.BLOQU ? ' (BLOQUEADO)':''),
                     subLabel: `${ubi.Bodega.FLOOR}-${ubi.Bodega.AISLE}-${ubi.Bodega.COLUM}-${ubi.Bodega.RACKS}-${ubi.Bodega.PALET} - (Cant. ${cantDisp})`,
@@ -746,7 +746,7 @@ const Scaneo = (props) => {
         return ubicaciones;
     }
 
-    const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined, scanCurrent.CHARG]);
+    const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined, scanCurrent.CHARG]);
     /* Funciones Scan */
     
     /* Componente Información */
@@ -809,7 +809,7 @@ const Scaneo = (props) => {
                         title="Finalizar Escaneo"
                         containerStyle={{marginTop: 10}}/>
                     }
-                    {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
+                    {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
                     <Button
                         variant="outlined"
                         color="#000"
@@ -898,7 +898,7 @@ const Scaneo = (props) => {
                     <Text style={styles.subtitle} numberOfLines={1}>{getMedidas(item.UnidadBase?.GROES)} ({(parseFloat(item.UnidadBase?.VOLUM ?? 0)*parseFloat(item.TCANT)).toFixed(2)} m3)</Text>
                 </VStack>
 
-                {traslado.TRSTS === 1 && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
+                {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
                     <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
                     <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal}
                         variant="outlined" title="Comentario" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
@@ -912,7 +912,7 @@ const Scaneo = (props) => {
                     {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
                     {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
                 </VStack>}
-                {traslado.TRSTS === 1 && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
+                {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
                     <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item)} style={{alignSelf: 'center'}}/>:''
                 }
             </HStack>
@@ -1147,7 +1147,7 @@ const Scaneo = (props) => {
                     <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
 
                     {traslado.TRSTS === 1 ? 
-                        cronometro.FINIC && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || !cronometro.FFEND) ?
+                        cronometro.FINIC && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || !cronometro.FFEND) ?
                         <View> 
                             <VStack spacing={-8}>
                                 <TextInput placeholder="Pulsa y escanea o tipea el código de barras" 
@@ -1297,7 +1297,7 @@ const Scaneo = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({trasladoItems?.filter(f => f.TCANT > 0).length}):</Text>
-                            {(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
+                            {(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
                             (cronometro.FINIC && !cronometro.FFEND) ? 
                                 <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSheet(true)} 
                                     disabled={loading || loadingSave} loading={loading || loadingSave} 
@@ -1314,7 +1314,7 @@ const Scaneo = (props) => {
                             </HStack>
                         </VStack>
                         <ListaPerform 
-                            items={props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
+                            items={props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
                             heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
                             height={160}

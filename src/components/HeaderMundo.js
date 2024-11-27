@@ -4,13 +4,16 @@ import SelectInput from './_virtualSelect';
 import { useState } from 'react';
 
 const ipDefaults = [{
-    label: '172.16.10.78 (local)',
+    label: '172.16.10.78 (local)', // PC IVAN local
     value: '172.16.10.78:8888'
 }, {
-    label: '201.249.133.34 (develop)',
+    label: '201.249.133.34 (develop)', // PC IVAN publica
     value: '201.249.133.34:8888'
 }, {
-    label: '201.249.133.34 (production)',
+    label: '192.168.0.183 (production)', // Servidor ip local
+    value: '192.168.0.183:8888'
+}, {
+    label: '201.249.133.34 (production)', // Servidor publico
     value: '201.249.133.34:8899'
 }];
 
@@ -52,7 +55,7 @@ const HeaderMundo = (props) => {
                 data={ipDefaults}
                 value={props.ipSelect}
                 setValue={props.setIp}
-                title=""
+                title={"IP en uso:\n"+props.ipSelect}
                 buttonStyle={{with: 0, position: 'absolute', visibility: false}}
                 open={openAdmin}
                 onClose={() => setAdmin(false)}

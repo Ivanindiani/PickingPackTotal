@@ -565,7 +565,7 @@ const Paletas = (props) => {
                         Nº Pal restantes: {paletasRestantesMemo}{"\n"}
                         Total Paletas: {Orden?.Paletas.length}
                     </Text>
-                    {props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ?
+                    {props.dataUser.USSCO.split(',').indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ?
                     <Button title="Agregar paleta" color={Global.colorMundoTotal} 
                         leading={p2 => <FontAwesome5 name="pallet" {...p2} size={14}/>} 
                         pressableContainerStyle={{padding: 0}}
@@ -590,9 +590,9 @@ const Paletas = (props) => {
                             (item.DISTX && item.DISTY && item.DISTZ ? `\nVol. reportado: ${(item.DISTX*item.DISTY*item.DISTZ).toFixed(2)} m3 (${item.DISTX}x${item.DISTY}x${item.DISTZ})`:'')}
                         trailing={p2 => 
                             !props.dataUser.CAMIONERO && <View>
-                                {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ? 
+                                {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && props.dataUser.USSCO.split(',').indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ? 
                                     <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2} color="red"/> } onPress={() => delPalet(item.IDPAL)}/>:''}
-                                {props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ? <IconButton icon={p2=p2 => <MaterialIcons name="settings" {...p2}/> } onPress={() => {
+                                {props.dataUser.USSCO.split(',').indexOf('ADMIN_PALLET') !== -1 && Orden?.STSOR === 1 ? <IconButton icon={p2=p2 => <MaterialIcons name="settings" {...p2}/> } onPress={() => {
                                     setInputs({
                                         largo: item.DISTX,
                                         ancho: item.DISTY,
@@ -605,7 +605,7 @@ const Paletas = (props) => {
                                 }}/>:''}
                             </View>
                         }
-                        onPress={() => props.dataUser.USSCO.indexOf('TRASLADOS_FIND') !== -1 ? props.navigation.navigate(props.dataUser.CAMIONERO ? 'RecibirTraslados':'Traslados', {
+                        onPress={() => props.dataUser.USSCO.split(',').indexOf('TRASLADOS_FIND') !== -1 ? props.navigation.navigate(props.dataUser.CAMIONERO ? 'RecibirTraslados':'Traslados', {
                             type_tras: 'crear_tras',
                             centroId: props.route.params.centroId,
                             almacenId: props.route.params.almacenId,

@@ -104,6 +104,9 @@ const Login = (props) => {
         })
         .catch(({status, error}) => {
             console.log("ERROR", error);
+            if(error.update_forced) {
+                return Alert.alert("Hay una nueva versión disponible", "Por favor ingresa a playstore y actualiza la aplicación a la nueva versión");
+            }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
                 6000

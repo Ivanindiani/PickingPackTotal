@@ -66,7 +66,7 @@ const Home = (props) => {
                 <Text style={styles.title2}>Hola{"\n"}{props.dataUser.CAMIONERO ? props.dataUser.DNAME+" "+(props.dataUser.DFNAM??''):props.dataUser.USNAM+" "+(props.dataUser.USLAS??'')}</Text>
                 <Image source={require('../assets/images/Logo.png') } style={styles.icon} resizeMode="cover"/>
                 <Text>Menú Inicio</Text>
-                {(props.dataUser.USSCO?.indexOf('RECEPCION_FIND') !== -1 || props.dataUser.USSCO?.indexOf('ADMIN_RECEPCION') !== -1) 
+                {(props.dataUser.USSCO?.split(',').indexOf('RECEPCION_FIND') !== -1 || props.dataUser.USSCO?.split(',').indexOf('ADMIN_RECEPCION') !== -1) 
                     && !props.dataUser.CAMIONERO ?
                 <ListItem
                     title="Recepción de Productos"
@@ -75,7 +75,7 @@ const Home = (props) => {
                     onPress={() => props.navigation.navigate('Recepcion')}
                 />:''
                 }
-                {/*props.dataUser.USSCO?.indexOf('SCAN') !== -1 && 
+                {/*props.dataUser.USSCO?.split(',').indexOf('SCAN') !== -1 && 
                 <ListItem
                     title="Traslado de Productos"
                     leading={<MaterialCI name="barcode-scan" size={24} />}
@@ -84,7 +84,7 @@ const Home = (props) => {
                     onPress={() => props.navigation.navigate('TrasladosTab', {type_tras: 'crear_tras'})}
                 />
                 */}
-                {props.dataUser.USSCO?.indexOf('TRASLADOS_FIND') !== -1 && 
+                {props.dataUser.USSCO?.split(',').indexOf('TRASLADOS_FIND') !== -1 && 
                 <ListItem
                     title="Traslados de Productos"
                     leading={<MaterialCI name="truck-delivery" size={24} />}
@@ -93,7 +93,7 @@ const Home = (props) => {
                     onPress={() => props.navigation.navigate('TabOrdenes', {type_tras: 'crear_tras'})}
                 />
                 }
-                {props.dataUser.USSCO?.indexOf('RECEIVE_TRAS') !== -1 && !props.dataUser.CAMIONERO ?
+                {props.dataUser.USSCO?.split(',').indexOf('RECEIVE_TRAS') !== -1 && !props.dataUser.CAMIONERO ?
                 <ListItem
                     title="Recepción de Traslados"
                     leading={<Feather name="check-square" size={24} />}
@@ -102,7 +102,7 @@ const Home = (props) => {
                     onPress={() => props.navigation.navigate('TrasladosTab', {type_tras: 'recibir_tras'})}
                 />:''
                 }
-                {props.dataUser.USSCO?.indexOf('FIND_ARTBODEGA') !== -1 && !props.dataUser.CAMIONERO ?
+                {props.dataUser.USSCO?.split(',').indexOf('FIND_ARTBODEGA') !== -1 && !props.dataUser.CAMIONERO ?
                 <ListItem
                     title="Almacén Inventario"
                     leading={<MaterialCI name="warehouse" size={24} />}

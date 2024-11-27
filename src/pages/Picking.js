@@ -757,9 +757,9 @@ const ManagerProducts = (props) => {
 
             {recepcion.RESTS === 'CREADO' ? 
             <VStack w="25%" style={{alignSelf: 'flex-end'}}>
-                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
+                {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <Text style={[styles.subtitle2]} mt={0}>Costo ({recepcion.ProveedoresFijo?.WAERS}):</Text>}
-                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
+                {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <TextInput
                     containerStyle={{fontSize: 5}} 
                     defaultValue={item.MONTO.toString()} 
@@ -802,9 +802,9 @@ const ManagerProducts = (props) => {
                     ref={el => otroInput1.current ? otroInput1.current[index] = el:''} 
                     maxLength={10}
                 />}
-                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
+                {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <Text style={styles.subtitle2}>Cant.</Text>}
-                {(props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
+                {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <TextInput
                     containerStyle={{fontSize: 5}} 
                     defaultValue={item.QUANT.toString()} 
@@ -853,10 +853,10 @@ const ManagerProducts = (props) => {
                 {/* <Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text> */}
             </VStack>}
             <VStack w={recepcion.RESTS === 'CREADO' ? '20%':'15%'} style={{alignItems: 'center'}}>
-            {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_ITEMS_DELETE') !== -1) &&
+            {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_DELETE') !== -1) &&
                 <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item.MAKTG, item.IDREA, item.MATNR)} style={{alignSelf: 'center'}}/>
             }
-            {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.indexOf('RECEPCION_DEVOLUCION') !== -1) &&
+            {recepcion.RESTS === 'CREADO' && (props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_DEVOLUCION') !== -1) &&
                 <IconButton icon={p2=p2 => <Entypo name="back" {...p2}/> } onPress={() => setDialogVisible(index)}/>
             }
             {recepcion.RESTS === 'CREADO' && <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>}
@@ -1011,7 +1011,7 @@ const ManagerProducts = (props) => {
                 <Stack style={styles.escaneados} mt={1}>
                     <HStack spacing={1} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                         <Text style={styles.title2}>Prod. escaneados ({productos.length}):</Text>
-                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' && productos.length && <Button compact={true} color={Global.colorMundoTotal} title="Finalizar" onPress={finalizarRecepcion} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
+                        {props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO' && productos.length && <Button compact={true} color={Global.colorMundoTotal} title="Finalizar" onPress={finalizarRecepcion} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
                     </HStack>
                     <ListaPerform
                         items={productos} 

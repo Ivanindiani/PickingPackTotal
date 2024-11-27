@@ -23,13 +23,13 @@ const AlmacenInv = (props) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if(props.dataUser.USSCO?.indexOf('INSERT_ARTBODEGA') !== -1 && props.dataUser.USSCO?.indexOf('MOVE_ARTBODEGA') === -1) {
+        if(props.dataUser.USSCO?.split(',').indexOf('INSERT_ARTBODEGA') !== -1 && props.dataUser.USSCO?.split(',').indexOf('MOVE_ARTBODEGA') === -1) {
             setRoutes([
                 { key: 'find', title: 'Buscar\nProductos' }, 
                 { key: 'manager', title: 'Agregar\nProductos' }, 
                 { key: 'bodega', title: 'Buscar\npor QR' }
             ])
-        } else if(props.dataUser.USSCO?.indexOf('INSERT_ARTBODEGA') !== -1 && props.dataUser.USSCO?.indexOf('MOVE_ARTBODEGA') !== -1) {
+        } else if(props.dataUser.USSCO?.split(',').indexOf('INSERT_ARTBODEGA') !== -1 && props.dataUser.USSCO?.split(',').indexOf('MOVE_ARTBODEGA') !== -1) {
             setRoutes([
                 { key: 'find', title: 'Buscar\nProductos' }, 
                 { key: 'manager', title: 'Agregar\nProductos' }, 

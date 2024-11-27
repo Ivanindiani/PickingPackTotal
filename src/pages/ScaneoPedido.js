@@ -387,7 +387,7 @@ const ScaneoPedido = (props) => {
                         if(producto.UnidadBase.XCHPF === 'X') { // Con lote
                             producto.maxQuantityLote = {};
                             producto.maxQuantityLote[producto.CHARG] = parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0);
-                            if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1) {
+                            if(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1) {
                                 producto.CANTP = pedido.reduce((prev, it) => it.MATNR===producto.MATNR && it.CHARG == producto.CHARG ? (prev+parseInt(it.CANTP)):prev,0);
                                 producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0)
                             }
@@ -406,7 +406,7 @@ const ScaneoPedido = (props) => {
                             }];
                         } else {
                             producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
-                            if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1) {
+                            if(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1) {
                                 producto.CANTP = pedido.reduce((prev, it) => it.MATNR===producto.MATNR ? (prev+parseInt(it.CANTP)):prev,0);
                                 producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0)
                             }
@@ -467,7 +467,7 @@ const ScaneoPedido = (props) => {
                     if(producto.UnidadBase.XCHPF === 'X') { // Con lote
                         producto.maxQuantityLote = {};
                         producto.maxQuantityLote[producto.CHARG] = parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0);
-                        /*if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
+                        /*if(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
                             producto.maxQuantityLote[producto.CHARG] +=parseInt(find.TCANT);
                             if(producto.UCRID == props.dataUser.IDUSR)
                                 producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0);
@@ -479,7 +479,7 @@ const ScaneoPedido = (props) => {
                         }];
                     } else {
                         producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
-                        /*if(props.dataUser.USSCO.indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
+                        /*if(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') === -1 && (producto.UCRID != props.dataUser.IDUSR || producto.IDPAL != IDPAL)){
                             producto.maxQuantity += parseInt(find.TCANT);
                             if(producto.UCRID == props.dataUser.IDUSR)
                                 producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0);
@@ -694,11 +694,11 @@ const ScaneoPedido = (props) => {
         console.log("Get ubi update");
         if(producto.ArticulosBodegas) {
             for(const ubi of producto.ArticulosBodegas) {
-                const escaneados = props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && !force ? 
+                const escaneados = props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && !force ? 
                     trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG &&
                         tra.IDADW === ubi.IDADW && (tra.IDPAL !== IDPAL || tra.UCRID !== ucrid) ? (prev+tra.TCANT):prev, 0):0;
                 let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0)-parseInt(escaneados);
-                console.log(ubi.QUANT, ubi.RESERVADOS, escaneados, cantDisp, props.dataUser.USSCO.indexOf('ADMIN_SCAN'))
+                console.log(ubi.QUANT, ubi.RESERVADOS, escaneados, cantDisp, props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN'))
                 ubicaciones.push({
                     label: "Paleta: "+ubi.IDDWA+(ubi.Bodega.BLOQU ? ' (BLOQUEADO)':''),
                     subLabel: `${ubi.Bodega.FLOOR}-${ubi.Bodega.AISLE}-${ubi.Bodega.COLUM}-${ubi.Bodega.RACKS}-${ubi.Bodega.PALET} - (Cant. ${cantDisp})`,
@@ -726,7 +726,7 @@ const ScaneoPedido = (props) => {
         return ubicaciones;
     }
 
-    const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined]);
+    const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined]);
     
     const getCantUnidades = (producto) => {
         let cantidad = parseInt(producto.TCANT);
@@ -799,7 +799,7 @@ const ScaneoPedido = (props) => {
                         title="Finalizar Escaneo"
                         containerStyle={{marginTop: 10}}/>
                     }
-                    {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
+                    {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
                     <Button
                         variant="outlined"
                         color="#000"
@@ -871,7 +871,7 @@ const ScaneoPedido = (props) => {
             <HStack
                 spacing={4}
                 style={[styles.items,(
-                    (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW) ||
+                    (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW) ||
                     (scanCurrent.IDTRI === item.IDTRI && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW && scanCurrent.force) || 
                     (rackSel !== null && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && IDPAL === item.IDPAL
                         && scanCurrent.ubicaciones[rackSel].UBI === item.IDADW && props.dataUser.IDUSR === item.UCRID && !scanCurrent.force) 
@@ -889,7 +889,7 @@ const ScaneoPedido = (props) => {
                     <Text style={styles.subtitle} numberOfLines={1}>{getMedidas(item.UnidadBase?.GROES)} ({(parseFloat(item.UnidadBase?.VOLUM ?? 0)*parseFloat(item.TCANT)).toFixed(2)} m3)</Text>
                </VStack>
 
-               {traslado.TRSTS === 1 && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
+               {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
                     <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
                     <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal}
                         variant="outlined" title="Comentario" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
@@ -903,7 +903,7 @@ const ScaneoPedido = (props) => {
                     {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
                     {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
                 </VStack>}
-                {traslado.TRSTS === 1 && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
+                {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
                     <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item)} style={{alignSelf: 'center'}}/>:''
                 }
             </HStack>
@@ -1190,7 +1190,7 @@ const ScaneoPedido = (props) => {
                     <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
 
                     {traslado.TRSTS === 1 ? 
-                        cronometro.FINIC && (props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || !cronometro.FFEND) ?
+                        cronometro.FINIC && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || !cronometro.FFEND) ?
                         <View> 
                             <VStack spacing={-8}>
                                 <TextInput placeholder="Pulsa y escanea o tipea el código de barras" 
@@ -1344,7 +1344,7 @@ const ScaneoPedido = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({trasladoItems?.filter(f => f.TCANT > 0).length}):</Text>
-                            {(props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
+                            {(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
                             (cronometro.FINIC && !cronometro.FFEND) ? 
                                 <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSheet(true)} 
                                     disabled={loading || loadingSave} loading={loading || loadingSave} 
@@ -1361,7 +1361,7 @@ const ScaneoPedido = (props) => {
                             </HStack>
                         </VStack>
                         <ListaPerform 
-                            items={props.dataUser.USSCO.indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
+                            items={props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
                             renderItems={memoRows} 
                             heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
                             height={160}

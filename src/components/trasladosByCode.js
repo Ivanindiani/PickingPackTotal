@@ -148,8 +148,8 @@ const TrasladosByCode = (props) => {
                         +`\nPeso: ${parseFloat(traslado.PESO??0).toFixed(2)} KG`
                         +`\nVolumen: ${parseFloat(traslado.VOLUMEN??0).toFixed(2)} M3`}
                     leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[traslado.TRSTS]} color={trasStatusColor[traslado.TRSTS]} style={{borderRadius: 12}} />}
-                    //trailing={p2 => props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
-                    onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.indexOf('SCAN') !== -1 || props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
+                    //trailing={p2 => props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
+                    onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
                         traslado: traslado,
                         updateTras: updateTras,
                         IDPAL: traslado.IDPAL

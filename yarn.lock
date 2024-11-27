@@ -3129,7 +3129,7 @@ __metadata:
     react: 18.2.0
     react-native: 0.74.3
     react-native-a-beep: ^1.2.0
-    react-native-calendars: ^1.1305.0
+    react-native-calendars: ^1.1307.0
     react-native-device-info: ^11.1.0
     react-native-dropdown-picker: ^5.4.6
     react-native-get-location: ^4.0.1
@@ -8292,9 +8292,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-calendars@npm:^1.1305.0":
-  version: 1.1305.0
-  resolution: "react-native-calendars@npm:1.1305.0"
+"react-native-calendars@npm:^1.1307.0":
+  version: 1.1307.0
+  resolution: "react-native-calendars@npm:1.1307.0"
   dependencies:
     hoist-non-react-statics: ^3.3.1
     lodash: ^4.17.15
@@ -8307,7 +8307,7 @@ __metadata:
   dependenciesMeta:
     moment:
       optional: true
-  checksum: bf50aa57f0e1efd3837319e9f119ebbd85c293be2d21c533850d105992872b2d4f0c1e58c1c4301655fd1b2b1ee9d26f9242c055a7f14ed57baacb1917c86e83
+  checksum: 1fc559d66bf0c687c09ba9462f243051127154efb4e0e293ddbabdfe8a64523ca114c905d853a2b911626b32c2f25abdb1de39cd07e8865d8c6a970991175195
   languageName: node
   linkType: hard
 

@@ -62,14 +62,14 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId, 
             prev[ord.DATE_FORMAT].dots.push({
                 key: ord.IDTRG,
                 marked: true,
-                color: ordenStatusColor[ord.STSOR],
+                color: ordenStatusColor[ord.STSOR],disabled: false, disableTouchEvent: false
             });
         } else {
             prev[ord.DATE_FORMAT] = {
                 dots: [{
                     key: ord.IDTRG,
                     marked: true,
-                    color: ordenStatusColor[ord.STSOR],
+                    color: ordenStatusColor[ord.STSOR],disabled: false, disableTouchEvent: false
                 }],
                 /*container: {
                     backgroundColor: 'grey',
@@ -95,7 +95,7 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId, 
             futureScrollRange={15}
             onRefresh={() => getOrdenes(getDateDiff(-30), getDateDiff(30)).catch((e) => console.log(e))}
             //refreshing={loading}
-            disabledByDefault={!almacenId}
+            disabledByDefault={!almacenId ? true:false}
             rowHasChanged={(r1, r2) => {
                 return r1.IDTRG !== r2.IDTRG || r1.STSOR !== r2.STSOR;
             }} 
@@ -175,7 +175,7 @@ const Calendario = memo(({ordenes, getOrdenes, setOrden, navigation, almacenId, 
             }}
         />
 }, (prevProps, nextProps) => {
-    if(!_.isEqual(prevProps.ordenes, nextProps.ordenes) || !_.isEqual(prevProps.ordenes?.data, nextProps.ordenes?.data)) return false;
+    if(!_.isEqual(prevProps.ordenes, nextProps.ordenes) || !_.isEqual(prevProps.ordenes?.data, nextProps.ordenes?.data) || prevProps.almacenId !== nextProps.almacenId) return false;
     console.log("No RENDER");
     return true;
 });
@@ -243,6 +243,9 @@ const Ordenes = (props) => {
                     //props.navigation.popToTop();
                     props.navigation.navigate('Login', {hola : true});
                 }*/
+                if(status === 404) {
+                    setOrdenes({});
+                }
                 ToastAndroid.show(
                     error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
                     ToastAndroid.LONG

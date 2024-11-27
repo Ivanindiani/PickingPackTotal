@@ -196,7 +196,7 @@ const FindProducts = (props) => {
                 <HStack style={[styles.row, {alignItems: 'center', justifyContent: 'space-between', left: -16}]}>
                     <Text style={styles.th}>ID:</Text>
                     <Text style={[styles.td, {backgroundColor: 'lightgreen', width: 'auto', maxWidth: '45%', textAlign: 'center', fontSize: 12}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
-                    {props.dataUser.USSCO.indexOf('DEL_ARTBODEGA') !== -1 && !item.RESERVADOS ?
+                    {props.dataUser.USSCO.split(',').indexOf('DEL_ARTBODEGA') !== -1 && !item.RESERVADOS ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
                 </HStack>

@@ -1279,7 +1279,7 @@ const Scaneo = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({items.length}):</Text>
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && items.length && <Button compact={true} title="Finalizar" onPress={finalizarTraslado} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
+                            {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && items.length && <Button compact={true} title="Finalizar" onPress={finalizarTraslado} disabled={loading || loadingSave} loading={loading || loadingSave}/>}
                         </HStack>
                         <ListaPerform 
                             items={items} 

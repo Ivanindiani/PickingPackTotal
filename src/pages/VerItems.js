@@ -327,7 +327,7 @@ const VerItems = (props) => {
             underlayColor="#DDDDDD"
             key={index}
             onPress={() => {
-                if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3) {
+                if(props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3) {
                     //console.log(item)
                     setDialogItem({...item, CANTR: item.CANTR || item.TCANT})
                     setDialogVisible(true);
@@ -341,7 +341,7 @@ const VerItems = (props) => {
                     <Text style={styles.title2}>{item.MAKTG || ""}</Text>
                     <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
                     <Text style={styles.subtitle} numberOfLines={1}>Paleta: {item.IDPAL.substr(-3).padStart(3, '0')}</Text>
-                    {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 ? 
+                    {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 ? 
                         <Text style={styles.small2}>Pulse para confirmar la cantidad real del producto:</Text>:''}
                 </VStack>
 
@@ -538,7 +538,7 @@ const VerItems = (props) => {
                                                 activeOpacity={0.6}
                                                 underlayColor="#DDDDDD"
                                                 onPress={() => {
-                                                    if(props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3) {
+                                                    if(props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 && props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3) {
                                                         console.log(item)
                                                         setDialogItem({...item, CANTR: item.CANTR || item.TCANT})
                                                         setDialogVisible(true);
@@ -588,7 +588,7 @@ const VerItems = (props) => {
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos ({onlyPalet ? items.filter((v) => v.IDPAL == soloPaleta).length:items.length}):</Text>
                             
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 && !onlyPalet && items.length ? 
+                            {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 && !onlyPalet && items.length ? 
                                 <Button compact={true} title="Recibir" onPress={recibirTraslado} disabled={loading}/>:''}
                         </HStack>
 

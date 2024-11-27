@@ -319,10 +319,10 @@ const Recepcion = (props) => {
                 </View>:''}
                 
                 <ScrollView nestedScrollEnabled={true} style={styles.scrollView} refreshControl={<RefreshControl onRefresh={() => centroId && almacenId ? getRecepciones():''} refreshing={loading}/>}>
-                    {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 &&
+                    {props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 &&
                     <Button style={styles.title1} title="Crear Recepción" color="white" tintColor={Global.colorMundoTotal} onPress={() => setShowCrear(!showCrear)}
                         leading={props => <MaterialCommunityIcons name={showCrear ? "menu-down":"menu-right"} {...props} size={24}/> } />}
-                    {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && showCrear ?  
+                    {props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 && showCrear ?  
                     <Box style={styles.box}>
                         <TextInput 
                             variant="standard" 
@@ -385,7 +385,7 @@ const Recepcion = (props) => {
                         {recepciones.map((recepcion, i) => 
                             <ListItem
                                 key={i}
-                                overline={recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS}
+                                overline={`#${recepcion.IDREC} - `+(recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS)}
                                 title={recepcion.DESCR}
                                 secondaryText={"Proveedor: "+recepcion.LIFNR+"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")+"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
                                 (recepcion.SAP?.NUM_ORDEN_COMPRA ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
@@ -393,14 +393,14 @@ const Recepcion = (props) => {
                                 leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
                                 trailing={(p2) => 
                                     <View>
-                                        {props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
+                                        {props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
                                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC, recepcion.RESTS === 'RECIBIDO' ? true:false)}/>:''}
                                         {recepcion.SAP?.NUM_ENTRADA_MERC && daysDiff(recepcion.DATEC) <= 7 && 
                                         recepcion.RecepcionArticulos?.reduce((prev, art) => prev+art.QUAND,0) > 0 ?
                                         <IconButton disabled={loading} icon={p2=p2 => loading ? <ActivityIndicator/>:<MaterialCommunityIcons name={recepcion.SAP?.MAIL == 1 ? "email-check":"email-send"} {...p2}/> } onPress={() => mailSend(recepcion)}/>:''}
                                     </View>
                                 }
-                                onPress={() => props.dataUser.USSCO.indexOf('RECEPCION_FIND') !== -1  || props.dataUser.USSCO.indexOf('ADMIN_RECEPCION') !== -1
+                                onPress={() => props.dataUser.USSCO.split(',').indexOf('RECEPCION_FIND') !== -1  || props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1
                                     ? props.navigation.navigate('Picking', {
                                         centroId: centroId,
                                         almacenId: almacenId,

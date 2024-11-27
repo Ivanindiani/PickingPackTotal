@@ -79,7 +79,7 @@ const Traslados = (props) => {
 
     useEffect(() => {
         // Lo deshabilitamos porque no se puede traer desde el usuario todos los almacenes solo los registrados
-        /*if(props.dataUser.USSCO.indexOf('ALLSEDE') !== -1) {
+        /*if(props.dataUser.USSCO.split(',').indexOf('ALLSEDE') !== -1) {
             setCentros(props.dataUser.Centros);
             setCentrosHacia(props.dataUser.Centros.reduce((prev, d) => d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
         } else {*/
@@ -427,13 +427,13 @@ const Traslados = (props) => {
                     leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                     trailing={(p2) => 
                         <View>
-                            {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
+                            {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
                             <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
-                            {props.dataUser.USSCO.indexOf('ADMIN_PALLET') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
+                            {props.dataUser.USSCO.split(',').indexOf('ADMIN_PALLET') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
                             <IconButton icon={p2=p2 => <MaterialCommunityIcons name="folder-move" {...p2}/> } onPress={() => setModalPallet(item)} />:''}
                         </View>
                     }
-                    onPress={() => props.dataUser.USSCO.indexOf('SCAN') !== -1 ? 
+                    onPress={() => props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 ? 
                     props.navigation.navigate(item.IDPED ? 'TabScaneo':'Scaneo', {
                         updatePaletas: (json) => {
                             setPaletas(json);
@@ -476,9 +476,9 @@ const Traslados = (props) => {
                 leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                 trailing={(p2) => 
                     <View>
-                        {props.dataUser.USSCO.indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
+                        {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
-                        {props.dataUser.USSCO.indexOf('TRASLADOS_UPD') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ?
+                        {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ?
                         <IconButton icon={p2=p2 => <MaterialCommunityIcons name="folder-move" {...p2}/> } onPress={() => setModalPallet(item)} />:''}
                     </View>
                 }
@@ -512,11 +512,11 @@ const Traslados = (props) => {
                 <Text style={styles.subtitle}>Tiendas en ruta: {props.route.params.planed?.PJWER.tiendas.join(',') ?? ''}</Text>
                 <Text style={styles.subtitle}>Pedidos asignados: {props.route.params.planed?.PJWER.pedidos?.join(',') ?? ''}</Text>
 
-                {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && props.route.params.STSOR === 1 ?
+                {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_NEW') !== -1 && props.route.params.STSOR === 1 ?
                 <Button style={styles.title1} title="Crear traslado manual" color="white" tintColor={Global.colorMundoTotal} onPress={() => setShowCrear(!showCrear)}
                     leading={props => <MaterialCommunityIcons name={showCrear ? "menu-down":"menu-right"} {...props} size={24}/> } />:'' }
 
-                {props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && showCrear && props.route.params.STSOR === 1 ?  
+                {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_NEW') !== -1 && showCrear && props.route.params.STSOR === 1 ?  
                 <Box style={styles.box}>
                     <TextInput 
                         variant="standard" 
@@ -555,7 +555,7 @@ const Traslados = (props) => {
                 
                 <HStack style={{justifyContent: 'space-between', margin: 5}}>
                     <Text style={styles.title1}>Paleta: {props.route.params.IDPAL.substr(-3).padStart(3, '0')}</Text>
-                    {/*props.dataUser.USSCO.indexOf('TRASLADOS_NEW') !== -1 && <Button leading={loading}
+                    {/*props.dataUser.USSCO.split(',').indexOf('TRASLADOS_NEW') !== -1 && <Button leading={loading}
                         title="Imprimir QR de paleta"
                         color={Global.colorMundoTotal}
                         uppercase={false}
