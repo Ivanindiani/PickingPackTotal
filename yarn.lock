@@ -3134,6 +3134,7 @@ __metadata:
     react-native-dropdown-picker: ^5.4.6
     react-native-get-location: ^4.0.1
     react-native-gifted-charts: ^1.4.14
+    react-native-image-picker: ^8.0.0
     react-native-keyevent: ^0.3.2
     react-native-linear-gradient: ^2.8.3
     react-native-modal-datetime-picker: ^17.1.0
@@ -8366,6 +8367,16 @@ __metadata:
     react-native-linear-gradient:
       optional: true
   checksum: f565f84afd870f90c1c9a356e31a2a4fe0d1640ce89f51edf49958aa679676e69ccadb8bba14b152536b7252db7409c4a8a01a8c21193daccc71ee016a24f080
+  languageName: node
+  linkType: hard
+
+"react-native-image-picker@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "react-native-image-picker@npm:8.0.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: d1b90219f4ff77d700307bd3dfc7475463dfe5c1d9dc4da365535075df4baf44d0c411cf9f19a3f83226830ada18ad3728abc2b14f67c77b1f5e146ebbb0bdec
   languageName: node
   linkType: hard
 

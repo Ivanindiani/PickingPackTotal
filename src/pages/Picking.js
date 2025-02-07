@@ -1,4 +1,4 @@
-import { ActivityIndicator, Box, Button, Chip, Dialog, DialogContent, Divider, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Box, Button, Chip, Dialog, DialogContent, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
 import SelectInput from "../components/_virtualSelect";
@@ -247,7 +247,7 @@ const ManagerProducts = (props) => {
                 unidadFindScan = preProduct.ProductosUnidads?.filter((p) => p.EAN11 == codigo)[0] ?? {};
                 console.log(unidadFindScan);
             }
-            if(preProduct && unidadFindScan.EAN11) {
+            if(preProduct && unidadFindScan.EAN11) { // Cuando ya está en el cuadro de escaneo
                 if(preProduct.UnidadBase.XCHPF !== 'X' && autosumar) {
                 //if(autosumar) {
                     let prod = JSON.parse(JSON.stringify(preProduct));
@@ -304,7 +304,7 @@ const ManagerProducts = (props) => {
                     }
                 }
                 return;
-            } else {
+            } else { // Buscamos el art en la lista para ser optimos 
                 setPreProduct({});
                 setLote(null);
                 setLoteName(null);
@@ -377,11 +377,12 @@ const ManagerProducts = (props) => {
                     }
 
                     for(let p in prod.ProductosUnidads) {
-                        if(prod.ProductosUnidads[p].EAN11 == codigo) {
+                        if(prod.ProductosUnidads[p].EAN11 == codigo) { // Si es escanean el cod de material da error
                             prod.unidad_index = prod.ProductosUnidads[p];
                             break;
                         }
                     }
+
                     if(prod.unidad_index?.EAN11 === prod.UnidadBase.EAN11) {
                         prod.noBase = false;
                     } else {
@@ -389,7 +390,6 @@ const ManagerProducts = (props) => {
                     }
                     setUndSelect(prod.unidad_index.MEINH);
 
-                    console.log("END FIND", prod);
 
                     if(prod.UnidadBase.XCHPF !== 'X') {
                         prod.QUANT = 0;
@@ -433,11 +433,13 @@ const ManagerProducts = (props) => {
 
     const addProduct = (producto = preProduct) => {
         setLoading(true);
+        producto.MONTO = 0.01; // Cableado
         let datos = {
-                IDREC: recepcion.IDREC,
+            IDREC: recepcion.IDREC,
             create: {
                 IDREC: recepcion.IDREC,
                 MATNR: producto.MATNR,
+                MONTO: producto.MONTO, // Cableado
                 QUANT: producto.UnidadBase?.XCHPF === 'X' ? cantidad:producto.QUANT
             }
         };
@@ -769,10 +771,12 @@ const ManagerProducts = (props) => {
                     inputContainerStyle={{
                         width: 90,
                         height: 45,
-                        margin: 0
+                        margin: 0,
+                        backgroundColor: 'lightgrey' // Quitar cuando se pueda permitir colocar el costo
                     }}
                     inputStyle={{paddingEnd: 0, paddingStart: 0}}
-                    editable={!loadingSave}
+                    //editable={!loadingSave} // Habilitar cuando se pueda permitir colocar el costo
+                    editable={false} // Quitar cuando se pueda permitir colocar el costo
                     pointerEvents="none"
                     onFocus={(e) => {
                         if(!item.MONTO) {
@@ -874,6 +878,16 @@ const ManagerProducts = (props) => {
             <ScrollView ref={scrollShow} nestedScrollEnabled={true} refreshControl={<RefreshControl refreshing={false} onRefresh={()=> memoGet(true)}/>}>
                 <VStack>
                     <Text style={styles.title2}>{recepcion.DESCR}</Text>
+                    <HStack style={{justifyContent: 'space-between'}} p={5}>
+                        <VStack>
+                            <Text style={styles.title3}>Total art: <Text style={styles.subtitle}>{productos.length}</Text></Text>
+                            <Text style={styles.title3}>Total unds: <Text style={styles.subtitle}>{productos.reduce((prev, prod) => prev+parseInt(prod.QUANT || 0), 0)}</Text></Text>
+                        </VStack>
+                        <VStack>
+                            <Text style={styles.title3}>Total art. dev: <Text style={styles.subtitle}>{productos.reduce((prev, prod) => prod.QUAND > 0 ? prev+1:prev, 0)}</Text></Text>
+                            <Text style={styles.title3}>Total unds. dev: <Text style={styles.subtitle}>{productos.reduce((prev, prod) => prev+parseInt(prod.QUAND || 0), 0)}</Text></Text>
+                        </VStack>
+                    </HStack>
                     {recepcion.RESTS === 'CREADO' ? 
                     <View> 
                         <VStack spacing={-8}>
@@ -915,7 +929,7 @@ const ManagerProducts = (props) => {
                                     </HStack>
                                 </VStack>
                                 <Stack w={"35%"}>
-                                    <ImagesAsync ipSelect={props.ipSelect} imageCode={preProduct.MATNR} token={props.token.token} style={{backgroundColor: 'black'}}/>
+                                    <ImagesAsync ipSelect={props.ipSelect} imageCode={preProduct.MATNR} token={props.token.token} style={{backgroundColor: 'black'}} upload/>
                                 </Stack>
                             </HStack>
 
