@@ -21,6 +21,7 @@ const ImagesAsync = memo(({imageCode, imageStyle = {}, token, ipSelect, msg = tr
         setImageFull(null);
         fetchIvan(ipSelect).get('/getImage', "code="+imageCode, token)
         .then(({data}) => {
+            //console.log("Image fetch", data);
             if(data.data) {
                 console.log("Get image lengths", data.data.length);
                 setImageFull(data.data);
@@ -28,13 +29,14 @@ const ImagesAsync = memo(({imageCode, imageStyle = {}, token, ipSelect, msg = tr
             }
         })
         .catch(({status, error}) => {
-            //console.log(error);
-            if(msg) {
-                return ToastAndroid.show(
-                    error?.text || error?.message || (error && error?.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                    ToastAndroid.LONG
-                );
+            console.log(status, error);
+            if(typeof(error?.text) === 'object') {
+                return ToastAndroid.show("Error desde el servidor de IMAGENES", ToastAndroid.LONG);
             }
+            return ToastAndroid.show(
+                error?.text || error?.message || (error && error?.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.LONG
+            );
         })
     }
 
@@ -78,13 +80,15 @@ const ImagesAsync = memo(({imageCode, imageStyle = {}, token, ipSelect, msg = tr
         }
         fetchIvan(ipSelect).post('/uploadImage', fileData, token)
         .then(({data}) => {
-            console.log(data);
             ToastAndroid.show("Imagen cargada con éxito", ToastAndroid.LONG);
             setConfirmar(0);
         })
         .catch(({status, error}) => {
             console.log(error);
             setConfirmar(1);
+            if(typeof(error?.text) === 'object') {
+                return ToastAndroid.show("Error desde el servidor de IMAGENES", ToastAndroid.LONG);
+            }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && error?.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
                 ToastAndroid.LONG

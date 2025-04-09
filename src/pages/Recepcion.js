@@ -1,6 +1,6 @@
 import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text, TextInput, VStack } from "@react-native-material/core";
-import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Modal, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
 import Entypo from "react-native-vector-icons/Entypo";
 import Feather from "react-native-vector-icons/Feather";
@@ -68,6 +68,24 @@ const Recepcion = (props) => {
         }
     }, [almacenId, filtrado]);
 
+
+    const daysDiff = useCallback((timeStart, timeEnd=null) => {
+        if(!timeStart) return '';
+        let dateNow = timeEnd ? new Date(timeEnd.replace("Z","")):new Date();
+
+        let seconds = Math.floor((dateNow - (new Date(timeStart.replace("Z",""))))/1000);
+        let minutes = Math.floor(seconds/60);
+        let hours = Math.floor(minutes/60);
+        let days = Math.floor(hours/24);
+
+        hours = hours-(days*24);
+        minutes = minutes-(days*24*60)-(hours*60);
+        seconds = seconds-(days*24*60*60)-(hours*60*60)-(minutes*60);
+
+        console.log("DAYS ", timeStart, days);
+        return days;
+    },[]);
+
     function getGruposProveedor() {
         setLoading(true);
         fetchIvan(props.ipSelect).get('/administrative/getGruposProveedor', null, props.token.token)
@@ -90,7 +108,8 @@ const Recepcion = (props) => {
 
     function getRecepciones() {
         let datos = [
-            `find={"WERKS": "${centroId}", "LGORT": "${almacenId}", "RESTS": "['CREADO','RECIBIDO', 'CONFIRMADO', 'REENVIAR']"}`,
+            `find={"WERKS": "${centroId}", "LGORT": "${almacenId}"}`,
+            //`find={"WERKS": "${centroId}", "LGORT": "${almacenId}", "RESTS": "['CANCELADO','CREADO','RECIBIDO', 'CONFIRMADO', 'REENVIAR']"}`,
             `orderBy=[["IDREC", "DESC"]]`,
             'articulos=1'
         ];
@@ -455,23 +474,6 @@ const Recepcion = (props) => {
         </Provider>
 
     )
-}
-
-function daysDiff(timeStart, timeEnd=null) {
-    if(!timeStart) return '';
-    let dateNow = timeEnd ? new Date(timeEnd.replace("Z","")):new Date();
-
-    let seconds = Math.floor((dateNow - (new Date(timeStart.replace("Z",""))))/1000);
-    let minutes = Math.floor(seconds/60);
-    let hours = Math.floor(minutes/60);
-    let days = Math.floor(hours/24);
-
-    hours = hours-(days*24);
-    minutes = minutes-(days*24*60)-(hours*60);
-    seconds = seconds-(days*24*60*60)-(hours*60*60)-(minutes*60);
-
-    console.log("DAYS ", timeStart, days);
-    return days;
 }
 
 export default Recepcion;

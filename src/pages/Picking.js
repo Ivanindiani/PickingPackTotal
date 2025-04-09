@@ -25,6 +25,7 @@ const ManagerProducts = (props) => {
     
     const [dialogVisible, setDialogVisible] = useState(-1);
     const [lote, setLote] = useState(null);
+    const [loteP, setLoteP] = useState(null);
     const [preProduct, setPreProduct] = useState({});
     const [productos, setProductos] = useState([]);
     const [cantidad, setCantidad] = useState(0);
@@ -307,6 +308,7 @@ const ManagerProducts = (props) => {
             } else { // Buscamos el art en la lista para ser optimos 
                 setPreProduct({});
                 setLote(null);
+                setLoteP(null);
                 setLoteName(null);
                 setDateLote(null);
                 setUndSelect(null);
@@ -445,6 +447,7 @@ const ManagerProducts = (props) => {
         };
         if(producto.UnidadBase?.XCHPF === 'X') {
             datos.create.LOTEA = lote === 'NEWLOTE' ? loteName:lote;
+            datos.create.LOTEP = loteP;
             datos.create.FVENC = dateLote;
         }
         fetchIvan(props.ipSelect).post('/administrative/crudRecepcionItems', datos, props.token.token)
@@ -537,6 +540,10 @@ const ManagerProducts = (props) => {
         if(text.length != 4) {
             return Alert.alert('Error', 'Selecciona un nombre de 4 carácteres minimo');
         }
+        const regex = /^[A-Z0-9]*$/; 
+        if (!regex.test(text)) {
+            return Alert.alert('Error', 'Debes incluir solo letras y numeros');
+        }
         setCuatro(text.toUpperCase());
         if(dateLote) {
             let fechaName = dateLote.substring(6,8)+""+dateLote.substring(4,6)+""+dateLote.substring(2,4);
@@ -591,8 +598,8 @@ const ManagerProducts = (props) => {
                 .then(({data}) => {
                     console.log("Recepcion confirmada: ", data.data);
                     setPreProduct({});
-                    setRecepcion({...recepcion, RESTS: 'RECIBIDO'});
-                    props.route.params.updateRecepcion({...recepcion, RESTS: 'RECIBIDO'});
+                    setRecepcion({...recepcion, RESTS: 'RECIBIDO', DATEU: getDateLocal(new Date(), true)});
+                    props.route.params.updateRecepcion({...recepcion, RESTS: 'RECIBIDO', DATEU: getDateLocal(new Date(), true)});
                 })
                 .catch(({status, error}) => {
                     console.log(error);
@@ -621,8 +628,12 @@ const ManagerProducts = (props) => {
             id: item.IDREA,
             IDREC: recepcion.IDREC,
             update: {
-                QUANT: parseInt(cantidad)
+                QUANT: parseInt(cantidad),
             }
+        }
+        console.log(item);
+        if(item.QUANT < item.QUAND) {
+            datos.update.QUAND = 0;
         }
         
         if(monto >= 0) {
@@ -651,6 +662,9 @@ const ManagerProducts = (props) => {
                     }
                     if(comentario) {
                         prod[i].COMEN = comentario;
+                    }
+                    if(prod[i].QUANT < prod[i].QUAND) {
+                        prod[i].QUAND = 0;
                     }
 
                     prod[i].UMOID = props.dataUser.IDUSR;
@@ -741,7 +755,7 @@ const ManagerProducts = (props) => {
         ]);
     }
 
-    const RowProducts = (item, index) => 
+    const memoRows = useCallback((item, index) => 
         <HStack
             key={index}
             spacing={4}
@@ -751,7 +765,8 @@ const ManagerProducts = (props) => {
             <VStack w="55%">
                 <Text style={styles.title3}>{item.Producto.MAKTG ?? ""}</Text>
                 <Text style={[styles.subtitle, {backgroundColor: 'yellow'}]}>{item.MATNR}</Text>
-                {item.LOTEA && recepcion.RESTS === 'CREADO' && <Text style={styles.subtitle} color="primary">Lote: {item.LOTEA}</Text>}
+                {item.LOTEA && <Text style={styles.subtitle} color="primary">Lote: {item.LOTEA}</Text>}
+                {item.LOTEP && <Text style={styles.subtitle} color="red">Lote físico: {item.LOTEP}</Text>}
                 <Text style={[styles.subtitle2]}>Creado Por: {(item.CreadoPor?.USNAM ?? '')+" "+(item.CreadoPor?.USLAS ?? '')}</Text>
                 {item.UCRID !== item.UMOID && <Text style={[styles.subtitle2]}>Actualizado Por: {(item.CreadoPor?.USNAM ?? '')+" "+(item.CreadoPor?.USLAS ?? '')}</Text>}
                 {item.COMEN ? <Text style={[styles.subtitle2]}>Motivo devolución: {item.COMEN}</Text>:''}
@@ -843,7 +858,7 @@ const ManagerProducts = (props) => {
                     ref={el => otroInput2.current ? otroInput2.current[index] = el:''} 
                     maxLength={10}
                     />}
-               {/*<Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text>*/}
+            {/*<Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text>*/}
             </VStack>:
             <VStack w="30%">
                 <Text style={styles.subtitle2}>Costo:</Text>
@@ -852,8 +867,8 @@ const ManagerProducts = (props) => {
                 <Text style={styles.quantity}>{item.QUANT}</Text>
                 <Text style={styles.subtitle}>Cant. devolución:</Text>
                 <Text style={styles.quantity}>{item.QUAND}</Text>
-                {item.LOTEA && <Text style={styles.subtitle}>Lote:</Text> }
-                {item.LOTEA && <Text style={styles.lote}>{item.LOTEA}</Text>}
+                {/* {item.LOTEA && <Text style={styles.subtitle}>Lote:</Text> }
+                {item.LOTEA && <Text style={styles.lote}>{item.LOTEA}</Text>} */}
                 {/* <Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text> */}
             </VStack>}
             <VStack w={recepcion.RESTS === 'CREADO' ? '20%':'15%'} style={{alignItems: 'center'}}>
@@ -865,10 +880,7 @@ const ManagerProducts = (props) => {
             }
             {recepcion.RESTS === 'CREADO' && <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>}
             </VStack>
-        </HStack>
-    ;
-
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [productos, preProduct.MATNR, loadingSave, recepcion, lote])
+        </HStack>, [productos, preProduct.MATNR, loadingSave, recepcion, lote])
 
     const memoGet = useCallback(getProductos);
 
@@ -949,7 +961,7 @@ const ManagerProducts = (props) => {
 
                         {preProduct.MATNR &&
                         <HStack style={[styles.row, {justifyContent: 'space-between'}]}>
-                            {preProduct.UnidadBase.XCHPF === 'X' &&
+                            {preProduct.UnidadBase?.XCHPF === 'X' &&
                             <VStack style={{alignItems: 'center'}}>
                                 <Text>Lote:</Text>
                                 <SelectInput
@@ -988,6 +1000,29 @@ const ManagerProducts = (props) => {
                                     />
                             </VStack>
                         </HStack>}
+                        {preProduct.UnidadBase?.XCHPF === 'X' &&
+                            <VStack style={{alignItems: 'center'}}>
+                                <Text>Lote Físico:</Text>
+                                <TextInput
+                                    autoCapitalize={"characters"}
+                                    value={loteP}
+                                    onChangeText={(t) => {
+                                        const regex = /^[A-Z0-9]*$/; 
+                                        if (regex.test(t)) {
+                                            setLoteP(t);
+                                        }
+                                    }}
+                                    placeholder="Lote físico"
+                                    textAlign={'center'}
+                                    inputStyle={{marginTop: -18}}
+                                    inputContainerStyle={{
+                                        height: 30,
+                                        padding: 10,
+                                        paddingHorizontal: 0}}
+                                    style={{alignItems: 'flex-end', width: '60%', flexWrap: 'nowrap'}}
+                                    maxLength={10}
+                                />
+                            </VStack>}
                         {preProduct.UnidadBase?.XCHPF === 'X' && lote === 'NEWLOTE' ?
                         <VStack mt={6} spacing={-5}>
                             <HStack style={[styles.row, {flexWrap: 'wrap'}]}>
@@ -1190,6 +1225,15 @@ function getPrural(texto) {
         default: 
             return texto.split(" ")[0]
     }
+}
+
+const getDateLocal = (date, hour = false) => {
+    let d = new Date(date.length < 12 ? date+"T23:50":date);
+    
+    const fechita = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
+
+    return !hour ? fechita:
+                    `${fechita}T${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
 export default ManagerProducts;
