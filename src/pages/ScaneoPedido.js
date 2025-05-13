@@ -641,7 +641,8 @@ const ScaneoPedido = (props) => {
                     UMOID: props.dataUser.IDUSR,
                     IDPAL: IDPAL,
                     IDADW: producto.ubicaciones[rackSel].UBI,
-                    CHARG: producto.CHARG
+                    CHARG: producto.CHARG,
+                    MEINS: producto.Producto.UnidadBase.MEINS
                 }
             }
 

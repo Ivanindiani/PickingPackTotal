@@ -16,8 +16,8 @@ import AlmacenInv from './pages/AlmacenInv';
 import Paletas from './pages/Paletas';
 import TabOrdenes from './pages/TabOrdenes';
 import Traslados from './pages/Traslados';
-import Recepcion from './pages/Recepcion';
-import Picking from './pages/Picking';
+import Recepcion from './pages/Recepcion/Recepcion';
+import Picking from './pages/Recepcion/Picking';
 import TabScaneo from './pages/TabScaneo';
 
 const Stack = createNativeStackNavigator();

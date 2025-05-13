@@ -1,28 +1,35 @@
-import { ActivityIndicator, Box, Button, Chip, Dialog, DialogContent, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Box, Button, 
+        Chip, Dialog, DialogContent, 
+        HStack, IconButton, Provider, 
+        Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshControl, StyleSheet, ToastAndroid, View } from "react-native";
-import SelectInput from "../components/_virtualSelect";
+import SelectInput from "../../components/_virtualSelect";
 import { ScrollView } from "react-native";
 import { Alert } from "react-native";
-import fetchIvan from "../components/_fetch";
-import ImagesAsync from "../components/_imagesAsync";
+import fetchIvan from "../../components/_fetch";
+import ImagesAsync from "../../components/_imagesAsync";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import ListaPerform from "../components/_virtualList";
+import ListaPerform from "../../components/_virtualList";
 
 import Entypo from "react-native-vector-icons/Entypo";
+import Octicons from "react-native-vector-icons/Octicons";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import Ft from "react-native-vector-icons/Fontisto";
 import RNBeep from "react-native-a-beep";
 import KeyEvent from 'react-native-keyevent';
+import ArticulosOrden from "./components/articulosOrden";
 
-const Global = require('../../app.json');
+const Global = require('../../../app.json');
 
 var mode = {};
 const ManagerProducts = (props) => {
     const centroId = props.route.params.centroId;
     const almacenId = props.route.params.almacenId;
     const [recepcion, setRecepcion] = useState(props.route.params.recepcion);
-    
+
+    const [show, setShow] = useState(false);
+
     const [dialogVisible, setDialogVisible] = useState(-1);
     const [lote, setLote] = useState(null);
     const [loteP, setLoteP] = useState(null);
@@ -249,7 +256,7 @@ const ManagerProducts = (props) => {
                 console.log(unidadFindScan);
             }
             if(preProduct && unidadFindScan.EAN11) { // Cuando ya está en el cuadro de escaneo
-                if(preProduct.UnidadBase.XCHPF !== 'X' && autosumar) {
+                if(autosumar && (preProduct.UnidadBase.XCHPF !== 'X' || (preProduct.UnidadBase.XCHPF === 'X' && lote && (lote === 'NEWLOTE' && loteName || lote !== 'NEWLOTE')))) {
                 //if(autosumar) {
                     let prod = JSON.parse(JSON.stringify(preProduct));
 
@@ -442,7 +449,8 @@ const ManagerProducts = (props) => {
                 IDREC: recepcion.IDREC,
                 MATNR: producto.MATNR,
                 MONTO: producto.MONTO, // Cableado
-                QUANT: producto.UnidadBase?.XCHPF === 'X' ? cantidad:producto.QUANT
+                QUANT: producto.UnidadBase?.XCHPF === 'X' ? cantidad:producto.QUANT,
+                MEINS: producto.UnidadBase.MEINS
             }
         };
         if(producto.UnidadBase?.XCHPF === 'X') {
@@ -774,7 +782,7 @@ const ManagerProducts = (props) => {
 
             {recepcion.RESTS === 'CREADO' ? 
             <VStack w="25%" style={{alignSelf: 'flex-end'}}>
-                {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
+                {/* {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <Text style={[styles.subtitle2]} mt={0}>Costo ({recepcion.ProveedoresFijo?.WAERS}):</Text>}
                 {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <TextInput
@@ -820,7 +828,7 @@ const ManagerProducts = (props) => {
                     }}
                     ref={el => otroInput1.current ? otroInput1.current[index] = el:''} 
                     maxLength={10}
-                />}
+                />} */}
                 {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <Text style={styles.subtitle2}>Cant.</Text>}
                 {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
@@ -861,8 +869,8 @@ const ManagerProducts = (props) => {
             {/*<Text style={styles.subtitle}>{getCantUnidades(item, item.QUANT)}</Text>*/}
             </VStack>:
             <VStack w="30%">
-                <Text style={styles.subtitle2}>Costo:</Text>
-                <Text style={styles.subtitle}>{item.MONTO} {recepcion.ProveedoresFijo.WAERS}</Text>
+                {/* <Text style={styles.subtitle2}>Costo:</Text>
+                <Text style={styles.subtitle}>{item.MONTO} {recepcion.ProveedoresFijo.WAERS}</Text> */}
                 <Text style={styles.subtitle}>Cantidad:</Text>
                 <Text style={styles.quantity}>{item.QUANT}</Text>
                 <Text style={styles.subtitle}>Cant. devolución:</Text>
@@ -1079,6 +1087,17 @@ const ManagerProducts = (props) => {
                 onCancel={() => setDatePickerVisibility(false)}
                 minimumDate={new Date()}
             />
+            {recepcion.EBELN ?
+            <>
+                <Stack style={styles.FAB}>
+                    <IconButton 
+                        icon={props => <Octicons name="checklist" {...props} />} 
+                        onPress={() => {console.log("Hola", show); setShow(!show)}}
+                        contentContainerStyle={{alignSelf: 'flex-end'}}
+                    />
+                </Stack>
+                <ArticulosOrden {...props} recepcion={recepcion} show={show} setShow={setShow} scan={preProduct?.MATNR ?? null}/>
+            </>:''}
 
             {productos.length && dialogVisible > -1 ?
             <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 100000, elevation: 100}}>
@@ -1205,6 +1224,15 @@ const styles = StyleSheet.create({
     lote: {
         fontSize: 12,
         fontWeight: 'bold'
+    },
+    FAB: {
+        position: 'absolute',
+        backgroundColor: Global.colorMundoTotal,
+        alignSelf: 'flex-end',
+        borderRadius: 50,
+        left: 15,
+        bottom: 15,
+        padding: 10
     }
 });
 

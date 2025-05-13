@@ -1,13 +1,13 @@
-import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Box, Button, HStack, IconButton, ListItem, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Modal, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
-import fetchIvan from "../components/_fetch";
+import fetchIvan from "../../components/_fetch";
 import Entypo from "react-native-vector-icons/Entypo";
 import Feather from "react-native-vector-icons/Feather";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import SelectInput from "../components/_virtualSelect";
-const Global = require("../../app.json");
+import SelectInput from "../../components/_virtualSelect";
+const Global = require("../../../app.json");
 
 const statusColor = {
     CREADO: 'yellow',
@@ -39,6 +39,17 @@ const Recepcion = (props) => {
     const [filtrado, setFiltrado] = useState(10);
     const [showCrear, setShowCrear] = useState(false);
 
+    const [idOrden, setIdOrden] = useState(null);
+    const [manual, setManual] = useState(false);
+
+    useEffect(() => {
+        setTipoProveedorID(null);
+        setGrupoProveedorID(null);
+        setProveedorID('');
+        setIdOrden(null);
+        setDescripcion('');
+    }, [manual]);
+
     useEffect(() => {
         if(props.dataUser.Centros.length === 1) {
             setCentroId(props.dataUser.Centros[0]?.WERKS);
@@ -67,7 +78,6 @@ const Recepcion = (props) => {
             setRecepciones([])
         }
     }, [almacenId, filtrado]);
-
 
     const daysDiff = useCallback((timeStart, timeEnd=null) => {
         if(!timeStart) return '';
@@ -111,7 +121,7 @@ const Recepcion = (props) => {
             `find={"WERKS": "${centroId}", "LGORT": "${almacenId}"}`,
             //`find={"WERKS": "${centroId}", "LGORT": "${almacenId}", "RESTS": "['CANCELADO','CREADO','RECIBIDO', 'CONFIRMADO', 'REENVIAR']"}`,
             `orderBy=[["IDREC", "DESC"]]`,
-            'articulos=1'
+            //'articulos=1'
         ];
         if(filtrado !== -1) {
             datos.push(`limit=${filtrado}`);
@@ -175,6 +185,7 @@ const Recepcion = (props) => {
                 EKORG: tipo_proveedor_id,
                 EKGRP: grupo_proveedor_id,
                 LIFNR: proveedor_id.padStart(10, "0"),
+                EBELN: idOrden,
                 RESTS: 'CREADO'
             }
         }
@@ -196,18 +207,10 @@ const Recepcion = (props) => {
             setGrupoProveedorID(null),
             setProveedorID('');
             setTipoProveedorID(null);
+            setIdOrden(null);
         })
         .catch(({status, error}) => {
             console.log(error);
-            if(error?.message?.indexOf('FK_ZSD_RECEPCIONS_LFA1_MANDT_LIFNR') !== -1) {
-                return ToastAndroid.show('Compruebe el ID del proveedor, el ingresado no existe', ToastAndroid.LONG);
-            }
-            if(error?.message?.indexOf('FK_ZSD_RECEPCIONS_T024E_MANDT_EKORG') !== -1) {
-                return ToastAndroid.show('Compruebe el tipo de proveedor, el ingresado no existe', ToastAndroid.LONG);
-            }
-            if(error?.message?.indexOf('FK_ZSD_RECEPCIONS_T024_MANDT_EKGRP') !== -1) {
-                return ToastAndroid.show('Compruebe el grupo de proveedor, el ingresado no existe', ToastAndroid.LONG);
-            }
             return ToastAndroid.show(
                 error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
                 ToastAndroid.LONG
@@ -236,7 +239,8 @@ const Recepcion = (props) => {
             fetchIvan(props.ipSelect).put('/administrative/crudRecepcion', datos, props.token.token)
             .then(({data}) => {
                 console.log("Recepcion eliminado: ", data.data);
-                setRecepciones(recepciones.filter(t => t.IDREC != id));
+                updateRecepcion({...recepciones.filter(t => t.IDREC === id)[0], RESTS: 'CANCELADO'});
+                //setRecepciones(recepciones.filter(t => t.IDREC != id));
             })
             .catch(({status, error}) => {
                 console.log(error);
@@ -348,47 +352,68 @@ const Recepcion = (props) => {
                             placeholder="Descripción, nº factura, etc.."
                             value={descripcion}
                             onChangeText={(text) => setDescripcion(text)}
-                            maxLength={50}></TextInput>
-                        <HStack style={{gap: 2, maxWidth: '100%', justifyContent: 'space-between'}} ms={-7}>
-                            <SelectInput
-                                searchable={false}
-                                data={tipoProveedor}
-                                value={tipo_proveedor_id}
-                                setValue={setTipoProveedorID}
-                                titleStyle={{fontSize: 9}}
-                                title="Tipo Proveedor"/>
-                            <SelectInput
-                                searchable={false}
-                                data={grupoProveedor}
-                                value={grupo_proveedor_id}
-                                setValue={setGrupoProveedorID}
-                                titleStyle={{fontSize: 9}}
-                                title="Grupo Proveedor"/>
-                        </HStack>
-                        <HStack style={{width: '100%', justifyContent: 'space-between'}} mt={5}>
+                            maxLength={manual ? 50:38}>
+                        </TextInput>
+                        
+                        <Stack fill center spacing={4}>
+                            <Text style={[styles.subtitle, {color: 'grey', fontWeight: 'bold'}]}>¿Ingresar orden de compra manualmente?</Text>
+                            <Switch value={manual} onValueChange={() => setManual(!manual)} color={Global.colorMundoTotal}/>
+                        </Stack>
+                        {!manual ?
+                        <HStack mb={10}>
                             <TextInput 
                                 variant="standard" 
-                                placeholder="ID PROVEEDOR"
-                                value={proveedor_id}
-                                onChangeText={(text) => setProveedorID(text)}
-                                onEndEditing={(e) => e.nativeEvent.text.length && setProveedorID(e.nativeEvent.text.padStart(10, "0"))}
+                                placeholder="Nº Orden de compra"
+                                keyboardType="numeric"
+                                value={idOrden}
+                                onChangeText={(text) => setIdOrden(text)}
                                 maxLength={10}
-                                style={{width: '70%'}}></TextInput>
-                            <VStack style={{width: '25%', alignItems: 'center'}}>
-                                <Text style={styles.subtitle}>Buscar por RIF</Text>
-                                <Button style={{width: 54}} color={Global.colorMundoTotal} onPress={() => {
-                                    setModalRif(true);
-                                    setLista([]); 
-                                    setProveedorID(null); 
-                                    setRifInput(null);
-                                }} leading={props => <Feather name="search" {...props} />}/>
-                            </VStack>
+                                style={{width: '100%'}}>
+                            </TextInput>
                         </HStack>
+                        :
+                        <>
+                            <HStack style={{gap: 2, maxWidth: '100%', justifyContent: 'space-between'}} ms={-7}>
+                                <SelectInput
+                                    searchable={false}
+                                    data={tipoProveedor}
+                                    value={tipo_proveedor_id}
+                                    setValue={setTipoProveedorID}
+                                    titleStyle={{fontSize: 9}}
+                                    title="Tipo Proveedor"/>
+                                <SelectInput
+                                    searchable={false}
+                                    data={grupoProveedor}
+                                    value={grupo_proveedor_id}
+                                    setValue={setGrupoProveedorID}
+                                    titleStyle={{fontSize: 9}}
+                                    title="Grupo Proveedor"/>
+                            </HStack>
+                            <HStack style={{width: '100%', justifyContent: 'space-between'}} mt={5}>
+                                <TextInput 
+                                    variant="standard" 
+                                    placeholder="ID PROVEEDOR"
+                                    value={proveedor_id}
+                                    onChangeText={(text) => setProveedorID(text)}
+                                    onEndEditing={(e) => e.nativeEvent.text.length && setProveedorID(e.nativeEvent.text.padStart(10, "0"))}
+                                    maxLength={10}
+                                    style={{width: '70%'}}></TextInput>
+                                <VStack style={{width: '25%', alignItems: 'center'}}>
+                                    <Text style={styles.subtitle}>Buscar por RIF</Text>
+                                    <Button style={{width: 54}} color={Global.colorMundoTotal} onPress={() => {
+                                        setModalRif(true);
+                                        setLista([]); 
+                                        setProveedorID(null); 
+                                        setRifInput(null);
+                                    }} leading={props => <Feather name="search" {...props} />}/>
+                                </VStack>
+                            </HStack>
+                        </>}
                         <Button loading={loading}
                             title="Crear" 
                             color={Global.colorMundoTotal} 
                             onPress={crearRecepcion}
-                            disabled={!descripcion.length || !tipo_proveedor_id || !grupo_proveedor_id || !proveedor_id?.length || loading || !almacenId}
+                            disabled={!descripcion.length || loading || !almacenId || (manual && (!tipo_proveedor_id || !grupo_proveedor_id || !proveedor_id?.length)) || (!manual && !idOrden)}
                             style={{marginTop: 5, zIndex: -1}}/>
                     </Box>:''}
                     <Stack style={styles.scrollView}>
@@ -406,7 +431,11 @@ const Recepcion = (props) => {
                                 key={i}
                                 overline={`#${recepcion.IDREC} - `+(recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS)}
                                 title={recepcion.DESCR}
-                                secondaryText={"Proveedor: "+recepcion.LIFNR+"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")+"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
+                                secondaryText={
+                                    (recepcion.EBELN ? `Nº orden: ${recepcion.EBELN}\n`:'')
+                                    +"Proveedor: "+recepcion.LIFNR
+                                    +"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")
+                                    +"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
                                 (recepcion.SAP?.NUM_ORDEN_COMPRA ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
                                 (recepcion.SAP?.NUM_ENTRADA_MERC ? `\nNº Entrada Stock: ${recepcion.SAP?.NUM_ENTRADA_MERC}`:"")}
                                 leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
@@ -415,7 +444,7 @@ const Recepcion = (props) => {
                                         {props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
                                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC, recepcion.RESTS === 'RECIBIDO' ? true:false)}/>:''}
                                         {recepcion.SAP?.NUM_ENTRADA_MERC && daysDiff(recepcion.DATEC) <= 7 && 
-                                        recepcion.RecepcionArticulos?.reduce((prev, art) => prev+art.QUAND,0) > 0 ?
+                                        recepcion.CANT_DEVOLUCIONES > 0 ?
                                         <IconButton disabled={loading} icon={p2=p2 => loading ? <ActivityIndicator/>:<MaterialCommunityIcons name={recepcion.SAP?.MAIL == 1 ? "email-check":"email-send"} {...p2}/> } onPress={() => mailSend(recepcion)}/>:''}
                                     </View>
                                 }

@@ -574,6 +574,7 @@ const Traslados = (props) => {
                     <DialogHeader title="Ampliar Traslado" />
                     <DialogContent>
                         <FlatList
+                            initialNumToRender={10}
                             data={modalPallet?.IDTRA ? paletas:[]}
                             ListHeaderComponent={<Text>Indica donde quieres que esté ampliado este traslado.</Text>}
                             renderItem={({item, index}) => {

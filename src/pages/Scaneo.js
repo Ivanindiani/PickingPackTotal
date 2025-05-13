@@ -652,7 +652,8 @@ const Scaneo = (props) => {
                     UMOID: props.dataUser.IDUSR,
                     IDPAL: IDPAL,
                     IDADW: producto.ubicaciones[rackSel].UBI,
-                    CHARG: producto.CHARG
+                    CHARG: producto.CHARG,
+                    MEINS: producto.UnidadBase?.MEINS ?? 'ST'
                 }
             }
 
