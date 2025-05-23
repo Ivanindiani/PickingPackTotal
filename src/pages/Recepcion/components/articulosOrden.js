@@ -7,9 +7,9 @@ import ModalShow from "../../../components/_modal";
 import _ from 'lodash';
 
 const ArticulosOrden = memo((props) => {
-    const {recepcion, scan} = props;
+    const {recepcion, scan, ordenCompra, getOrdenCompra} = props;
 
-    const [ordenCompra, setOrdenCompra] = useState({});
+    //const [ordenCompra, setOrdenCompra] = useState({});
     const [loading, setLoading] = useState(false);
     const [buscar, setBuscar] = useState('');
 
@@ -18,12 +18,15 @@ const ArticulosOrden = memo((props) => {
             getOrdenCompra();
     }, [props.show]);
 
-    function getOrdenCompra() {
+
+    /*function getOrdenCompra() {
         let datos = [
             `EBELN=${recepcion.EBELN}`,
-            `RECEPCION=${recepcion.IDREC}`
+            `RECEPCION=${recepcion.IDREC}`,
+            `WERKS=${recepcion.WERKS}`,
+            `LGORT=${recepcion.LGORT}`
         ];
-        setOrdenCompra([]);
+        setOrdenCompra({});
         setLoading(true);
         fetchIvan(props.ipSelect).get('/administrative/getOrdenCompra', datos.join('&'), props.token.token)
         .then(({data}) => {
@@ -40,7 +43,7 @@ const ArticulosOrden = memo((props) => {
         .finally(() => {
             setLoading(false);
         });
-    }
+    }*/
 
     const rowList = ({item, index}) => {
         return (
@@ -57,12 +60,12 @@ const ArticulosOrden = memo((props) => {
                 trailing={
                     <VStack style={styles.item}>
                         <VStack style={styles.item2}>
-                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{item.MENGE*item.UMREZ}</Text>
+                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{/*item.MENGE*item.UMREZ*/}{item.CANT_FINAL}</Text>
                             <Text style={{fontSize: 11}} numberOfLines={1}>Und.</Text>
                         </VStack>
                         <VStack style={styles.item2}>
                             <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{item.COUNT_SCAN ?? 0}</Text>
-                            <Text style={{fontSize: 11, color: !item.COUNT_SCAN ? 'red':(item.COUNT_SCAN == (item.MENGE*item.UMREZ) ? 'green':'orange')}} numberOfLines={1}>Scan</Text>
+                            <Text style={{fontSize: 11, color: !item.COUNT_SCAN ? 'red':(item.COUNT_SCAN == (item.CANT_FINAL) ? 'green':'orange')}} numberOfLines={1}>Scan</Text>
                         </VStack>
                     </VStack>
                 }
@@ -83,7 +86,7 @@ const ArticulosOrden = memo((props) => {
                             <Text style={{textAlign: 'center', fontWeight: '600'}}>Lista de artículos esperados</Text>
                             <HStack style={{justifyContent: 'space-around'}}>
                                 <Text style={styles.title3}>Total art: <Text style={styles.subtitle}>{ordenCompra?.PedidosCompraProductos?.length ?? 0}</Text></Text>
-                                <Text style={styles.title3}>Total unds: <Text style={styles.subtitle}>{ordenCompra?.PedidosCompraProductos ? ordenCompra?.PedidosCompraProductos.reduce((prev, prod) => prev+parseInt(prod.MENGE*prod.UMREZ || 0), 0):0}</Text></Text>
+                                <Text style={styles.title3}>Total unds: <Text style={styles.subtitle}>{ordenCompra?.PedidosCompraProductos ? ordenCompra?.PedidosCompraProductos.reduce((prev, prod) => prev+parseInt(prod.CANT_FINAL || 0), 0):0}</Text></Text>
                             </HStack>
                         </Stack>
 
@@ -102,7 +105,7 @@ const ArticulosOrden = memo((props) => {
         </ModalShow>
     )
 },(prevProps, nextProps) => {
-    if(_.isEqual(prevProps.recepcion, nextProps.recepcion) && prevProps.show === nextProps.show && prevProps.scan === nextProps.scan) {
+    if(_.isEqual(prevProps.recepcion, nextProps.recepcion) && prevProps.show === nextProps.show && prevProps.scan === nextProps.scan && _.isEqual(prevProps.ordenCompra, nextProps.ordenCompra)) {
         return true; // props are equal
     }
     return false; // props are not equal -> update the component

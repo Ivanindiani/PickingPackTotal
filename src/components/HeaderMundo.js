@@ -1,7 +1,7 @@
 import { Text } from '@react-native-material/core';
 import { Image, StyleSheet, View } from 'react-native';
 import SelectInput from './_virtualSelect';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const ipDefaults = [{
     label: '172.16.10.78 (local)', // PC IVAN local
@@ -18,18 +18,28 @@ const ipDefaults = [{
 }];
 
 const HeaderMundo = (props) => {
-    let count = 0;
 
     //console.log(props);
     const [openAdmin, setAdmin] = useState(false);
+    const [count, setCount] = useState(0);
 
     const logoAdmin = () => {
-        count++;
-        if(count === 10) {
-            count = 0;
+        if(count === 9) {
+            setCount(0);
             setAdmin(true);
+            return;
         }
+        setCount(count+1);
     }
+
+    useEffect(() => {
+        const temp = setTimeout(() => setCount(0),2000);
+
+        return () => {
+            console.log("Clear");
+            clearTimeout(temp);
+        }
+    }, [count]);
 
     return (
         <View style={styles.container}>

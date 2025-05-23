@@ -61,7 +61,7 @@ const App = () => {
                     setIp(value);
                   } 
                 } catch (e) {
-                    console.log("Error opteniendo data ip ", e)
+                    console.log("Error obteniendo data ip ", e)
                 }
             };
             getData();

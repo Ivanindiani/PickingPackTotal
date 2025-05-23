@@ -279,7 +279,8 @@ const Recepcion = (props) => {
             style: 'destructive',
             onPress: () => {
             let datos = {
-                IDREC: recepcion.IDREC
+                IDREC: recepcion.IDREC,
+                WERKS: recepcion.WERKS
             };
             if(recepcion.SAP?.MAIL == 1) {
                 datos.forzar = true;
@@ -429,21 +430,21 @@ const Recepcion = (props) => {
                         {recepciones.map((recepcion, i) => 
                             <ListItem
                                 key={i}
-                                overline={`#${recepcion.IDREC} - `+(recepcion.SAP?.NUM_ENTRADA_MERC ? "DISP. en STOCK":recepcion.RESTS)}
+                                overline={`#${recepcion.IDREC} - `+(recepcion.SAP?.NUM_ENTRADA_MERC?.length > 1 ? "DISP. en STOCK":recepcion.RESTS)}
                                 title={recepcion.DESCR}
                                 secondaryText={
                                     (recepcion.EBELN ? `Nº orden: ${recepcion.EBELN}\n`:'')
                                     +"Proveedor: "+recepcion.LIFNR
                                     +"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")
                                     +"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
-                                (recepcion.SAP?.NUM_ORDEN_COMPRA ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
-                                (recepcion.SAP?.NUM_ENTRADA_MERC ? `\nNº Entrada Stock: ${recepcion.SAP?.NUM_ENTRADA_MERC}`:"")}
-                                leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
+                                (recepcion.SAP?.NUM_ORDEN_COMPRA?.length > 1 ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+
+                                (recepcion.SAP?.NUM_ENTRADA_MERC?.length > 1 ? `\nNº Entrada Stock: ${recepcion.SAP?.NUM_ENTRADA_MERC}`:"")}
+                                leading={<Entypo name="circle" size={24} backgroundColor={recepcion.SAP?.NUM_ENTRADA_MERC?.length > 1 ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} color={recepcion.SAP?.NUM_ENTRADA_MERC?.length > 1 ? Global.colorMundoTotal:statusColor[recepcion.RESTS]} style={{borderRadius: 12}} />}
                                 trailing={(p2) => 
                                     <View>
                                         {props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 && recepcion.RESTS === 'CREADO'? 
                                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropRecepcion(recepcion.DESCR, recepcion.IDREC, recepcion.RESTS === 'RECIBIDO' ? true:false)}/>:''}
-                                        {recepcion.SAP?.NUM_ENTRADA_MERC && daysDiff(recepcion.DATEC) <= 7 && 
+                                        {recepcion.SAP?.NUM_ENTRADA_MERC?.length > 1 && daysDiff(recepcion.DATEC) <= 7 && 
                                         recepcion.CANT_DEVOLUCIONES > 0 ?
                                         <IconButton disabled={loading} icon={p2=p2 => loading ? <ActivityIndicator/>:<MaterialCommunityIcons name={recepcion.SAP?.MAIL == 1 ? "email-check":"email-send"} {...p2}/> } onPress={() => mailSend(recepcion)}/>:''}
                                     </View>

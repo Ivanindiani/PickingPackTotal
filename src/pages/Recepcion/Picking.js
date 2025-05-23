@@ -54,10 +54,10 @@ const ManagerProducts = (props) => {
 
     const inputScan = useRef(null);
     const inputCantidad = useRef(null);
-    const otroInput1 = useRef([]);
+    //const otroInput1 = useRef([]);
     const otroInput2 = useRef([]);
     const otroInput3 = useRef(null);
-    const otroInput4 = useRef(null);
+    //const otroInput4 = useRef(null);
     const scrollShow = useRef(null);
 
     useEffect(() => {
@@ -162,16 +162,17 @@ const ManagerProducts = (props) => {
     useEffect(() => {
         setCantidad(0);
         setLoteName(null);
-        setCuatro(null);
+        setCuatro("AAAA");
         if(lote) {
             let encontrar = false;
             inputCantidad.current?.setNativeProps({text: ""})
             for(let item of productos) {
-                if(item.LOTEA == lote) {
+                if(item.LOTEA == lote && item.MATNR == preProduct.MATNR) {
                     //console.log("Encontramos el lote en la lista: ", item.quantity_usar)
                     encontrar = true;
                     inputCantidad.current?.setNativeProps({text: item.QUANT.toString()})
                     setCantidad(item.QUANT);
+                    setPreProduct({...preProduct, ...item});
                     //setPreProduct(item);
                     break;
                 }
@@ -187,16 +188,17 @@ const ManagerProducts = (props) => {
 
     useEffect(() => {
         if(loteName) {
+            console.log(loteName)
             let encontrar = false;
             //inputCantidad.current?.setNativeProps({text: ""});
             //setCantidad(0);
             for(let item of productos) {
-                if(item.LOTEA == loteName) {
+                if(item.LOTEA == loteName && item.MATNR == preProduct.MATNR) {
                     //console.log("Encontramos el lote en la lista: ", item.quantity_usar)
                     encontrar = true;
                     inputCantidad.current?.setNativeProps({text: item.QUANT.toString()})
                     setCantidad(item.QUANT);
-                    //setPreProduct(item);
+                    setPreProduct({...preProduct, ...item});
                     break;
                 }
             }
@@ -256,7 +258,8 @@ const ManagerProducts = (props) => {
                 console.log(unidadFindScan);
             }
             if(preProduct && unidadFindScan.EAN11) { // Cuando ya está en el cuadro de escaneo
-                if(autosumar && (preProduct.UnidadBase.XCHPF !== 'X' || (preProduct.UnidadBase.XCHPF === 'X' && lote && (lote === 'NEWLOTE' && loteName || lote !== 'NEWLOTE')))) {
+                console.log("encontramos el codigo en preproduct");
+                if(autosumar && (preProduct.UnidadBase.XCHPF !== 'X' || (preProduct.UnidadBase.XCHPF === 'X' && lote && ((lote === 'NEWLOTE' && loteName) || lote !== 'NEWLOTE')))) {
                 //if(autosumar) {
                     let prod = JSON.parse(JSON.stringify(preProduct));
 
@@ -544,7 +547,7 @@ const ManagerProducts = (props) => {
         }
     }
 
-    const setInputCuatro = (text) => {
+    /*const setInputCuatro = (text) => {
         if(text.length != 4) {
             return Alert.alert('Error', 'Selecciona un nombre de 4 carácteres minimo');
         }
@@ -557,7 +560,7 @@ const ManagerProducts = (props) => {
             let fechaName = dateLote.substring(6,8)+""+dateLote.substring(4,6)+""+dateLote.substring(2,4);
             setLoteName(text.toUpperCase()+fechaName);
         }
-    }
+    }*/
 
     const finalizarRecepcion = async () => {
         
@@ -583,6 +586,24 @@ const ManagerProducts = (props) => {
                             if(prod.MONTO !== prod2.MONTO) {
                                 return Alert.alert('Error', 'Hay artículos iguales con monto diferente por favor verifique');
                             }
+                        }
+                    }
+                    if(recepcion.EBELN) {
+                        let suma = 0;
+                        for(let prod2 of ordenCompra.PedidosCompraProductos) {
+                            if(prod2.MATNR === prod.MATNR) //suma+=prod2.MENGE*prod2.UMREZ;
+                                suma+=prod2.CANT_FINAL;
+                        }
+                        if(suma === 0) {
+                            return Alert.alert('Error', `No puedes incluir artículos que no existen en la orden de compra original (${prod.MATNR})`);
+                        }
+                        let cantidadTotal = 0;
+                        for(let prod2 of prods) {
+                            if(prod2.MATNR === prod.MATNR) 
+                                cantidadTotal+=prod2.QUANT;
+                        }
+                        if(cantidadTotal > suma) { // Esto solo sirve si 
+                            return Alert.alert('Error', `No puedes sobrepasar la cantidad esperada de un artículo (${prod.MATNR})`);
                         }
                     }
                     /*if(prod.LOTEA) {
@@ -763,12 +784,51 @@ const ManagerProducts = (props) => {
         ]);
     }
 
+    /**Orden compra */
+    const [ordenCompra, setOrdenCompra] = useState({});
+    function getOrdenCompra() {
+        let datos = [
+            `EBELN=${recepcion.EBELN}`,
+            `RECEPCION=${recepcion.IDREC}`,
+            `WERKS=${recepcion.WERKS}`,
+            `LGORT=${recepcion.LGORT}`
+        ];
+
+        if(recepcion.RESTS !== 'CREADO') {
+            datos.push(`NOSUM=1`);
+        }
+        setOrdenCompra({});
+        setLoading(true);
+        fetchIvan(props.ipSelect).get('/administrative/getOrdenCompra', datos.join('&'), props.token.token)
+        .then(({data}) => {
+            setOrdenCompra(data.data);
+            console.log(data.data);
+        })
+        .catch(({status, error}) => {
+            console.log(status, error);
+            return ToastAndroid.show(
+                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.LONG
+            );
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+    }
+
+    useEffect(() => {
+        if(recepcion.EBELN) {
+            getOrdenCompra();
+        }
+    }, [recepcion]);
+    /**Orden compra */
+
     const memoRows = useCallback((item, index) => 
         <HStack
             key={index}
             spacing={4}
             style={[styles.items,((item.UCRID == props.dataUser.IDUSR && (preProduct.MATNR === item.MATNR && item.UnidadBase.XCHPF !== 'X') || 
-                        (item.UnidadBase.XCHPF === 'X' && item.LOTEA == lote && preProduct.MATNR === item.MATNR)) ? {backgroundColor: 'lightgreen'}:{}), {width: '100%'}]}
+                        (item.UnidadBase.XCHPF === 'X' && (item.LOTEA == loteName || item.LOTEA == lote) && preProduct.MATNR === item.MATNR)) ? {backgroundColor: 'lightgreen'}:{}), {width: '100%'}]}
         >
             <VStack w="55%">
                 <Text style={styles.title3}>{item.Producto.MAKTG ?? ""}</Text>
@@ -888,7 +948,7 @@ const ManagerProducts = (props) => {
             }
             {recepcion.RESTS === 'CREADO' && <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>}
             </VStack>
-        </HStack>, [productos, preProduct.MATNR, loadingSave, recepcion, lote])
+        </HStack>, [productos, preProduct.MATNR, loadingSave, recepcion, lote, loteName])
 
     const memoGet = useCallback(getProductos);
 
@@ -974,7 +1034,8 @@ const ManagerProducts = (props) => {
                                 <Text>Lote:</Text>
                                 <SelectInput
                                     searchable={false}
-                                    data={preProduct.ProdConLotes?.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG}],[{value: 'NEWLOTE', label: 'NUEVO LOTE'}])}
+                                    //data={preProduct.ProdConLotes?.reduce((p,i) => [...p, {value: i.CHARG, label: i.CHARG}],[{value: 'NEWLOTE', label: 'NUEVO LOTE'}])}
+                                    data={[{value: 'NEWLOTE', label: 'NUEVO LOTE'}]}
                                     value={lote}
                                     setValue={setLote}
                                     title="Elegir"
@@ -1042,9 +1103,11 @@ const ManagerProducts = (props) => {
                                 <Text style={{fontSize: 12, fontWeight: 'bold', textAlign: 'center'}}>{loteName ? 'Nombre asignado: '+loteName:''}</Text>
                                 <TextInput
                                     autoCapitalize={"characters"}
-                                    onEndEditing={(e) => setInputCuatro(e.nativeEvent.text)}
+                                    editable={false}
+                                    //onEndEditing={(e) => setInputCuatro(e.nativeEvent.text)}
                                     placeholder="Iniciales"
                                     textAlign={'center'}
+                                    value={cuatro}
                                     inputStyle={{marginTop: -18}}
                                     inputContainerStyle={{
                                         height: 30,
@@ -1096,7 +1159,8 @@ const ManagerProducts = (props) => {
                         contentContainerStyle={{alignSelf: 'flex-end'}}
                     />
                 </Stack>
-                <ArticulosOrden {...props} recepcion={recepcion} show={show} setShow={setShow} scan={preProduct?.MATNR ?? null}/>
+                <ArticulosOrden {...props} recepcion={recepcion} show={show} setShow={setShow} scan={preProduct?.MATNR ?? null} 
+                                ordenCompra={ordenCompra} setOrdenCompra={setOrdenCompra} getOrdenCompra={getOrdenCompra}/>
             </>:''}
 
             {productos.length && dialogVisible > -1 ?
