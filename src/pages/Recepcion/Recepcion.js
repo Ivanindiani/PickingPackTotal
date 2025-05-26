@@ -358,7 +358,7 @@ const Recepcion = (props) => {
                         
                         <Stack fill center spacing={4}>
                             <Text style={[styles.subtitle, {color: 'grey', fontWeight: 'bold'}]}>¿Ingresar orden de compra manualmente?</Text>
-                            <Switch value={manual} onValueChange={() => setManual(!manual)} color={Global.colorMundoTotal}/>
+                            <Switch value={manual} onValueChange={() => setManual(!manual)} color={Global.colorMundoTotal} disabled={props.dataUser.USSCO.split(',').indexOf('RECEPCION_OC_MANUAL') === -1}/>
                         </Stack>
                         {!manual ?
                         <HStack mb={10}>
@@ -434,7 +434,7 @@ const Recepcion = (props) => {
                                 title={recepcion.DESCR}
                                 secondaryText={
                                     (recepcion.EBELN ? `Nº orden: ${recepcion.EBELN}\n`:'')
-                                    +"Proveedor: "+recepcion.LIFNR
+                                    +"Proveedor: "+(recepcion.ProveedoresFijo?.Proveedor?.NAME1 ?? recepcion.LIFNR ?? '')
                                     +"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")
                                     +"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
                                 (recepcion.SAP?.NUM_ORDEN_COMPRA?.length > 1 ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+

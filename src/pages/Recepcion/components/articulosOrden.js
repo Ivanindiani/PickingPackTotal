@@ -60,12 +60,12 @@ const ArticulosOrden = memo((props) => {
                 trailing={
                     <VStack style={styles.item}>
                         <VStack style={styles.item2}>
-                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{/*item.MENGE*item.UMREZ*/}{item.CANT_FINAL}</Text>
+                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{recepcion.RESTS !== 'CREADO' ? (item.MENGE*item.UMREZ):item.CANT_FINAL}</Text>
                             <Text style={{fontSize: 11}} numberOfLines={1}>Und.</Text>
                         </VStack>
                         <VStack style={styles.item2}>
                             <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{item.COUNT_SCAN ?? 0}</Text>
-                            <Text style={{fontSize: 11, color: !item.COUNT_SCAN ? 'red':(item.COUNT_SCAN == (item.CANT_FINAL) ? 'green':'orange')}} numberOfLines={1}>Scan</Text>
+                            <Text style={{fontSize: 11, color: !item.COUNT_SCAN ? 'red':(item.COUNT_SCAN == (recepcion.RESTS !== 'CREADO' ? (item.MENGE*item.UMREZ):item.CANT_FINAL) ? 'green':'orange')}} numberOfLines={1}>Scan</Text>
                         </VStack>
                     </VStack>
                 }
@@ -74,7 +74,7 @@ const ArticulosOrden = memo((props) => {
     }
 
     return (
-        <ModalShow show={props.show} setShow={props.setShow} title={"Orden de compra nº: "+recepcion.EBELN} >
+        <ModalShow show={props.show} setShow={props.setShow} title={"Orden de compra nº: "+recepcion.EBELN+"\nProveedor: "+recepcion.ProveedoresFijo?.Proveedor?.NAME1 ?? recepcion.LIFNR ?? ''} >
             
             <FlatList
                 data={ordenCompra?.PedidosCompraProductos ? !buscar?.length ? ordenCompra.PedidosCompraProductos:ordenCompra?.PedidosCompraProductos.filter(f => f.TXZ01.indexOf(buscar) !== -1 || f.MATNR.indexOf(buscar) !== -1):[]}
@@ -86,7 +86,13 @@ const ArticulosOrden = memo((props) => {
                             <Text style={{textAlign: 'center', fontWeight: '600'}}>Lista de artículos esperados</Text>
                             <HStack style={{justifyContent: 'space-around'}}>
                                 <Text style={styles.title3}>Total art: <Text style={styles.subtitle}>{ordenCompra?.PedidosCompraProductos?.length ?? 0}</Text></Text>
-                                <Text style={styles.title3}>Total unds: <Text style={styles.subtitle}>{ordenCompra?.PedidosCompraProductos ? ordenCompra?.PedidosCompraProductos.reduce((prev, prod) => prev+parseInt(prod.CANT_FINAL || 0), 0):0}</Text></Text>
+                                <Text style={styles.title3}>Total unds: 
+                                    <Text style={styles.subtitle}>
+                                        {ordenCompra?.PedidosCompraProductos ? 
+                                            ordenCompra?.PedidosCompraProductos.reduce((prev, prod) => prev+parseInt((recepcion.RESTS !== 'CREADO' ? (prod.MENGE*prod.UMREZ):prod.CANT_FINAL) || 0), 0)
+                                            :0}
+                                    </Text>
+                                </Text>
                             </HStack>
                         </Stack>
 
