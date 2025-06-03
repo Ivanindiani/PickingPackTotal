@@ -46,6 +46,9 @@ const ArticulosOrden = memo((props) => {
     }*/
 
     const rowList = ({item, index}) => {
+        let restante = item.restante ?? 0;
+
+        let scanReserved = (item.COUNT_SCAN ?? 0) - restante; // Cuando hay mas no puedo lo mejor es un procesador de cantidades pero nah
         return (
             <ListItem 
                 key={index} 
@@ -60,17 +63,21 @@ const ArticulosOrden = memo((props) => {
                 trailing={
                     <VStack style={styles.item}>
                         <VStack style={styles.item2}>
-                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{recepcion.RESTS !== 'CREADO' ? (item.MENGE*item.UMREZ):item.CANT_FINAL}</Text>
+                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{recepcion.RESTS !== 'CREADO' ?  Math.floor(item.MENGE*item.UMREZ):item.CANT_FINAL}</Text>
                             <Text style={{fontSize: 11}} numberOfLines={1}>Und.</Text>
                         </VStack>
                         <VStack style={styles.item2}>
-                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{item.COUNT_SCAN ?? 0}</Text>
-                            <Text style={{fontSize: 11, color: !item.COUNT_SCAN ? 'red':(item.COUNT_SCAN == (recepcion.RESTS !== 'CREADO' ? (item.MENGE*item.UMREZ):item.CANT_FINAL) ? 'green':'orange')}} numberOfLines={1}>Scan</Text>
+                            <Text style={{fontSize: 14, fontWeight: 'bold'}} numberOfLines={1}>{(item.COUNT_SCAN ?? 0) /**Aqui quiero mostrar la cantidad restante */}</Text>
+                            <Text style={{fontSize: 11, color: !item.COUNT_SCAN ? 'red':(item.COUNT_SCAN == (recepcion.RESTS !== 'CREADO' ? Math.floor(item.MENGE*item.UMREZ):item.CANT_FINAL) ? 'green':'orange')}} numberOfLines={1}>Scan</Text>
                         </VStack>
                     </VStack>
                 }
             />
         )
+    }
+
+    const listRaw = (MATNR, SCAN) => {
+
     }
 
     return (

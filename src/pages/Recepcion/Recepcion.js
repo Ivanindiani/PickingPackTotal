@@ -434,7 +434,7 @@ const Recepcion = (props) => {
                                 title={recepcion.DESCR}
                                 secondaryText={
                                     (recepcion.EBELN ? `Nº orden: ${recepcion.EBELN}\n`:'')
-                                    +"Proveedor: "+(recepcion.ProveedoresFijo?.Proveedor?.NAME1 ?? recepcion.LIFNR ?? '')
+                                    +"Proveedor: "+(recepcion.ProveedoresFijo?.Proveedor?.NAME1 ?? recepcion.LIFNR ?? '')+` (${recepcion.LIFNR})`
                                     +"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")
                                     +"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
                                 (recepcion.SAP?.NUM_ORDEN_COMPRA?.length > 1 ? `\nNº Confirmación: ${recepcion.SAP?.NUM_ORDEN_COMPRA}`:"")+

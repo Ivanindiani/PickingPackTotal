@@ -1148,7 +1148,7 @@ const ManagerProducts = (props) => {
                 mode="date"
                 onConfirm={selectDate}
                 onCancel={() => setDatePickerVisibility(false)}
-                minimumDate={new Date()}
+                minimumDate={new Date(new Date().setMonth(new Date().getMonth() + 6))}
             />
             {recepcion.EBELN ?
             <>

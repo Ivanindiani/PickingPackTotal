@@ -79,8 +79,8 @@ android {
         applicationId "com.totalwms"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 114
-        versionName "1.14"
+        versionCode 116
+        versionName "1.16"
     }
     signingConfigs {
         debug {
