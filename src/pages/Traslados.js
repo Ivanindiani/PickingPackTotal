@@ -79,7 +79,7 @@ const Traslados = (props) => {
 
     useEffect(() => {
         // Lo deshabilitamos porque no se puede traer desde el usuario todos los almacenes solo los registrados
-        /*if(props.dataUser.USSCO.split(',').indexOf('ALLSEDE') !== -1) {
+        /*if(props.dataUser.USSCO.split(',').indexOf('totalwms_alldevices_*') !== -1) {
             setCentros(props.dataUser.Centros);
             setCentrosHacia(props.dataUser.Centros.reduce((prev, d) => d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
         } else {*/

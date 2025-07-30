@@ -11,10 +11,13 @@ const ipDefaults = [{
     value: '201.249.133.34:8888'
 }, {
     label: '192.168.0.183 (production)', // Servidor ip local
-    value: '192.168.0.183:8888'
+    value: '192.168.0.183:8899'
 }, {
     label: '201.249.133.34 (production)', // Servidor publico
     value: '201.249.133.34:8899'
+}, {
+    label: 'Dominio pockets.dyndns-remote.com 8899', // Servidor publico
+    value: 'pockets.dyndns-remote.com:8899'
 }];
 
 const HeaderMundo = (props) => {

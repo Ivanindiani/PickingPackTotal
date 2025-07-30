@@ -102,7 +102,7 @@ const Home = (props) => {
                     onPress={() => props.navigation.navigate('TrasladosTab', {type_tras: 'recibir_tras'})}
                 />:''
                 }
-                {props.dataUser.USSCO?.split(',').indexOf('FIND_ARTBODEGA') !== -1 && !props.dataUser.CAMIONERO ?
+                {props.dataUser.USSCO?.split(',').indexOf('totalwms_bodega_articulos_ver') !== -1 && !props.dataUser.CAMIONERO ?
                 <ListItem
                     title="Almacén Inventario"
                     leading={<MaterialCI name="warehouse" size={24} />}
