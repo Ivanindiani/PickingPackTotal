@@ -254,7 +254,7 @@ const ManagerProducts = (props) => {
 
             let unidadFindScan = {};
             if(preProduct) {
-                unidadFindScan = preProduct.ProductosUnidads?.filter((p) => p.EAN11 == codigo)[0] ?? {};
+                unidadFindScan = preProduct.ProductosUnidads?.filter((p) => p.EAN11 == codigo || p.EAN11 == codigo?.replace(/^0+/, ''))[0] ?? {};
                 console.log(unidadFindScan);
             }
             if(preProduct && unidadFindScan.EAN11) { // Cuando ya está en el cuadro de escaneo
@@ -327,7 +327,7 @@ const ManagerProducts = (props) => {
                 for(let prod of productos) {
                     const unidadBase = prod.UnidadBase?.MEINS || "ST";
                     for(let und of prod.Producto.ProductosUnidads) {
-                        if(und.EAN11 == codigo && prod.UCRID == props.dataUser.IDUSR) { // AHORA ES POR ID DE USUARIO
+                        if((und.EAN11 == codigo || und.EAN11 == codigo?.replace(/^0+/, '')) && prod.UCRID == props.dataUser.IDUSR) { // AHORA ES POR ID DE USUARIO
                             if(prod.UnidadBase.XCHPF === 'X') {
                                 mode = {
                                     mode: 'update',
@@ -389,7 +389,7 @@ const ManagerProducts = (props) => {
                     }
 
                     for(let p in prod.ProductosUnidads) {
-                        if(prod.ProductosUnidads[p].EAN11 == codigo) { // Si es escanean el cod de material da error
+                        if(prod.ProductosUnidads[p].EAN11 == codigo || prod.ProductosUnidads[p].EAN11 == codigo?.replace(/^0+/, '')) { // Si es escanean el cod de material da error
                             prod.unidad_index = prod.ProductosUnidads[p];
                             break;
                         }

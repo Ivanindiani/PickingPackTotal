@@ -375,7 +375,7 @@ const Scaneo = (props) => {
         
         // Primero Buscamos en los items si existe
             
-        if(scanSelect && scancode === scanSelect.unidad_index?.EAN11 && mode.mode === 'update') {
+        if(scanSelect && (scancode === scanSelect.unidad_index?.EAN11 || scancode?.replace(/^0+/, '') === scanSelect.unidad_index?.EAN11) && mode.mode === 'update') {
             //console.log("Hola es el mismo codigo")
             if(!scanSelect.Producto?.ProdConLotes?.length && autosumar) {
                 console.log("Hola es el mismo codigo y sumamos", scanSelect)
@@ -437,7 +437,7 @@ const Scaneo = (props) => {
                 for(let und of item.Producto?.ProductosUnidads) {
                     const unidadBase = item.Producto.UnidadBase?.MEINS || "ST";
                     //console.log("item: "+und.EAN11, "scan: "+scancode, "Unidad Base: "+item.Producto.UnidadBase?.MEINS)
-                    if(und.EAN11 === scancode) {
+                    if(und.EAN11 === scancode || und.EAN11 === scancode?.replace(/^0+/, '')) {
                         let lotico = [];
                         let fullItems = false;
                         item.TCANT = parseInt(item.TCANT);
@@ -563,7 +563,7 @@ const Scaneo = (props) => {
                         }
                     }
                     for(let unidad of producto.Producto.ProductosUnidads) { 
-                        if(unidad.EAN11 === scancode) {
+                        if(unidad.EAN11 === scancode || unidad.EAN11 === scancode?.replace(/^0+/, '')) {
                             producto.unidad_index = unidad;
                             if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                                 producto.noBase = true;
@@ -582,7 +582,7 @@ const Scaneo = (props) => {
                     producto.maxQuantity = parseInt(producto.Producto.ProdSinLotes[0]?.LABST || 0)-parseInt(quantity_used);
 
                     for(let unidad of producto.Producto.ProductosUnidads) {
-                        if(unidad.EAN11 === scancode) {
+                        if(unidad.EAN11 === scancode || unidad.EAN11 === scancode?.replace(/^0+/, '')) {
                             producto.unidad_index = unidad;
                             if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                                 producto.noBase = true;

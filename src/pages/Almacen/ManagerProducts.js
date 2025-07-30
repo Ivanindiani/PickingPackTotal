@@ -67,7 +67,7 @@ const ManagerProducts = (props) => {
                 const prod = data.data;
 
                 for(let p in prod.ProductosUnidads) {
-                    if(prod.ProductosUnidads[p].EAN11 == codigo) {
+                    if(prod.ProductosUnidads[p].EAN11 == codigo || prod.ProductosUnidads[p].EAN11 == codigo?.replace(/^0+/, '')) {
                         prod.unidad_index = prod.ProductosUnidads[p];
                         break;
                     }
