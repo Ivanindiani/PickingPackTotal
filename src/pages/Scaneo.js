@@ -295,7 +295,7 @@ const Scaneo = (props) => {
 
         let unidadFindScan = {};
         if(scanCurrent) {
-            unidadFindScan = scanCurrent.Producto?.ProductosUnidads?.filter((p) => p.EAN11 == scancode)[0] ?? {};
+            unidadFindScan = scanCurrent.Producto?.ProductosUnidads?.filter((p) => p.EAN11 == scancode || p.EAN11 == scancode?.replace(/^0+/, ''))[0] ?? {};
             console.log(unidadFindScan);
         }
         
@@ -404,7 +404,7 @@ const Scaneo = (props) => {
             console.log("Producto", data.data);
             const producto = {...data.data, ...data.data.Producto};
             for(const unidad of producto.Producto?.ProductosUnidads) {
-                if(unidad.EAN11 != scancode) continue;
+                if(unidad.EAN11 != scancode && unidad.EAN11 != scancode?.replace(/^0+/, '')) continue;
                 producto.unidad_index = unidad;
                 producto.force = false;
                 producto.TCANT = 0;

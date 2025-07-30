@@ -261,7 +261,7 @@ const VerItems = (props) => {
             if(!found) return ToastAndroid.show("El producto que escaneó no está en la lista", ToastAndroid.LONG);
 
             for(let unidad of producto.Producto.ProductosUnidads) {
-                if(unidad.EAN11 === scancode) {
+                if(unidad.EAN11 === scancode || unidad.EAN11 === scancode?.replace(/^0+/, '')) {
                     scanFinal.unidad_index = unidad;
                     if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
                         scanFinal.noBase = true;
