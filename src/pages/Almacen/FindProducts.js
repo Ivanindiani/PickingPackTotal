@@ -1,15 +1,15 @@
-import { ActivityIndicator, Button, HStack, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Button, HStack, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useRef, useState, useEffect } from "react";
-import { StyleSheet, Alert, ToastAndroid, Dimensions, View } from "react-native";
+import { StyleSheet, Alert, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import { useCallback } from "react";
 import ListaPerform from "../../components/_virtualList";
 import fetchIvan from "../../components/_fetch";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import ImagesAsync from "../../components/_imagesAsync";
-const Global = require('../../../app.json');
+//const Global = require('../../../app.json');
 
-const dimensionesScreen = Dimensions.get('screen');
+//const dimensionesScreen = Dimensions.get('screen');
 const FindProducts = (props) => {
     
     const bodega = props.bodega;
@@ -144,7 +144,7 @@ const FindProducts = (props) => {
         return `${item.Bodega?.FLOOR ?? ''}-${item.Bodega?.AISLE ?? ''}-${item.Bodega?.COLUM ?? ''}-${item.Bodega?.RACKS ?? ''}-${item.Bodega?.PALET ?? ''}`;
     }
 
-    const RowProducts = (item, index) => {
+    const RowProducts = useCallback((item, index) => {
         return (
             <VStack 
                 style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: item.Bodega.BLOQU ? 'auto':265}} 
@@ -196,7 +196,7 @@ const FindProducts = (props) => {
                 <HStack style={[styles.row, {alignItems: 'center', justifyContent: 'space-between', left: -16}]}>
                     <Text style={styles.th}>ID:</Text>
                     <Text style={[styles.td, {backgroundColor: 'lightgreen', width: 'auto', maxWidth: '45%', textAlign: 'center', fontSize: 12}]} numberOfLines={1}>{item.IDDWA} ({getConcatItem(item)})</Text>
-                    {props.dataUser.USSCO.split(',').indexOf('totalwms_bodega_articulos_eliminar') !== -1 && !item.RESERVADOS ?
+                    {props.dataUser.USSCO.split(',').indexOf('DEL_ARTBODEGA') !== -1 && !item.RESERVADOS ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
                 </HStack>
@@ -205,8 +205,9 @@ const FindProducts = (props) => {
                 </View>
             </VStack>
         )
-    }
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [findProduct])
+    }, []);
+
+    //const memoRows = useCallback((item, index) => RowProducts(item, index), [findProduct])
 
     return (
         <Stack spacing={2} m={4} style={{flex: 1}}> 
@@ -230,9 +231,10 @@ const FindProducts = (props) => {
                 
             <ListaPerform
                 items={findProduct} 
-                renderItems={memoRows} 
+                renderItems={RowProducts} 
                 //heightRemove={dimensionesScreen.height < 600 ? 330:375}
-                //height={190}
+                height={240}
+                forceHeight={true}
                 />
         </Stack>
     )

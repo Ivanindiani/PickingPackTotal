@@ -30,6 +30,7 @@ const ImagesAsync = memo(({imageCode, imageStyle = {}, token, ipSelect, msg = tr
         })
         .catch(({status, error}) => {
             console.log(status, error);
+            if(!msg) return;
             if(typeof(error?.text) === 'object') {
                 return ToastAndroid.show("Error desde el servidor de IMAGENES", ToastAndroid.LONG);
             }

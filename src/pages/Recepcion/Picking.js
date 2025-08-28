@@ -19,6 +19,7 @@ import Ft from "react-native-vector-icons/Fontisto";
 import RNBeep from "react-native-a-beep";
 import KeyEvent from 'react-native-keyevent';
 import ArticulosOrden from "./components/articulosOrden";
+import FabScrollTop from "../../components/fabScrollTop";
 
 const Global = require('../../../app.json');
 
@@ -59,6 +60,8 @@ const ManagerProducts = (props) => {
     const otroInput3 = useRef(null);
     //const otroInput4 = useRef(null);
     const scrollShow = useRef(null);
+    const listaRef = useRef(null);
+    const fabRef = useRef(null);
 
     useEffect(() => {
         if(loading) {
@@ -823,8 +826,8 @@ const ManagerProducts = (props) => {
     }, [recepcion]);
     /**Orden compra */
 
-    const memoRows = useCallback((item, index) => 
-        <HStack
+    const RowProducts = useCallback((item, index) => {
+        return <HStack
             key={index}
             spacing={4}
             style={[styles.items,((item.UCRID == props.dataUser.IDUSR && (preProduct.MATNR === item.MATNR && item.UnidadBase.XCHPF !== 'X') || 
@@ -842,53 +845,6 @@ const ManagerProducts = (props) => {
 
             {recepcion.RESTS === 'CREADO' ? 
             <VStack w="25%" style={{alignSelf: 'flex-end'}}>
-                {/* {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
-                <Text style={[styles.subtitle2]} mt={0}>Costo ({recepcion.ProveedoresFijo?.WAERS}):</Text>}
-                {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
-                <TextInput
-                    containerStyle={{fontSize: 5}} 
-                    defaultValue={item.MONTO.toString()} 
-                    numeric
-                    textAlign={'center'}
-                    keyboardType="numeric" 
-                    inputContainerStyle={{
-                        width: 90,
-                        height: 45,
-                        margin: 0,
-                        backgroundColor: 'lightgrey' // Quitar cuando se pueda permitir colocar el costo
-                    }}
-                    inputStyle={{paddingEnd: 0, paddingStart: 0}}
-                    //editable={!loadingSave} // Habilitar cuando se pueda permitir colocar el costo
-                    editable={false} // Quitar cuando se pueda permitir colocar el costo
-                    pointerEvents="none"
-                    onFocus={(e) => {
-                        if(!item.MONTO) {
-                            otroInput1.current[index]?.setNativeProps({text: ""});
-                        }
-                    }}
-                    onEndEditing={(e) => {
-                        let cant = '';
-                        try {
-                            cant = e.nativeEvent.text?.match(/(^\d+(?:\.\d+)?)/g)[0];
-                            if(cant && cant[0] === '0' && cant !== '0') 
-                                cant = cant.substring(1,cant.length);
-                        } catch {
-                        }
-                        if((!cant && cant !== 0) || parseFloat(cant) < 0) {
-                            if(item.MONTO) {
-                                otroInput1.current[index]?.setNativeProps({text: item.MONTO.toString()});
-                                return;
-                            }
-                        }
-                        if(parseFloat(cant) == item.MONTO) return otroInput1.current[index]?.setNativeProps({text: item.MONTO.toString()});
-
-                        console.log(cant, "cant")
-                        otroInput1.current[index]?.setNativeProps({text: cant ?? '0'});
-                        updateProduct(item, item.QUANT, parseFloat(cant ?? 0));
-                    }}
-                    ref={el => otroInput1.current ? otroInput1.current[index] = el:''} 
-                    maxLength={10}
-                />} */}
                 {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
                 <Text style={styles.subtitle2}>Cant.</Text>}
                 {(props.dataUser.USSCO.split(',').indexOf('ADMIN_RECEPCION') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEPCION_ITEMS_UPDATE') !== -1) && 
@@ -948,14 +904,22 @@ const ManagerProducts = (props) => {
             }
             {recepcion.RESTS === 'CREADO' && <Text style={[styles.subtitle2, {textAlign: 'center'}]}>Cant. dev.{"\n"}{item.QUAND}</Text>}
             </VStack>
-        </HStack>, [productos, preProduct.MATNR, loadingSave, recepcion, lote, loteName])
+        </HStack>;
+    }, [preProduct.MATNR, loadingSave, recepcion.RESTS, lote, loteName]);
 
-    const memoGet = useCallback(getProductos);
+    const refreshControl = <RefreshControl refreshing={false} onRefresh={()=> getProductos(true)}/>;
+
+    const handleScroll = (event) => {
+        if(listaRef?.current)
+            listaRef.current.handleScroll(event);
+        if(fabRef?.current)
+            fabRef.current.handleScroll(event);
+    }
 
     return (
         <Provider>
             {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
-            <ScrollView ref={scrollShow} nestedScrollEnabled={true} refreshControl={<RefreshControl refreshing={false} onRefresh={()=> memoGet(true)}/>}>
+            <ScrollView ref={scrollShow} nestedScrollEnabled={true} refreshControl={refreshControl} onScroll={handleScroll}>
                 <VStack>
                     <Text style={styles.title2}>{recepcion.DESCR}</Text>
                     <HStack style={{justifyContent: 'space-between'}} p={5}>
@@ -1135,13 +1099,17 @@ const ManagerProducts = (props) => {
                     </HStack>
                     <ListaPerform
                         items={productos} 
-                        renderItems={memoRows} 
+                        renderItems={RowProducts} 
                         heightRemove={recepcion.RESTS === 'CREADO' ? 135:160}
                         height={recepcion.RESTS === 'CREADO' ? 150:100}
+                        ref={listaRef}
+                        scrollPrincipal={scrollShow}
                         />
                 </Stack>
                 <View style={{ width: 200, height: 10 }}></View>
             </ScrollView>
+
+            <FabScrollTop scrollPrincipal={scrollShow} ref={fabRef}/>
             <DateTimePickerModal
                 locale="es-VE"
                 isVisible={isDatePickerVisible}

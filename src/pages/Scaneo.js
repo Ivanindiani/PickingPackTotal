@@ -1,8 +1,10 @@
-import { ActivityIndicator, Box, Pressable, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack, Chip } from "@react-native-material/core";
+import { ActivityIndicator, Box, Pressable, Button, Dialog, DialogActions, DialogContent, DialogHeader, 
+    HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack, Chip } from "@react-native-material/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, LogBox, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import RNBeep from "react-native-a-beep";
+import FabScrollTop from "../components/fabScrollTop";
 
 /* Librerias de IVAN */
 import fetchIvan from "../components/_fetch";
@@ -56,6 +58,8 @@ const Scaneo = (props) => {
     /** Referencias a componentes **/
     const mounted = useRef(null);
     const scrollPrincipal = useRef(null);
+    const listaRef = useRef(null);
+    const fabRef = useRef(null);
     const inputScan = useRef(null); // Input principal
     const inputCant1 = useRef(null); // Input cantidad escaneo
     //const inputCantList = useRef(null); // Input cantidad escaneo
@@ -466,6 +470,8 @@ const Scaneo = (props) => {
 
     const editarProducto = (find) => {
         //setRackSel(null);
+        if(scrollPrincipal.current)
+            scrollPrincipal.current.scrollTo({y: 20, animated: true})
         let producto = {};
         for(let tri of trasladoItems) {
             producto = JSON.parse(JSON.stringify(tri));
@@ -699,7 +705,7 @@ const Scaneo = (props) => {
         }
     }
 
-    const getUbi = (producto, ucrid = props.dataUser.IDUSR, force=false) => {
+    const getUbicaciones = useCallback((producto, ucrid = props.dataUser.IDUSR, force=false) => {
         if(!producto?.MATNR) return [];
         let contar = 0, idx = 0;
         let ubicaciones = [];
@@ -745,9 +751,9 @@ const Scaneo = (props) => {
             });
         }
         return ubicaciones;
-    }
+    }, [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined, scanCurrent.CHARG]);
 
-    const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined, scanCurrent.CHARG]);
+    //const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined, scanCurrent.CHARG]);
     /* Funciones Scan */
     
     /* Componente Información */
@@ -877,8 +883,10 @@ const Scaneo = (props) => {
     }
 
     /* Componente de lista */
-    const RowProducts = (item, index) => 
-        <Pressable onPress={() => item.COMNT ? Alert.alert("Comentario", item.COMNT):''} key={index}>
+    const RowProducts = useCallback((item, index) => {
+        //if(scanCurrent.MATNR === item.MATNR)
+            //console.log(scanCurrent.IDTRI, item.IDTRI, rackSel, scanCurrent.ubicaciones, item.IDADW, scanCurrent.force);
+        return <Pressable onPress={() => item.COMNT ? Alert.alert("Comentario", item.COMNT):''} key={index}>
             <HStack
                 spacing={4}
                 style={[styles.items,(
@@ -901,10 +909,12 @@ const Scaneo = (props) => {
 
                 {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
                     <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
-                    <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal}
+                    <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal} disabled={loadingSave}
                         variant="outlined" title="Comentario" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
-                    <Button onPress={() => editarProducto(item)} buttonStyle={{padding: 0}} containerStyle={{padding: 0}} contentContainerStyle={{padding: 0}}
-                        variant="outlined" title="Editar" compact={true} loading={loadingSave} style={{marginBottom: 5, padding: 0}} titleStyle={{fontSize: 11}}/>
+                    <Button onPress={() => editarProducto(item)} buttonStyle={{padding: 0}} 
+                        containerStyle={{padding: 0}} contentContainerStyle={{padding: 0}} disabled={loadingSave}
+                        variant="outlined" title="Editar" compact={true} loading={loadingSave}  
+                        style={{marginBottom: 5, padding: 0}} titleStyle={{fontSize: 11}}/>
                 </VStack>:
                 <VStack w="30%">
                     <Text style={styles.subtitle}>Cantidad:</Text>
@@ -914,13 +924,13 @@ const Scaneo = (props) => {
                     {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
                 </VStack>}
                 {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
-                    <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item)} style={{alignSelf: 'center'}}/>:''
+                    <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => !loadingSave && deleteItem(item)} style={{alignSelf: 'center'}}/>:''
                 }
             </HStack>
         </Pressable>
-    ;
+    }, [loadingSave, (scanCurrent?.MATNR || scanCurrent?.IDTRI || scanCurrent.CHARG), rackSel, cronometro?.FFEND, traslado.TRSTS]);
 
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [trasladoItems, scanCurrent, loadingSave, traslado, rackSel, cronometro?.FFEND])
+    //const memoRows = useCallback((item, index) => RowProducts(item, index), [trasladoItems, scanCurrent, loadingSave, rackSel, cronometro?.FFEND, traslado])
     /* Componente de lista */
 
     /* Otras funciones */
@@ -1134,12 +1144,19 @@ const Scaneo = (props) => {
     }
     /* Otras funciones */
 
+    const refreshControl = <RefreshControl refreshing={false} onRefresh={()=> getTrasladoItems(true)}/>;
+
+    const handleScroll = (event) => {
+        if(listaRef?.current)
+            listaRef.current.handleScroll(event);
+        if(fabRef?.current)
+            fabRef.current.handleScroll(event);
+    }
     return (
         <Provider>
-            <Stack spacing={0} m={2} mb={-4}>
+            <Stack spacing={0} m={2} mb={-4} style={{flex: 1}}>
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
-                <ScrollView ref={scrollPrincipal} nestedScrollEnabled = {true} refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getTrasladoItems(true)}/>}>
-                    <DialogoInfo/>
+                <ScrollView ref={scrollPrincipal} refreshControl={refreshControl} onScroll={handleScroll}>
 
                     <HStack style={{justifyContent: 'space-between'}}>
                         <Crono cronometro={cronometro}/>
@@ -1316,15 +1333,20 @@ const Scaneo = (props) => {
                         </VStack>
                         <ListaPerform 
                             items={props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
-                            renderItems={memoRows} 
+                            renderItems={RowProducts} 
                             heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
                             height={160}
                             forceHeight={false}
+                            ref={listaRef}
+                            scrollPrincipal={scrollPrincipal}
                             />
                     </Stack>
-                    <View style={{ width: 200, height: 10 }}></View>
+                    <View style={{ width: 200, height: 10}}></View>
                 </ScrollView>
             </Stack>
+
+            <FabScrollTop scrollPrincipal={scrollPrincipal} ref={fabRef}/>
+            <DialogoInfo/>
             <DialogoButtons/>
             <DialogoComentario/>
         </Provider>
@@ -1376,6 +1398,7 @@ const styles = StyleSheet.create({
     escaneados: {
         marginTop: 10,
         zIndex: 9,
+        flex: 1
     },
     items: {
         justifyContent: 'space-between', 

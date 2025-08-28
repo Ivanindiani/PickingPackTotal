@@ -8,6 +8,7 @@ import fetchIvan from "../../components/_fetch";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import ImagesAsync from "../../components/_imagesAsync";
 import SelectInput from "../../components/_virtualSelect";
+import FabScrollTop from "../../components/fabScrollTop";
 const Global = require('../../../app.json');
 
 const dimensionesScreen = Dimensions.get('screen');
@@ -22,6 +23,9 @@ const FindProducts = (props) => {
     const [findProduct, setFindProduct] = useState([]);
 
     const inputScan = useRef(null);
+    const scrollPrincipal = useRef(null);
+    const listaRef = useRef(null);
+    const fabRef = useRef(null);
 
     useEffect(() => {
         setEstructura({});
@@ -183,7 +187,7 @@ const FindProducts = (props) => {
         fetchIvan(props.ipSelect).get('/administrative/crudArtBodegas', datos.join('&'), props.token.token)
         .then(({data}) => {
             console.log(data);
-            setFindProduct(data.data);
+                    setFindProduct(data.data);
         }).catch(({status, error}) => {
             console.log(error);
             if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
@@ -239,7 +243,7 @@ const FindProducts = (props) => {
         return `${item.Bodega?.FLOOR ?? ''}-${item.Bodega?.AISLE ?? ''}-${item.Bodega?.COLUM ?? ''}-${item.Bodega?.RACKS ?? ''}-${item.Bodega?.PALET ?? ''}`;
     }
 
-    const RowProducts = (item, index) => {
+    const RowProducts = useCallback((item, index) => {
         return (
             <VStack 
                 style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: item.Bodega.BLOQU ? 'auto':175}} 
@@ -270,7 +274,7 @@ const FindProducts = (props) => {
                 </VStack>}
                 <HStack style={[styles.row, {alignItems: 'center', justifyContent: 'flex-end', left: -16}]} spacing={5}>
                     <Text style={[styles.td, {backgroundColor: 'lightgreen', width: 'auto', maxWidth: '75%', textAlign: 'center', fontSize: 12, padding: 3}]} numberOfLines={2}>{item.IDDWA}{"\n"}{getConcatItem(item)}</Text>
-                    {props.dataUser.USSCO.split(',').indexOf('totalwms_bodega_articulos_eliminar') !== -1 && !item.RESERVADOS ?
+                    {props.dataUser.USSCO.split(',').indexOf('DEL_ARTBODEGA') !== -1 && !item.RESERVADOS ?
                     <Button color="white" title={<AntDesign name="delete" color="red" size={20}/>} onPress={() => borrarItem(item)}/>
                     :''}
                 </HStack>
@@ -279,16 +283,21 @@ const FindProducts = (props) => {
                 </View>
             </VStack>
         )
+    }, []);
+ 
+    const handleScroll = (event) => {
+        if(listaRef?.current)
+            listaRef.current.handleScroll(event);
+        if(fabRef?.current)
+            fabRef.current.handleScroll(event);
     }
-    
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [findProduct])
 
     return (
         <Stack spacing={2} m={4} style={{flex: 1}}> 
            {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
-            <ScrollView nestedScrollEnabled={true}>
+            <ScrollView ref={scrollPrincipal} onScroll={handleScroll}>
             {props.almacenId && bodega.data ?
-            <VStack style={{width: '100%', flexWrap: 'nowrap'}}>
+            <VStack style={{width: '100%', flexWrap: 'nowrap', flex: 1}}>
                 <HStack style={{alignSelf: 'center', alignItems: 'center'}}>
                     <Text style={styles.small2}>Activar teclado</Text>
                     <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
@@ -364,13 +373,17 @@ const FindProducts = (props) => {
 
                 </VStack>:<Text>Selecciona un almacén para continuar</Text>}
                 <ListaPerform
-                    items={findProduct} 
-                    renderItems={memoRows} 
                     //heightRemove={dimensionesScreen.height < 600 ? 330:375}
-                    //height={190}
+                    height={180}
+                    forceHeight={true}
+                    items={findProduct} 
+                    renderItems={RowProducts} 
+                    ref={listaRef}
+                    scrollPrincipal={scrollPrincipal}
                     />
             
             </ScrollView>
+            <FabScrollTop scrollPrincipal={scrollPrincipal} ref={fabRef}/>
         </Stack>
     )
 }

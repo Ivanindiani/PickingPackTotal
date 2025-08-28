@@ -13,6 +13,7 @@ const Global = require('../../app.json');
 import { LogBox } from 'react-native';
 import ListaPerform from "../components/_virtualList";
 import { Linking } from "react-native";
+import FabScrollTop from "../components/fabScrollTop";
 
 LogBox.ignoreLogs([
   'Non-serializable values were found in the navigation state',
@@ -35,6 +36,9 @@ const VerItems = (props) => {
     const [onlyPalet, setOnlyPalet] = useState(soloPaleta ? true:false);
 
     const elInput = useRef(null);
+
+    const listaRef = useRef(null);
+    const fabRef = useRef(null);
 
     // Evento alternativo para detectar el escaneo
     const evento = (keyEvent) => { 
@@ -105,7 +109,7 @@ const VerItems = (props) => {
         }
     }, [loading === true]);
 
-    async function getItems() {
+    const getItems = useCallback(async () => {
         //console.log("TRASLADO", traslado);
         let data = [
             `find={"IDTRA": ${traslado.IDTRA}}`,
@@ -133,7 +137,7 @@ const VerItems = (props) => {
         .finally(() => {
             setLoading(false);
         });
-    }
+    }, []);
 
     const recibirTraslado = () => {
         Alert.alert('Confirmar', `Antes de completar el traslado, verifique que todos los productos llegaron correctamente con la cantidad esperada.`, [
@@ -321,8 +325,8 @@ const VerItems = (props) => {
         </VStack>
     ;
 
-    const RowProducts = (item, index) => 
-        <TouchableHighlight
+    const RowProducts = useCallback((item, index) => {
+        return <TouchableHighlight
             activeOpacity={0.6}
             underlayColor="#DDDDDD"
             key={index}
@@ -358,7 +362,7 @@ const VerItems = (props) => {
                 </VStack>}
             </HStack>
         </TouchableHighlight>
-    ;
+    }, [scanSelect.Producto ? scanSelect.Producto.MATNR:undefined, traslado.TRSTS]);
 
     const DialogoInfo = () =>
     <Dialog visible={showInfo} onDismiss={() => setShowInfo(false)} >
@@ -455,10 +459,16 @@ const VerItems = (props) => {
 
     }
 
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [items, scanSelect.Producto ? scanSelect.Producto.MATNR:undefined, traslado, onlyPalet])
+    //const memoRows = useCallback((item, index) => RowProducts(item, index), [items, scanSelect.Producto ? scanSelect.Producto.MATNR:undefined, traslado, onlyPalet])
 
-    const memoGet = useCallback(() => getItems());
+    const refreshControl = <RefreshControl refreshing={false} onRefresh={()=> getItems()}/>;
 
+    const handleScroll = (event) => {
+        if(listaRef?.current)
+            listaRef.current.handleScroll(event);
+        if(fabRef?.current)
+            fabRef.current.handleScroll(event);
+    }
     return (
         <Provider>
             <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
@@ -514,7 +524,7 @@ const VerItems = (props) => {
 
             <Stack spacing={0} m={2} mb={-4}>
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
-                <ScrollView ref={scrollShow} nestedScrollEnabled = {true} refreshControl={<RefreshControl refreshing={false} onRefresh={()=> memoGet(true)}/>}>
+                <ScrollView ref={scrollShow} refreshControl={refreshControl} onScroll={handleScroll}>
                     <DialogoInfo/>
                     <Text style={[styles.subtitle, {alignSelf: 'flex-end'}]} onPress={() => setShowInfo(!showInfo)}><Entypo name="info-with-circle" size={16} color={Global.colorMundoTotal}/> Info Traslado</Text>
 
@@ -600,14 +610,18 @@ const VerItems = (props) => {
 
                         <ListaPerform
                             items={onlyPalet ? items.filter((v) => v.IDPAL == soloPaleta):items} 
-                            renderItems={memoRows} 
+                            renderItems={RowProducts} 
                             heightRemove={traslado.TRSTS >= 3 && traslado.TRSTS < 5 ? ((scanSelect && scanSelect.Producto ) ? 125:260):160}
-                            //refreshGet={memoGet}
+                            ref={listaRef}
+                            height={120}
+                            //forceHeight={true}
+                            scrollPrincipal={scrollShow}
                         />
                     </Stack>
                     <View style={{ width: 200, height: 10 }}></View>
                 </ScrollView>
             </Stack>
+            <FabScrollTop scrollPrincipal={scrollShow} ref={fabRef}/>
         </Provider>
     )
 }

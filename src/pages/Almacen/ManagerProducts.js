@@ -238,7 +238,7 @@ const ManagerProducts = (props) => {
             <ScrollView nestedScrollEnabled={true}>
             {props.almacenId && bodega.data ?
                 <VStack style={{width: '100%', flexWrap: 'nowrap'}}>
-                    <HStack style={{alignSelf: 'center', alignItems: 'center'}}>
+                    <HStack style={{marginLeft: 10, alignItems: 'center'}}>
                         <Text style={styles.small2}>Activar teclado</Text>
                         <Switch value={showKeyBoard} onValueChange={() => setShowKeyBoard(!showKeyBoard)} autoFocus={false}/> 
                     </HStack>

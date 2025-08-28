@@ -1,15 +1,15 @@
-import { ActivityIndicator, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
+import { ActivityIndicator, Button, Dialog, DialogActions, DialogContent, HStack, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
 import { useRef, useState, useEffect } from "react";
-import { StyleSheet, Alert, ToastAndroid, Dimensions, View } from "react-native";
+import { StyleSheet, Alert, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import { useCallback } from "react";
 import ListaPerform from "../../components/_virtualList";
 import fetchIvan from "../../components/_fetch";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import ImagesAsync from "../../components/_imagesAsync";
-const Global = require('../../../app.json');
+//const Global = require('../../../app.json');
 
-const dimensionesScreen = Dimensions.get('screen');
+//const dimensionesScreen = Dimensions.get('screen');
 
 const MoveProducts = (props) => {
     
@@ -134,7 +134,7 @@ const MoveProducts = (props) => {
         return `${item.Bodega?.FLOOR ?? ''}-${item.Bodega?.AISLE ?? ''}-${item.Bodega?.COLUM ?? ''}-${item.Bodega?.RACKS ?? ''}-${item.Bodega?.PALET ?? ''}`;
     }
     
-    const RowProducts = (item, index) => {
+    const RowProducts = useCallback((item, index) => {
         return (
             <VStack 
                 style={{marginTop: 5, borderWidth: 0.3, width: '99%', backgroundColor: 'lightgrey', height: item.Bodega?.BLOQU ? 'auto':275}} 
@@ -190,13 +190,11 @@ const MoveProducts = (props) => {
                     <Button title="Mover" color="white" compact={true} tintColor="primary" trailing={<Ionicons name="move"/>} onPress={() => setDialogVisible(index)}/>}
                 </HStack>
                 <View style={styles.imagenPosition}>
-                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}}/>
+                    <ImagesAsync ipSelect={props.ipSelect} imageCode={item.MATNR} token={props.token.token} imageStyle={{height: 90, width: 90}} msg={false}/>
                 </View>
             </VStack>
         )
-    }
-
-    const memoRows = useCallback((item, index) => RowProducts(item, index), [findProduct])
+    }, [])
 
     return (
         <Provider>
@@ -220,9 +218,11 @@ const MoveProducts = (props) => {
                 
                 <ListaPerform
                     items={findProduct} 
-                    renderItems={memoRows} 
+                    renderItems={RowProducts} 
                     //heightRemove={dimensionesScreen.height < 600 ? 335:380}
                     //height={186}
+                    height={186}
+                    forceHeight={true}
                     />
                 {bodega?.data && dialogVisible > -1 ?
                 <Dialog visible={dialogVisible > -1 ? true:false} onDismiss={() => setDialogVisible(-1)} style={{zIndex: 100000, elevation: 100}}>
