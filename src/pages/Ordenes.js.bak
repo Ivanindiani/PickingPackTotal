@@ -15,7 +15,7 @@ const Ordenes = (props) => {
     const [centrosUser] = useState(props.dataUser.Centros?.length ? props.dataUser.Centros.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 ? [...prev, {label: d.NAME1, value: d.WERKS}]:prev,[]):[]);
     const [almacenes, setAlmacenes] = useState([]);
     const [almacenId, setAlmacenId] = useState(null);
-    const [filtrado, setFiltrado] = useState(10);
+    const [filtrado, setFiltrado] = useState(25);
     const [configOrden, setConfigOrden] = useState({});
 
     useEffect(() => {

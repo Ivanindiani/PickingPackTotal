@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ActivityIndicator, Box, HStack, ListItem, Stack, Text } from "@react-native-material/core";
-import { ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import fetchIvan from "../components/_fetch";
 import SelectInput from "../components/_virtualSelect";
 import Entypo from "react-native-vector-icons/Entypo";
@@ -15,7 +15,9 @@ const RecibirTraslados = (props) => {
     const [centroId, setCentroId] = useState(props.route.params.centroId ? props.route.params.centroId:(centrosUser.length === 1 ? centrosUser[0].value:null));
     const [almacenes, setAlmacenes] = useState([]);
     const [almacenId, setAlmacenId] = useState(null);
-    const [filtrado, setFiltrado] = useState(10);
+    const [sectores, setSectores] = useState([]);
+    const [sectorId, setSectorId] = useState(null);
+    const [filtrado, setFiltrado] = useState(25);
 
     useEffect(() => { // Change centro
         if(centroId) {
@@ -23,6 +25,8 @@ const RecibirTraslados = (props) => {
             for(let centro of props.dataUser.Centros) {
                 if(centro.WERKS == centroId) {
                     almacenesAux = centro.Almacenes?.reduce((prev, al) => [...prev, {label: al.LGOBE, value: al.LGORT}], []);
+                    setSectores(centro.Sectores?.reduce((prev, sec) => [...prev, {label: sec.VTEXT, value: sec.SPART}], [{label: 'Todos', value: null}]));
+                    setSectorId(null);
                     break;
                 }
             }
@@ -36,14 +40,14 @@ const RecibirTraslados = (props) => {
     useEffect(() => {
         if(centroId && almacenId) 
             getTraslados();
-    }, [almacenId, filtrado]);
+    }, [almacenId, filtrado, sectorId]);
 
     async function getTraslados() {
         let data = [
             `orden=true`,
             props.route.params.type_tras === 'crear_tras' ?
-            `find={"FWERK": "${centroId}", "FLGOR": "${almacenId}", "TRSTS": "[1,2,3,4,5]"}`:
-            `find={"TWERK": "${centroId}", "TLGOR": "${almacenId}", "TRSTS": "[3,4,5]"}`
+            `find={"FWERK": "${centroId}", "FLGOR": "${almacenId}", "TRSTS": "[1,2,3,4,5]" ${sectorId ? ', "SPART": "'+sectorId+'"':''}}`:
+            `find={"TWERK": "${centroId}", "TLGOR": "${almacenId}", "TRSTS": "[3,4,5]" ${sectorId ? ', "SPART": "'+sectorId+'"':''}}`
         ]
         if(props.route.params.IDPAL) {
             data.push(`IDPAL=${props.route.params.IDPAL}`)
@@ -110,12 +114,25 @@ const RecibirTraslados = (props) => {
                     buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
                 />
             </View>:''}
-            <ScrollView nestedScrollEnabled={true}  style={styles.scrollView}>
+            {!props.dataUser.CAMIONERO && centroId && sectores.length ?
+            <View style={styles.centros}>
+                <Text style={{fontWeight: '500'}}>Sector: </Text>
+                <SelectInput
+                    searchable={false}
+                    data={sectores}
+                    value={sectorId}
+                    setValue={setSectorId}
+                    title="Todo de la lista"
+                    buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
+                    disabled={!centroId ? true:false}
+                />
+            </View>:''}
+            <ScrollView nestedScrollEnabled={true}  style={styles.scrollView} refreshControl={<RefreshControl onRefresh={() => centroId && almacenId ? getTraslados():''} refreshing={loading}/>}>
                 <Stack style={styles.scrollView} spacing={5}>
                     <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}}>
                         <Text>{"Últimos traslados\n"}<Text style={styles.subtitle}>Destino: {centrosUser.filter(center => center.value === centroId)[0]?.label}</Text></Text>
                         <SelectInput
-                            data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
+                            data={[{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: '500', value: 500}]}
                             value={filtrado}
                             setValue={setFiltrado}
                             title=""
@@ -127,17 +144,17 @@ const RecibirTraslados = (props) => {
                             key={i}
                             title={tras.TRCON}
                             overline={"#"+tras.IDTRA+"\n"+trasladosStatus[tras.TRSTS]}
-                            secondaryText={"Origen: "+tras.DesdeCentro?.NAME1+" ("+tras.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
-                                +"Fecha Creación: "+tras.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
-                                +"Fecha Contable: "+tras.DATEU?.substr(0,16)?.replace("T"," ")+"\n"
+                            secondaryText={"Origen: "+tras.DesdeCentro?.NAME1+"\n"
+                                +"Fecha: "+tras.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
                                 +"Pedido Nº: "+(tras.IDPED ?? "Traslado MANUAL")
-                                +(tras.TRSTS > 2 ? "\nNº Documento SAP: "+tras.CodigosTraslado?.MBLNR:'')
+                                +(tras.CodigosTraslados?.length && tras.TRSTS > 1 ? "\nDocumento(s) SAP: "+tras.CodigosTraslados?.reduce((prev, t) => [...prev, t.MBLNR],[]).join(', '):'')
                                 +`\nPeso: ${parseFloat(tras.PESO??0).toFixed(2)} KG`
                                 +`\nVolumen: ${parseFloat(tras.VOLUMEN??0).toFixed(2)} M3`
+                                +`\nSector: ${tras.Sector?.VTEXT ?? ''}\n`
                             }
                             leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[tras.TRSTS]} color={trasStatusColor[tras.TRSTS]} style={{borderRadius: 12}} />}
                             //trailing={p2 => props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (tras.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(tras.TRCON, tras.IDTRA)}/>}
-                            onPress={() => props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
+                            onPress={() => props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 && !props.dataUser.CAMIONERO ? props.navigation.navigate('VerItems', {
                                 traslado: tras,
                                 updateTras: updateTras
                             }):''}

@@ -1,5 +1,5 @@
 import { ActivityIndicator, Box, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, ListItem, Provider, Stack, Switch, Text, TextInput, VStack } from "@react-native-material/core";
-import { memo, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Alert, FlatList, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View, useWindowDimensions } from "react-native";
 import fetchIvan from "../components/_fetch";
 import Entypo from "react-native-vector-icons/Entypo";
@@ -15,10 +15,7 @@ const Global = require("../../app.json");
 const trasladosStatus = ['Eliminado', 'En progreso', 'En Tránsito, en espera de SAP', 'En Tránsito, cargado en SAP', 'Recibido, en espera de TotalPost', 'Completado', 'Devuelto en espera de SAP', 'Devuelto'];
 const trasStatusColor = ['red', 'yellow', 'blue', 'orange', 'lightgreen', 'green', 'lightred', 'red'];
 const Traslados = (props) => {
-    const centroId = props.route.params.centroId;
-    const almacenId = props.route.params.almacenId;
-    const centroName = props.route.params.centroName;
-    const almacenName = props.route.params.almacenName;
+    const {centroId, almacenId, centroName, almacenName} = props.route.params;
 
     const [loading, setLoading] = useState(true);
     const [traslados, setTraslados] = useState([]);
@@ -28,9 +25,11 @@ const Traslados = (props) => {
     const [centroIdA, setCentroIdA] = useState(null);
     const [almacenesA, setAlmacenesA] = useState([]);
     const [almacenIdA, setAlmacenIdA] = useState(null);
+    const [sectores, setSectores] = useState([]);
+    const [sectorId, setSectorId] = useState(null);
     const [nameTras, setNameTras] = useState('');
-    const [filtrado, setFiltrado] = useState(10);
-    const [filtrado2, setFiltrado2] = useState(10);
+    const [filtrado, setFiltrado] = useState(25);
+    const [filtrado2, setFiltrado2] = useState(25);
     const [showCrear, setShowCrear] = useState(false);
     const [modalPallet, setModalPallet] = useState(null);
     const [paletas, setPaletas] = useState(props.route.params.Paletas ?? []);
@@ -78,24 +77,13 @@ const Traslados = (props) => {
     }, [props.navigation, modalPallet]);
 
     useEffect(() => {
-        // Lo deshabilitamos porque no se puede traer desde el usuario todos los almacenes solo los registrados
-        /*if(props.dataUser.USSCO.split(',').indexOf('ALLDEVICES') !== -1) {
-            setCentros(props.dataUser.Centros);
-            setCentrosHacia(props.dataUser.Centros.reduce((prev, d) => d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
-        } else {*/
-        if(!centros.length) {
-            console.log("HOLA CENTROS", centros.length)
-            getCentros();
-        }
-        //}
-    },[]);
-
-    useEffect(() => {
         if(centroIdA) {
             let almacenesAux = [];
             for(let centro of centros) {
                 if(centro.WERKS === centroIdA) {
                     almacenesAux = centro.Almacenes?.reduce((prev, al) => [...prev, {label: al.LGOBE, value: al.LGORT}], []);
+                    setSectores(centro.Sectores?.reduce((prev, sec) => [...prev, {label: sec.VTEXT, value: sec.SPART}], []));
+                    setSectorId(null);
                     break;
                 }
             }
@@ -114,6 +102,42 @@ const Traslados = (props) => {
             getPending();
         }
     }, [filtrado2]);
+
+    useEffect(() => {
+        getCentros();
+    }, []);
+
+    async function getCentros() {
+        setLoading(true);
+        fetchIvan(props.ipSelect).get('/Centros', "", props.token.token)
+        .then(({data}) => {
+            console.log("Centros (TIENDAS): ", data.data.length);
+            const newCentros = [...data.data];
+            let sectoresUser = [];
+            for(let centroUser of props.dataUser.Centros) {
+                if(centroUser.WERKS === centroId) {
+                    sectoresUser = centroUser.Sectores;
+                    break;
+                }
+            }
+            for(let center of newCentros) {
+                center.Sectores = sectoresUser;
+            }
+            setCentros(newCentros);
+            console.log(newCentros);
+            setCentrosHacia(newCentros.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 || d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
+        })
+        .catch(({status, error}) => {
+            console.log(error);
+            return ToastAndroid.show(
+                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.LONG
+            );
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+    }
 
     async function getTraslados() {
         let datos = [
@@ -177,26 +201,6 @@ const Traslados = (props) => {
         });
     }
 
-    async function getCentros() {
-        setLoading(true);
-        fetchIvan(props.ipSelect).get('/Centros', "", props.token.token)
-        .then(({data}) => {
-            console.log("Centros y almacenes: ", data.data.length);
-            setCentros(data.data);
-            setCentrosHacia(data.data.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 || d.WERKS == centroId ? prev:[...prev, {label: d.NAME1, value: d.WERKS}],[]))
-        })
-        .catch(({status, error}) => {
-            console.log(error);
-            return ToastAndroid.show(
-                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
-                ToastAndroid.LONG
-            );
-        })
-        .finally(() => {
-            setLoading(false);
-        });
-    }
-
     const crearTraslado = () => {
         let datos = {
             create: {
@@ -205,6 +209,7 @@ const Traslados = (props) => {
                 TWERK: centroIdA,
                 FLGOR: almacenId,
                 TLGOR: almacenIdA,
+                SPART: sectorId,
                 TRSTS: 1
             },
             IDPAL: props.route.params.IDPAL
@@ -377,104 +382,112 @@ const Traslados = (props) => {
         }
     }
 
-    const TrasladosEnPaleta = () =>
-        <FlatList
-            data={traslados}
-            ListHeaderComponent={
-            <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}} mt={5} mb={5}>
-                <VStack border={0} p={2} spacing={4}>
-                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso: {parseFloat(paleta.PESO??0).toFixed(2)} KG</Text>
-                    </HStack>
-                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Vol: {parseFloat(paleta.VOLUMEN??0).toFixed(2)} M3</Text>
-                    </HStack>
-                </VStack>
-                {/*<VStack border={0} p={2} spacing={4}>
-                    {paleta.WEIGH ?
-                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Peso reportado: {parseFloat(paleta.WEIGH??0).toFixed(2)} KG</Text>
-                    </HStack>:''}
-                    {paleta.DISTX && paleta.DISTY && paleta.DISTZ ?
-                    <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
-                        <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen reportado: {parseFloat((paleta.DISTX*paleta.DISTY*paleta.DISTZ) ?? 0).toFixed(2)} M3</Text>
-                    </HStack>:''}
-                </VStack>*/}
-                <SelectInput
-                    data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
-                    value={filtrado}
-                    setValue={setFiltrado}
-                    title=""
-                />
-            </HStack>
-            }
-            renderItem={({item, index}) =>
-                <ListItem
-                    key={index}
-                    overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
-                    title={item.TRCON}
-                    secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.WERKS+")\n"
-                        +"Fecha Creación: "+item.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
-                        +"Fecha Contable: "+item.DATEU?.substr(0,16)?.replace("T"," ")+"\n"
-                        +"Pedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
-                        +(item.TRSTS > 2 ? "\nNº Documento SAP: "+item.CodigosTraslado?.MBLNR:'')
-                    //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
-                            //+")\n"+item.DATEU?.substr(0,16).replace("T"," ")
-                            //+"\nAmpliado en: "+(item.Paletas.reduce((pr, pl) => (pr.length ? (pr+","):pr)+pl.IDPAL?.padStart(3, "0"), ""))
-                        +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`
-                        +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`
+    const TrasladosEnPaleta = useCallback(() => {
+        return (
+            <FlatList
+                data={traslados}
+                ListHeaderComponent={
+                <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start'}} mt={5} mb={5}>
+                    <VStack border={0} p={2} spacing={4}>
+                        <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                            <Text style={{fontSize: 11, fontWeight: '600'}}>Peso: {parseFloat(paleta.PESO??0).toFixed(2)} KG</Text>
+                        </HStack>
+                        <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                            <Text style={{fontSize: 11, fontWeight: '600'}}>Vol: {parseFloat(paleta.VOLUMEN??0).toFixed(2)} M3</Text>
+                        </HStack>
+                    </VStack>
+                    {/*<VStack border={0} p={2} spacing={4}>
+                        {paleta.WEIGH ?
+                        <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                            <Text style={{fontSize: 11, fontWeight: '600'}}>Peso reportado: {parseFloat(paleta.WEIGH??0).toFixed(2)} KG</Text>
+                        </HStack>:''}
+                        {paleta.DISTX && paleta.DISTY && paleta.DISTZ ?
+                        <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
+                            <Text style={{fontSize: 11, fontWeight: '600'}}>Volumen reportado: {parseFloat((paleta.DISTX*paleta.DISTY*paleta.DISTZ) ?? 0).toFixed(2)} M3</Text>
+                        </HStack>:''}
+                    </VStack>*/}
+                    <SelectInput
+                        data={[{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: '500', value: 500}]}
+                        value={filtrado}
+                        setValue={setFiltrado}
+                        title=""
+                    />
+                </HStack>
+                }
+                renderItem={({item, index}) =>{
+                    const accesoAlSector = centros.filter(f => f.WERKS === item.TWERK)[0]?.Sectores.findIndex(s => s.SPART === item.SPART) ?? -1;
+                    return (<ListItem
+                        key={index}
+                        overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
+                        title={item.TRCON}
+                        secondaryText={"Destino: "+item.HaciaCentro?.NAME1+"\n"
+                            +"Fecha: "+item.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
+                            +"Pedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
+                            +(item.CodigosTraslados?.length && item.TRSTS > 1 ? "\nDocumento(s) SAP: "+item.CodigosTraslados?.reduce((prev, t) => [...prev, t.MBLNR],[]).join(', '):'')
+                        //secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"+"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE
+                                //+")\n"+item.DATEU?.substr(0,16).replace("T"," ")
+                                //+"\nAmpliado en: "+(item.Paletas.reduce((pr, pl) => (pr.length ? (pr+","):pr)+pl.IDPAL?.padStart(3, "0"), ""))
+                            +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`
+                            +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`
+                            +`\nSector: ${item.Sector?.VTEXT ?? ''}`
                         }
-                    leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
-                    trailing={(p2) => 
-                        <View>
-                            {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
-                            <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
-                            {props.dataUser.USSCO.split(',').indexOf('ADMIN_PALLET') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
-                            <IconButton icon={p2=p2 => <MaterialCommunityIcons name="folder-move" {...p2}/> } onPress={() => setModalPallet(item)} />:''}
-                        </View>
-                    }
-                    onPress={() => props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 ? 
-                    props.navigation.navigate(item.IDPED ? 'TabScaneo':'Scaneo', {
-                        updatePaletas: (json) => {
-                            setPaletas(json);
-                            setPaleta(json.filter(f => f.IDPAL === props.route.params.IDPAL)[0]);
-                            props.route.params.setPaletas(json)
-                        },
-                        Paletas: paletas,
-                        Paleta: paleta,
-                        IDPAL: props.route.params.IDPAL,
-                        traslado: item,
-                        updateTras: updateTras
-                    }):''}
-                />
-            }
-            ListEmptyComponent={<Text>No hay traslados creados</Text>}
-            refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getTraslados()}/>}
-        />;
+                        leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
+                        trailing={(p2) => 
+                            accesoAlSector > -1 && !props.dataUser.CAMIONERO &&
+                            <View>
+                                {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 &&
+                                !item.CodigosTraslados?.length ? 
+                                <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
+                                {props.dataUser.USSCO.split(',').indexOf('ADMIN_PALLET') !== -1 && (item.TRSTS === 1) && props.route.params.STSOR < 2 ?
+                                <IconButton icon={p2=p2 => <MaterialCommunityIcons name="folder-move" {...p2}/> } onPress={() => setModalPallet(item)} />:''}
+                            </View>
+                        }
+                        onPress={() => props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 && accesoAlSector > -1 && !props.dataUser.CAMIONERO ? 
+                        props.navigation.navigate(item.IDPED ? 'TabScaneo':'Scaneo', {
+                            updatePaletas: (json) => {
+                                setPaletas(json);
+                                setPaleta(json.filter(f => f.IDPAL === props.route.params.IDPAL)[0]);
+                                props.route.params.setPaletas(json)
+                            },
+                            Paletas: paletas,
+                            Paleta: paleta,
+                            IDPAL: props.route.params.IDPAL,
+                            traslado: item,
+                            updateTras: updateTras
+                        }):ToastAndroid.show("No tienes acceso a este traslado", ToastAndroid.SHORT)}
+                    />)
+                }}
+                ListEmptyComponent={<Text>No hay traslados creados</Text>}
+                refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getTraslados()}/>}
+            />)
+    }, [traslados, paletas, paleta, filtrado, centros]);
 
-    const Pendientes = () => 
+    const Pendientes = useCallback(() => 
     <FlatList
         data={pending}
         ListHeaderComponent={
         <HStack style={{justifyContent: 'flex-end', alignItems: 'flex-start'}} mt={5} mb={5}>
             <SelectInput
-                data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
+                data={[{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: '500', value: 500}]}
                 value={filtrado2}
                 setValue={setFiltrado2}
                 title=""
             />
         </HStack>
         }
-        renderItem={({item, index}) =>
-            <ListItem
+        renderItem={({item, index}) => {
+            const accesoAlSector = centros.filter(f => f.WERKS == item.FWERK)[0]?.Sectores.findIndex(s => s.SPART == item.SPART) ?? -1;
+            return <ListItem
                 key={index}
                 overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
                 title={item.TRCON}
                 secondaryText={"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.WERKS+")\n"
                             +"Fecha Creación: "+item.DATEC?.substr(0,16)?.replace("T"," ")+"\n"
-                            +"Pedido Nº: "+(item.IDPED ?? "Traslado MANUAL")}
+                            +"Pedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
+                            +`\nSector: ${item.Sector?.VTEXT ?? ''}`}
                 leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                 trailing={(p2) => 
+                    accesoAlSector > -1 && 
                     <View>
                         {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && props.route.params.STSOR < 2 ? 
                         <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>:''}
@@ -483,10 +496,10 @@ const Traslados = (props) => {
                     </View>
                 }
             />
-        }
+        }}
         ListEmptyComponent={<Text>No hay pedidos pendientes</Text>}
         refreshControl={<RefreshControl refreshing={false} onRefresh={()=> getPending()}/>}
-    />;
+    />,[pending, filtrado2, centros]);
 
     const _renderScene = ({ route }) => {
         switch(route.key) {
@@ -527,16 +540,17 @@ const Traslados = (props) => {
                     <Text style={styles.subtitle}>Sucursal origen: {centroName+` (${almacenName})`}</Text>
                     
                     <Text style={styles.subtitle}>Sucursal destino: {centroIdA ? centrosHacia?.filter(s => s.value == centroIdA)[0]?.label:''}{almacenIdA ? '('+almacenesA.filter(al => al.value === almacenIdA)[0]?.label+')':''}</Text>
-                    <HStack style={{justifyContent: 'space-between'}}>
+                    <VStack style={{alignItems: 'center', }}>
                         <SelectInput
                             searchable={true}
                             data={centrosHacia.filter(f => props.route.params.planed?.PJWER.tiendas.indexOf(f.value) !== -1)}
                             value={centroIdA}
                             setValue={setCentroIdA}
                             title="Sucursal Destino"
-                            buttonStyle={{width: '49%'}}
                         />
-                        {centroIdA && almacenesA.length && <SelectInput
+                        <HStack style={{justifyContent: 'space-between', width: '100%', marginTop: 3}}>
+                            {centroIdA && almacenesA.length && 
+                            <SelectInput
                                 searchable={false}
                                 data={almacenesA}
                                 value={almacenIdA}
@@ -544,12 +558,25 @@ const Traslados = (props) => {
                                 title="División destino"
                                 buttonStyle={{width: '49%'}}
                             />}
-                    </HStack>
+
+                            {centroIdA && sectores.length &&
+                            <SelectInput
+                                searchable={false}
+                                data={sectores}
+                                value={sectorId}
+                                setValue={setSectorId}
+                                title="Sector"
+                                buttonStyle={{width: '49%', alignSelf: 'flex-end'}}
+                                disabled={!centroIdA ? true:false}
+                            />}
+                        </HStack>
+                        
+                    </VStack>
                     <Button loading={loading}
                         title="Crear" 
                         color={Global.colorMundoTotal} 
                         onPress={crearTraslado}
-                        disabled={!nameTras.length || loading || !almacenId || !almacenIdA}
+                        disabled={!nameTras.length || loading || !almacenId || !almacenIdA || !sectorId}
                         style={{marginTop: 5, zIndex: -1}}/>
                 </Box>:''}
                 

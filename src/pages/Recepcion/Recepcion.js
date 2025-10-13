@@ -23,6 +23,8 @@ const Recepcion = (props) => {
     const [centrosUser] = useState(props.dataUser.Centros?.length ? props.dataUser.Centros.reduce((prev, d) => props.dataUser.Restringe?.indexOf(d.WERKS) !== -1 ? [...prev, {label: d.NAME1, value: d.WERKS}]:prev,[]):[]);
     const [almacenes, setAlmacenes] = useState([]);
     const [almacenId, setAlmacenId] = useState(null);
+    const [sectores, setSectores] = useState([]);
+    const [sectorId, setSectorId] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const [modalRif, setModalRif] = useState(false);
@@ -36,7 +38,7 @@ const Recepcion = (props) => {
     const [grupoProveedor, setGruposProveedor] = useState([]);
     const [grupo_proveedor_id, setGrupoProveedorID] = useState(null);
     const [proveedor_id, setProveedorID] = useState('');
-    const [filtrado, setFiltrado] = useState(10);
+    const [filtrado, setFiltrado] = useState(25);
     const [showCrear, setShowCrear] = useState(false);
 
     const [idOrden, setIdOrden] = useState(null);
@@ -59,6 +61,8 @@ const Recepcion = (props) => {
             for(let centro of props.dataUser.Centros) {
                 if(centro.WERKS == centroId) {
                     almacenesAux = centro.Almacenes?.reduce((prev, al) => [...prev, {label: al.LGOBE, value: al.LGORT}], []);
+                    setSectores(centro.Sectores?.reduce((prev, sec) => [...prev, {label: sec.VTEXT, value: sec.SPART}], [{label: 'Todos', value: null}]));
+                    setSectorId(null);
                     break;
                 }
             }
@@ -77,7 +81,7 @@ const Recepcion = (props) => {
         } else {
             setRecepciones([])
         }
-    }, [almacenId, filtrado]);
+    }, [almacenId, filtrado, sectorId]);
 
     const daysDiff = useCallback((timeStart, timeEnd=null) => {
         if(!timeStart) return '';
@@ -92,7 +96,7 @@ const Recepcion = (props) => {
         minutes = minutes-(days*24*60)-(hours*60);
         seconds = seconds-(days*24*60*60)-(hours*60*60)-(minutes*60);
 
-        console.log("DAYS ", timeStart, days);
+        //console.log("DAYS ", timeStart, days);
         return days;
     },[]);
 
@@ -118,7 +122,7 @@ const Recepcion = (props) => {
 
     function getRecepciones() {
         let datos = [
-            `find={"WERKS": "${centroId}", "LGORT": "${almacenId}"}`,
+            sectorId ? `find={"WERKS": "${centroId}", "LGORT": "${almacenId}", "SPART": "${sectorId}"}`: `find={"WERKS": "${centroId}", "LGORT": "${almacenId}"}`,
             //`find={"WERKS": "${centroId}", "LGORT": "${almacenId}", "RESTS": "['CANCELADO','CREADO','RECIBIDO', 'CONFIRMADO', 'REENVIAR']"}`,
             `orderBy=[["IDREC", "DESC"]]`,
             //'articulos=1'
@@ -177,6 +181,7 @@ const Recepcion = (props) => {
     }
 
     const crearRecepcion = () => {
+        if(!sectorId) return ToastAndroid.show("Debe seleccionar el sector", ToastAndroid.SHORT);
         let datos = {
             create: {
                 WERKS: centroId,
@@ -186,6 +191,7 @@ const Recepcion = (props) => {
                 EKGRP: grupo_proveedor_id,
                 LIFNR: proveedor_id.padStart(10, "0"),
                 EBELN: idOrden,
+                SPART: sectorId,
                 RESTS: 'CREADO'
             }
         }
@@ -329,7 +335,8 @@ const Recepcion = (props) => {
                     {!centrosUser.length && <Text style={{fontWeight: '500'}}>No tienes centros asignados</Text>}
                 </View>
             
-                {centroId && almacenes.length ?<View style={styles.centros}>
+                {centroId && almacenes.length ?
+                <View style={styles.centros}>
                     <Text style={{fontWeight: '500'}}>División: </Text>
                     <SelectInput
                         searchable={false}
@@ -337,6 +344,20 @@ const Recepcion = (props) => {
                         value={almacenId}
                         setValue={setAlmacenId}
                         title="División origen"
+                        buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
+                        disabled={!centroId ? true:false}
+                    />
+                </View>:''}
+                
+                {centroId && sectores.length ?
+                <View style={styles.centros}>
+                    <Text style={{fontWeight: '500'}}>Sector: </Text>
+                    <SelectInput
+                        searchable={false}
+                        data={sectores}
+                        value={sectorId}
+                        setValue={setSectorId}
+                        title="Todo de la lista"
                         buttonStyle={{maxWidth: '70%', alignSelf: 'flex-end'}}
                         disabled={!centroId ? true:false}
                     />
@@ -421,7 +442,7 @@ const Recepcion = (props) => {
                         <HStack style={{justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 5}}>
                             <Text>{"Lista de recepciones\n"}</Text>
                             <SelectInput
-                                data={[{label: '10', value: 10},{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: 'Todos', value: -1}]}
+                                data={[{label: '25', value: 25},{label: '50', value: 50},{label: '100', value: 100},{label: '500', value: 500}]}
                                 value={filtrado}
                                 setValue={setFiltrado}
                                 title=""
@@ -434,6 +455,7 @@ const Recepcion = (props) => {
                                 title={recepcion.DESCR}
                                 secondaryText={
                                     (recepcion.EBELN ? `Nº orden: ${recepcion.EBELN}\n`:'')
+                                    +`Sector: ${recepcion.Sector?.VTEXT ?? ''}\n`
                                     +"Proveedor: "+(recepcion.ProveedoresFijo?.Proveedor?.NAME1 ?? recepcion.LIFNR ?? '')+` (${recepcion.LIFNR})`
                                     +"\nFecha Creación: "+recepcion.DATEC?.substr(0,16)?.replace("T"," ")
                                     +"\nFecha Contable: "+recepcion.DATEU?.substr(0,16)?.replace("T"," ")+
@@ -460,7 +482,7 @@ const Recepcion = (props) => {
                         )}
                         {!recepciones.length && <Text>No hay recepciones creadas</Text>}
                     </Stack>
-                    <View style={{ width: 200, height: 80 }}></View>
+                    <View style={{ width: 200, height: 130 }}></View>
                 </ScrollView>
                 {loading && <ActivityIndicator />}
                 <View style={styles.centeredView}>

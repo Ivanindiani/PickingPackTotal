@@ -137,7 +137,7 @@ const ManagerProducts = (props) => {
             setPreProduct({});
             setEstructura({});
             setCantidad(0);
-            setProducto({...datos.create, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.PALETA, MAKTG: preProduct.MAKTG, ...data.data});
+            setProducto({...datos.create, FLOOR: estructura.nivel, AISLE: estructura.pasillo, COLUM: estructura.columna, RACKS: estructura.rack, PALET: bodega.extra?.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.PALETA, MAKTG: preProduct.MAKTG, ...data.data});
             ToastAndroid.show('Producto agregado correctamente', ToastAndroid.LONG);
         }).catch(({status, error}) => {
             console.log(error);
@@ -159,11 +159,11 @@ const ManagerProducts = (props) => {
             for(let space of bodega.data) {
                 if(space.IDDWA == codeID) {
                     setEstructura({
-                        nivel: space.FLOOR,
-                        pasillo: space.AISLE,
+                        nivel: space.FLOOR.toString(),
+                        pasillo: space.AISLE.toString(),
                         columna: space.COLUM.toString(),
                         rack: space.RACKS.toString(),
-                        paleta: bodega.extra.Niveles[space.FLOOR].Pasillos[space.AISLE].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
+                        paleta: bodega.extra?.Niveles[space.FLOOR].Pasillos[space.AISLE].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
                     });
                     return;
                 }
@@ -335,7 +335,7 @@ const ManagerProducts = (props) => {
                         <Text style={[styles.small3, {maxWidth: 120}]}>{bodega.extra?.Nombres?.FLNAM || "Piso/Nivel"}:</Text>
                         <SelectInput
                             searchable={true}
-                            data={!bodega.extra ? []:Object.keys(bodega.extra.Niveles).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
+                            data={!bodega.extra ? []:Object.keys(bodega.extra?.Niveles).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
                             value={estructura.nivel}
                             setValue={(val) => setEstructura({nivel: val})}
                             title={bodega.extra?.Nombres?.FLNAM || "Nivel"}
@@ -345,7 +345,7 @@ const ManagerProducts = (props) => {
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel ? 
-                                []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
+                                []:Object.keys(bodega.extra?.Niveles[estructura.nivel].Pasillos).reduce((p,i) => [...p, {value: parseInt(i), label: i.toString()}],[])}
                             value={estructura.pasillo}
                             setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: val})}
                             title={bodega.extra?.Nombres?.AINAM || "Pasillo"}
@@ -357,7 +357,7 @@ const ManagerProducts = (props) => {
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo ? 
-                                []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas).reduce((p,i) => [...p, {value: i, label: i}],[])}
+                                []:Object.keys(bodega.extra?.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas).reduce((p,i) => [...p, {value: i, label: i}],[])}
                             value={estructura.columna}
                             setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: estructura.pasillo, columna: val})}
                             title={bodega.extra?.Nombres?.CONAM || "Columna"}
@@ -367,7 +367,7 @@ const ManagerProducts = (props) => {
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !estructura.columna ? 
-                                []:Object.keys(bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks).reduce((p,i) => [...p, {value: i, label: i}],[])}
+                                []:Object.keys(bodega.extra?.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks).reduce((p,i) => [...p, {value: i, label: i}],[])}
                             value={estructura.rack}
                             setValue={(val) => setEstructura({nivel: estructura.nivel, pasillo: estructura.pasillo, columna: estructura.columna, rack: val})}
                             title={bodega.extra?.Nombres?.RANAM || "Rack"}
@@ -379,7 +379,7 @@ const ManagerProducts = (props) => {
                         <SelectInput
                             searchable={true}
                             data={!bodega.extra || !estructura.nivel || !estructura.pasillo || !estructura.columna  || !estructura.rack ? 
-                                []:bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas.reduce((p,i,idx) => [...p, {value: idx, label: i.PALETA}],[])}
+                                []:bodega.extra?.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas.reduce((p,i,idx) => [...p, {value: idx, label: i.PALETA}],[])}
                             value={estructura.paleta}
                             setValue={(val) => setEstructura({...estructura, paleta: val})}
                             title={bodega.extra?.Nombres?.PANAM || "Paleta"}
@@ -388,15 +388,15 @@ const ManagerProducts = (props) => {
                         />
                     </HStack>
 
-                    {bodega?.extra && bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU ?
+                    {bodega?.extra && bodega.extra?.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU ?
                     <VStack style={[styles.row, {alignItems: 'center'}]}>
                         <Text style={[styles.th, {color: 'red', textAlign: 'center', width: '100%'}]}>¡Ubicación BLOQUEADA!</Text>
-                        <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{bodega.extra.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas[estructura.paleta]?.COMEB}</Text>
+                        <Text style={[styles.td, {fontSize: 10.5, textAlign: 'justify', width: '100%'}]} numberOfLines={5}>{bodega.extra?.Niveles[estructura.nivel].Pasillos[estructura.pasillo].Columnas[estructura.columna].Racks[estructura.rack].Paletas[estructura.paleta]?.COMEB}</Text>
                     </VStack>:''}
 
                     <Button title="Cargar" onPress={addProduct} color={Global.colorMundoTotal} loading={loading}
                         disabled={!codeID || !estructura.columna || !estructura.nivel || !estructura.pasillo || !estructura.rack ||
-                            estructura.paleta < 0 || !cantidad || !Object.keys(preProduct).length || bodega.extra.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU} 
+                            estructura.paleta < 0 || !cantidad || !Object.keys(preProduct).length || bodega.extra?.Niveles[estructura.nivel]?.Pasillos[estructura.pasillo]?.Columnas[estructura.columna]?.Racks[estructura.rack]?.Paletas[estructura.paleta]?.BLOQU} 
                         style={{marginTop: 10}}/>
                 </VStack>
             :<Text>Selecciona un almacén para continuar</Text>}
@@ -422,11 +422,11 @@ const ManagerProducts = (props) => {
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
-                    <Text style={[styles.td, {color: bodega.extra.Niveles[producto.FLOOR].Color.HCODE || 'black'}]}>{producto.FLOOR}</Text>
+                    <Text style={[styles.td, {color: bodega.extra?.Niveles[producto.FLOOR].Color.HCODE || 'black'}]}>{producto.FLOOR}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
-                    <Text style={[styles.td, {color: bodega.extra.Niveles[producto.FLOOR].Pasillos[producto.AISLE].Color.HCODE || 'black'}]}>{producto.AISLE}</Text>
+                    <Text style={[styles.td, {color: bodega.extra?.Niveles[producto.FLOOR].Pasillos[producto.AISLE].Color.HCODE || 'black'}]}>{producto.AISLE}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>

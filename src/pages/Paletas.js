@@ -661,7 +661,13 @@ const Paletas = (props) => {
                     .then(({data}) => {
                         console.log("Ruta actualizada: ", data);
                         let ordenProvi = JSON.parse(JSON.stringify(Orden));
-                        ordenProvi.Rutas[index].DROUT = ruta.DROUT === 'Creada' ? 'En Ruta':'Entregada';
+                        for(let p of ordenProvi.Rutas) {
+                            if(p.Traslado.TWERK === ordenProvi.Rutas[index].Traslado.TWERK &&
+                                p.Traslado.TLGOR === ordenProvi.Rutas[index].Traslado.TLGOR
+                            ) {
+                                p.DROUT = ruta.DROUT === 'Creada' ? 'En Ruta':'Entregada';
+                            }
+                        }
                         props.route.params.setOrden(ordenProvi);
                         setOrden(ordenProvi);
                         ToastAndroid.show(`Ruta (${ruta.Traslado?.HaciaCentro?.NAME1}), puesta en ${ordenProvi.Rutas[index].DROUT}. Gracias por reportar ¡feliz viaje!`, ToastAndroid.LONG);

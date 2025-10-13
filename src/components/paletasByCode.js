@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
+import { FlatList, StyleSheet, ToastAndroid } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import fetchIvan from "./_fetch";
 import RNBeep from 'react-native-a-beep';
 import Entypo from "react-native-vector-icons/Entypo";
-import AntDesign from "react-native-vector-icons/AntDesign";
 const Global = require('../../app.json');
 
 const { Provider, Stack, Text, TextInput, HStack, Switch, ListItem, ActivityIndicator, IconButton } = require("@react-native-material/core")
@@ -149,17 +148,18 @@ const PaletasByCode = (props) => {
                             key={index}
                             title={item.TRCON}
                             overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
-                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+" ("+item.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
-                                +"Destino: "+item.HaciaCentro?.NAME1+" ("+item.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
-                                +item.DATEU?.substr(0,16)?.replace("T"," ")
+                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+"\n"
+                                +"Destino: "+item.HaciaCentro?.NAME1+"\n"
+                                +"Fecha: "+item.DATEC?.substr(0,16)?.replace("T"," ")
                                 +"\nTraslado Nº: "+item.IDTRA
                                 +"\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
-                                +(item.TRSTS > 2 ? "\nNº Documento SAP: "+item.CodigosTraslado?.MBLNR:'')
+                                +(item.CodigosTraslados?.length && item.TRSTS > 1 ? "\nDocumento(s) SAP: "+item.CodigosTraslados?.reduce((prev, t) => [...prev, t.MBLNR],[]).join(', '):'')
                                 +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`
-                                +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`}
+                                +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`
+                                +`\nSector: ${item.Sector?.VTEXT}`}
                             leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
                             //trailing={p2 => props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
-                            onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 ? 
+                            onPress={() => (props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1) && !props.dataUser.CAMIONERO ? 
                                 props.navigation.navigate('VerItems', {
                                     traslado: item,
                                     updateTras: updateTras,

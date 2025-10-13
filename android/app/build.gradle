@@ -79,8 +79,14 @@ android {
         applicationId "com.totalwms"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 118
-        versionName "1.18"
+        versionCode 119
+        versionName "1.19"
+        externalNativeBuild { /** 16kb */
+            cmake {
+                arguments "-DANDROID_PLATFORM=android-21",
+                          "-DANDROID_STL=c++_shared"
+            }
+        }
     }
     signingConfigs {
         debug {

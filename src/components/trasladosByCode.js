@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, ToastAndroid, View } from "react-native";
+import { FlatList, StyleSheet, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import fetchIvan from "./_fetch";
 import RNBeep from 'react-native-a-beep';
@@ -14,10 +14,10 @@ const trasStatusColor = ['red', 'yellow', 'blue', 'orange', 'lightgreen', 'green
 
 const TrasladosByCode = (props) => {
     const [loading, setLoading] = useState(false);
-    const [traslado, setTraslado] = useState({});
+    const [traslados, setTraslados] = useState({});
     const [showKeyBoard, setShowKeyBoard] = useState(false);
     const [msgConexion, setMsgConex] = useState('');
-    const [paleta, setPaleta] = useState(null);
+    //const [paleta, setPaleta] = useState(null);
 
     const inputScan = useRef(null);
 
@@ -83,7 +83,7 @@ const TrasladosByCode = (props) => {
         inputScan.current?.clear();
 
         setLoading(true);
-        setTraslado({});
+        setTraslados([]);
         setMsgConex('');
         let datos = [
             `code=${scancode}`,
@@ -93,7 +93,12 @@ const TrasladosByCode = (props) => {
         fetchIvan(props.ipSelect).get('/trasladosByCode', datos.join('&'), props.token.token)
         .then(({data}) => {
             console.log(data);
-            setTraslado({...data.data, IDPAL: paleta});
+            if(paleta) {
+                for(let tras of data.data) {
+                    tras.IDPAL = paleta;
+                }
+            }
+            setTraslados(data.data);
         })
         .catch(({status, error}) => {
             console.log(error);
@@ -112,7 +117,16 @@ const TrasladosByCode = (props) => {
         });
     }
 
-    const updateTras = useCallback((udp) => setTraslado(udp));
+    const updateTras = useCallback((udp) => {
+        let aux = [];
+        for(let i in traslados) {
+            aux.push(traslados[i]);
+            if(aux[i].IDTRA === upd.IDTRA) {
+                aux[i] = upd;
+            }
+        }
+        setTraslados(aux);
+    });
 
     return (
         <Provider>
@@ -136,27 +150,34 @@ const TrasladosByCode = (props) => {
                 </HStack>
 
                 {loading && <ActivityIndicator />}
-                {traslado.IDTRA && 
-                <ListItem
-                    title={traslado.TRCON}
-                    overline={"#"+traslado.IDTRA+"\n"+trasladosStatus[traslado.TRSTS]}
-                    secondaryText={"Origen: "+traslado.DesdeCentro?.NAME1+" ("+traslado.DesdeCentro?.Almacenes[0]?.LGOBE+")\n"
-                        +"Destino: "+traslado.HaciaCentro?.NAME1+" ("+traslado.HaciaCentro?.Almacenes[0]?.LGOBE+")\n"
-                        +traslado.DATEU?.substr(0,16).replace("T"," ")
-                        +"\nPedido Nº: "+(traslado.IDPED ?? "Traslado MANUAL")
-                        +(traslado.TRSTS > 2 ? "\nNº Documento SAP: "+traslado.CodigosTraslado?.MBLNR:'')
-                        +`\nPeso: ${parseFloat(traslado.PESO??0).toFixed(2)} KG`
-                        +`\nVolumen: ${parseFloat(traslado.VOLUMEN??0).toFixed(2)} M3`}
-                    leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[traslado.TRSTS]} color={trasStatusColor[traslado.TRSTS]} style={{borderRadius: 12}} />}
-                    //trailing={p2 => props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (traslado.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(traslado.TRCON, traslado.IDTRA)}/>}
-                    onPress={() => props.dataUser.CAMIONERO || props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 ? props.navigation.navigate('VerItems', {
-                        traslado: traslado,
-                        updateTras: updateTras,
-                        IDPAL: traslado.IDPAL
-                    }):''}
+
+                <FlatList
+                    data={traslados}
+                    renderItem={({item, index}) => 
+                        <ListItem
+                            key={index}
+                            title={item.TRCON}
+                            overline={"#"+item.IDTRA+"\n"+trasladosStatus[item.TRSTS]}
+                            secondaryText={"Origen: "+item.DesdeCentro?.NAME1+"\n"
+                                +"Destino: "+item.HaciaCentro?.NAME1+"\n"
+                                +"Fecha: "+item.DATEC?.substr(0,16).replace("T"," ")
+                                +"\nPedido Nº: "+(item.IDPED ?? "Traslado MANUAL")
+                                +(item.CodigosTraslados?.length && item.TRSTS > 1 ? "\nDocumento(s) SAP: "+item.CodigosTraslados?.reduce((prev, t) => [...prev, t.MBLNR],[]).join(', '):'')
+                                +`\nPeso: ${parseFloat(item.PESO??0).toFixed(2)} KG`
+                                +`\nVolumen: ${parseFloat(item.VOLUMEN??0).toFixed(2)} M3`
+                                +`\nSector: ${item.Sector?.VTEXT}`}
+                            leading={<Entypo name="circle" size={24} backgroundColor={trasStatusColor[item.TRSTS]} color={trasStatusColor[item.TRSTS]} style={{borderRadius: 12}} />}
+                            //trailing={p2 => props.dataUser.USSCO.split(',').indexOf('TRASLADOS_DEL') !== -1 && (item.TRSTS < 3) && <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => dropTraslado(item.TRCON, item.IDTRA)}/>}
+                            onPress={() => !props.dataUser.CAMIONERO && 
+                            (props.dataUser.USSCO.split(',').indexOf('SCAN') !== -1 || props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1) ? 
+                                props.navigation.navigate('VerItems', {
+                                traslado: item,
+                                updateTras: updateTras,
+                                IDPAL: item.IDPAL
+                            }):''}
+                        />
+                    }
                 />
-                }
-                <View style={{width: 100, height: 150}}/>
             </Stack>
         </Provider>
     )

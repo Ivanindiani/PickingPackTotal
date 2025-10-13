@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, ToastAndroid, TouchableHighlight, View } from "react-native";
 import { ActivityIndicator, Box, Button, HStack, Stack, Switch, Text, TextInput, VStack, Dialog, DialogActions, DialogContent, DialogHeader, Provider } from "@react-native-material/core"
 import fetchIvan from "../components/_fetch";
 import RNBeep from "react-native-a-beep";
 import ImagesAsync from "../components/_imagesAsync";
 import Entypo from "react-native-vector-icons/Entypo";
-import FontAwesome from "react-native-vector-icons/FontAwesome";
+import Fontisto from "react-native-vector-icons/Fontisto";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import MI from "react-native-vector-icons/MaterialCommunityIcons";
 import KeyEvent from 'react-native-keyevent';
 const Global = require('../../app.json');
@@ -39,6 +40,13 @@ const VerItems = (props) => {
 
     const listaRef = useRef(null);
     const fabRef = useRef(null);
+
+    /** Busqueda de artículos */
+    const [search, setOpenSearch] = useState({
+        open: false,
+        text: null
+    });
+    const inputSearch = useRef(null);
 
     // Evento alternativo para detectar el escaneo
     const evento = (keyEvent) => { 
@@ -116,6 +124,7 @@ const VerItems = (props) => {
             `checkProducts=false`,
             `unidadBase=true`,
             `simpleData=true`,
+            `groupPallet=true`
         ]
         setLoading(true);
         fetchIvan(props.ipSelect).get('/crudTrasladoItems', data.join('&'), props.token.token)
@@ -408,17 +417,128 @@ const VerItems = (props) => {
         </DialogActions>
     </Dialog>
     ;
-                /* HACER VALIDACIÓN EN SAP SI EL ARTICULO NO EXISTE */
+
+    const DialogoSearch = useCallback(() => {
+        return <Dialog visible={search.open}>
+            <DialogHeader title="Buscar artículo"/>
+            <DialogContent>
+                <TextInput placeholder="Codigo de artículo o descripción" 
+                    autoFocus
+                    ref={inputSearch}
+                    maxLength={100}
+                    onChangeText={(text) => inputSearch.current ? inputSearch.current.value = text:''}
+                />
+            </DialogContent>
+            <DialogActions>
+                <HStack spacing={10}>
+                    <Button
+                        variant="outlined"
+                        color="#000"
+                        onPress={() => setOpenSearch({
+                            open: false,
+                            text: null
+                        })}
+                        title="Cancelar"/>
+                    <Button
+                        loading={loading}
+                        disabled={loading}
+                        color={Global.colorMundoTotal}
+                        onPress={() => {
+                            if(inputSearch.current?.value?.length) {
+                                setOpenSearch({
+                                    open: false,
+                                    text: inputSearch.current?.value
+                                })
+                            } else {
+                                setOpenSearch({
+                                    open: false,
+                                    text: null
+                                })
+                            }
+
+                        }}
+                        title="Buscar"/>
+                </HStack>
+            </DialogActions>
+        </Dialog>;
+    }, [loading, search])
+    
+    const DialogoConfirm = useCallback(() => 
+        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+            <DialogHeader title="Confirma la cantidad real del producto" />
+            <DialogContent>
+                <Stack spacing={2}>
+                    <Text style={styles.title2}>{dialogItem.MAKTG}</Text>
+                    <Text style={styles.subtitle}>{dialogItem.MATNR}</Text>
+                    <HStack  style={{alignItems: 'center'}}>
+                        <Text style={styles.subtitle}>Unidad base del producto es: </Text>
+                        <Text style={styles.title2}>{dialogItem.UnidadBase?.UnidadDescripcion?.MSEHL?.toUpperCase()}</Text>
+                    </HStack>
+                    <HStack style={{alignItems: 'center', marginTop: 5}}>
+                        <Text style={styles.subtitle}>Cantidad Unitaria Esperada:</Text>
+                        <Text style={[styles.quantity, {marginStart: 10}]}>{parseInt(dialogItem.TCANT)}</Text>
+                    </HStack>
+
+                    <Text style={styles.subtitle}>Cantidad Unitaria Real: </Text>
+                    <TextInput defaultValue={dialogItem.CANTR?.toString() || dialogItem.TCANT?.toString()} 
+                        autoFocus={true}
+                        variant="outlined"
+                        keyboardType="numeric"
+                        ref={elInput}
+                        editable={!loading}
+                        onChangeText={(text) => {
+                            if(elInput.current) {
+                                const newValue = text ? parseInt(text.replace(/\D/g, '')).toString():'0';
+                                elInput.current.value = newValue;
+                                elInput.current.setNativeProps({text: newValue});
+                            } else {
+                                elInput.current.value = '';
+                            }
+                        }}
+                        maxLength={10}/>
+                </Stack>
+            </DialogContent>
+            <DialogActions>
+                <Button
+                    title="Confirmar"
+                    compact
+                    variant="text"
+                    loading={loading}
+                    disabled={loading}
+                    onPress={() => {
+                        const value = parseInt(elInput.current?.value) ?? null;
+                        console.log(elInput.current?.value);
+                        if(value === null || value < 0 || isNaN(value)) {
+                            return Alert.alert("Error", "Por favor ingresa una cantidad valida");
+                        }
+                        let its = JSON.parse(JSON.stringify(items));
+                        for(let it of its) {
+                            if(it.MATNR === dialogItem.MATNR && it.CHARG === dialogItem.CHARG
+                                && it.IDPAL === dialogItem.IDPAL) {
+                                it.CANTR = value || 0;
+                                break;
+                            }
+                        }
+                        confirmarCantidad(its, {...dialogItem, CANTR: value});
+                    }}
+                />
+            </DialogActions>
+        </Dialog>, 
+    [dialogItem, dialogVisible, loading]);
+
+
+    /* HACER VALIDACIÓN EN SAP SI EL ARTICULO NO EXISTE */
     const confirmarCantidad = (its, item) => {
         let datos = {
-            id: item.IDTRI,
-            update: {
-                CANTR: item.CANTR
-            }
+            IDTRA: item.IDTRA,
+            MATNR: item.MATNR,
+            CHARG: item.CHARG,
+            IDPAL: item.IDPAL,
+            CANTR: item.CANTR
         }
         setLoading(true);
 
-        fetchIvan(props.ipSelect).put('/crudTrasladoItems', datos, props.token.token)
+        fetchIvan(props.ipSelect).put('/confirmarTiendaItems', datos, props.token.token)
         .then(({data}) => {
             console.log(data);
             if(scanSelect.MATNR === item.MATNR) {
@@ -469,59 +589,20 @@ const VerItems = (props) => {
         if(fabRef?.current)
             fabRef.current.handleScroll(event);
     }
+
+    const itemsShow = useMemo(() => {
+        let itAux = JSON.parse(JSON.stringify(items));
+        if(search.text !== null && search.text !== '') {
+            itAux = itAux.filter(f => f.MATNR === search.text || f.MAKTG?.indexOf(search.text.toUpperCase()) !== -1 || f.UnidadBase?.EAN11 === search.text);
+        }
+        if(onlyPalet) {
+            itAux = itAux.filter((v) => v.IDPAL == soloPaleta);
+        }
+        return itAux;
+    }, [items, search, onlyPalet, soloPaleta]);
+
     return (
         <Provider>
-            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-                <DialogHeader title="Confirma la cantidad real del producto" />
-                <DialogContent>
-                    <Stack spacing={2}>
-                        <Text style={styles.title2}>{dialogItem.MAKTG}</Text>
-                        <Text style={styles.subtitle}>{dialogItem.MATNR}</Text>
-                        <HStack  style={{alignItems: 'center'}}>
-                            <Text style={styles.subtitle}>Unidad base del producto es: </Text>
-                            <Text style={styles.title2}>{dialogItem.UnidadBase?.UnidadDescripcion?.MSEHL?.toUpperCase()}</Text>
-                        </HStack>
-                        <HStack style={{alignItems: 'center', marginTop: 5}}>
-                            <Text style={styles.subtitle}>Cantidad Unitaria Esperada:</Text>
-                            <Text style={[styles.quantity, {marginStart: 10}]}>{parseInt(dialogItem.TCANT)}</Text>
-                        </HStack>
-
-                        <Text style={styles.subtitle}>Cantidad Unitaria Real: </Text>
-                        <TextInput defaultValue={dialogItem.CANTR?.toString() || dialogItem.TCANT?.toString()} 
-                            autoFocus={true}
-                            variant="outlined"
-                            keyboardType="numeric"
-                            ref={elInput}
-                            editable={!loading}
-                            onChangeText={(cant) => { elInput.current?.setNativeProps({text: cant ? parseInt(cant.replace(/\D/g, '')).toString():'0'}); setDialogItem({...dialogItem, CANTR: parseInt(cant ? cant.replace(/\D/g, ''):'0')});} }
-                            onEndEditing={(e) => setDialogItem({...dialogItem, CANTR: parseInt(e.nativeEvent.text)})} 
-                            maxLength={10}/>
-                    </Stack>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        title="Confirmar"
-                        compact
-                        variant="text"
-                        loading={loading}
-                        disabled={loading}
-                        onPress={() => {
-                            if(dialogItem?.CANTR === null) {
-                                return Alert.alert("Error", "Por favor ingresa una cantidad valida");
-                            }
-                            let its = JSON.parse(JSON.stringify(items));
-                            for(let it of its) {
-                                if(it.IDTRI === dialogItem.IDTRI) {
-                                    it.CANTR = dialogItem.CANTR || 0
-                                    break;
-                                }
-                            }
-                            confirmarCantidad(its, dialogItem);
-                        }}
-                    />
-                </DialogActions>
-            </Dialog>
-
             <Stack spacing={0} m={2} mb={-4}>
                 {!loading && msgConexion ? <Text style={{padding: 3, backgroundColor: 'red', color: 'white', textAlign: 'center', fontSize: 12}}>{msgConexion}</Text>:''}
                 <ScrollView ref={scrollShow} refreshControl={refreshControl} onScroll={handleScroll}>
@@ -597,9 +678,13 @@ const VerItems = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos ({onlyPalet ? items.filter((v) => v.IDPAL == soloPaleta).length:items.length}):</Text>
+                            <HStack>
+                                <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSearch(search.text?.length ? {open: false, text: null}:{open: true, text: ''})} 
+                                    leading={search.text === null ? <Fontisto name="search" size={20}/>:<MaterialIcons name="cancel" size={20} color="red"/>}/>
                             
                             {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('RECEIVE_TRAS') !== -1 && traslado.TRSTS === 3 && !onlyPalet && items.length ? 
                                 <Button compact={true} title="Recibir" onPress={recibirTraslado} disabled={loading}/>:''}
+                            </HStack>
                         </HStack>
 
                         {soloPaleta ?
@@ -609,7 +694,7 @@ const VerItems = (props) => {
                         </HStack>:''}
 
                         <ListaPerform
-                            items={onlyPalet ? items.filter((v) => v.IDPAL == soloPaleta):items} 
+                            items={itemsShow} 
                             renderItems={RowProducts} 
                             heightRemove={traslado.TRSTS >= 3 && traslado.TRSTS < 5 ? ((scanSelect && scanSelect.Producto ) ? 125:260):160}
                             ref={listaRef}
@@ -622,6 +707,8 @@ const VerItems = (props) => {
                 </ScrollView>
             </Stack>
             <FabScrollTop scrollPrincipal={scrollShow} ref={fabRef}/>
+            <DialogoSearch/>
+            <DialogoConfirm/>
         </Provider>
     )
 }

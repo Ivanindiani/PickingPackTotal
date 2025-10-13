@@ -160,11 +160,11 @@ const MoveProducts = (props) => {
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
-                    <Text style={[styles.td, {color: bodega.extra.Niveles[item.Bodega?.FLOOR].Color.HCODE || 'black'}]}>{item.Bodega?.FLOOR}</Text>
+                    <Text style={[styles.td, {color: bodega.extra?.Niveles[item.Bodega?.FLOOR].Color.HCODE || 'black'}]}>{item.Bodega?.FLOOR}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
-                    <Text style={[styles.td, {color: bodega.extra.Niveles[item.Bodega?.FLOOR].Pasillos[item.Bodega?.AISLE].Color.HCODE || 'black'}]}>{item.Bodega?.AISLE}</Text>
+                    <Text style={[styles.td, {color: bodega.extra?.Niveles[item.Bodega?.FLOOR].Pasillos[item.Bodega?.AISLE].Color.HCODE || 'black'}]}>{item.Bodega?.AISLE}</Text>
                 </HStack>
                 <HStack style={styles.row}>
                     <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>
@@ -246,11 +246,11 @@ const MoveProducts = (props) => {
                             {moveCode ? <VStack style={{backgroundColor: 'lightgrey'}}>
                                 <HStack style={styles.row}>
                                     <Text style={styles.th}>{bodega.extra?.Nombres?.FLNAM || "PISO/NIVEL"}:</Text>
-                                    <Text style={[styles.td, {color: bodega.extra.Niveles[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR]?.Color.HCODE || 'black'}]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR}</Text>
+                                    <Text style={[styles.td, {color: bodega.extra?.Niveles[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR]?.Color.HCODE || 'black'}]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR}</Text>
                                 </HStack>
                                 <HStack style={styles.row}>
                                     <Text style={styles.th}>{bodega.extra?.Nombres?.AINAM || "PASILLO"}:</Text>
-                                    <Text style={[styles.td, {color: bodega.extra.Niveles[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR].Pasillos[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.AISLE].Color.HCODE || 'black'}]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.AISLE}</Text>
+                                    <Text style={[styles.td, {color: bodega.extra?.Niveles[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.FLOOR].Pasillos[bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.AISLE].Color.HCODE || 'black'}]}>{bodega?.data?.filter((a) => a.IDDWA === moveCode)[0]?.AISLE}</Text>
                                 </HStack>
                                 <HStack style={styles.row}>
                                     <Text style={styles.th}>{bodega.extra?.Nombres?.CONAM || "COLUMNA"}:</Text>

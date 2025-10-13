@@ -1,5 +1,5 @@
 import { ActivityIndicator, Box, Pressable, Button, Dialog, DialogActions, DialogContent, DialogHeader, HStack, IconButton, Provider, Stack, Switch, Text, TextInput, VStack, Chip } from "@react-native-material/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, LogBox, RefreshControl, ScrollView, StyleSheet, ToastAndroid, View } from "react-native";
 import KeyEvent from 'react-native-keyevent';
 import RNBeep from "react-native-a-beep";
@@ -14,6 +14,8 @@ import ImagesAsync from "../components/_imagesAsync";
 /* IMPORT ICONS */
 import AntDesign from "react-native-vector-icons/AntDesign";
 import Entypo from "react-native-vector-icons/Entypo";
+import Fontisto from "react-native-vector-icons/Fontisto";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import FabScrollTop from "../components/fabScrollTop";
 /* IMPORT ICONS */
@@ -29,6 +31,7 @@ LogBox.ignoreLogs([
 const ScaneoPedido = (props) => {
     const [traslado, setTraslado] = useState(props.route.params.traslado);
     const IDPAL = props.route.params.IDPAL;
+    const isAdminScan = props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1;
 
     const [loading, setLoading] = useState(true);
     const [loadingSave, setLoadingSave] = useState(false);
@@ -37,6 +40,11 @@ const ScaneoPedido = (props) => {
     const [cronometro, setCronometro] = useState({});
     const [openSheet, setOpenSheet] = useState(false);
     const [comentario, setComentario] = useState(-2);
+    const [search, setOpenSearch] = useState({
+        open: false,
+        text: null
+    });
+    const [reubicar, setReubicar] = useState(-1);
 
     const [peso, setPeso] = useState(0);
     const [volumen, setVolumen] = useState(0);
@@ -64,6 +72,7 @@ const ScaneoPedido = (props) => {
     const inputCant1 = useRef(null); // Input cantidad escaneo
     //const inputCantList = useRef(null); // Input cantidad escaneo
     const inputComentario = useRef(null); // Input comentario dialog
+    const inputSearch = useRef(null);
     /** Referencias a componentes **/
 
     /* EVENTO KEYBOARD */
@@ -309,6 +318,18 @@ const ScaneoPedido = (props) => {
     /* Funciones fetch */
 
     /* Funciones Scan */
+    const changeSelectLote = (value) => {
+        let scanAux = JSON.parse(JSON.stringify(scanCurrent));
+
+        scanAux.CHARG = value;
+        scanAux.CANTP = pedido.reduce((prev, it) => (it.MATNR==scanAux.MATNR && it.CHARG == scanAux.CHARG) &&
+                                                        (isAdminScan || it.UASIG === props.dataUser.IDUSR) ? (parseInt(prev)+parseInt(it.CANTP)):prev,0);
+        scanAux.ubicaciones = getUbicaciones(scanAux);
+        scanAux.TCANT = trasladoItems.filter(f => (f.MATNR==scanAux.MATNR && f.CHARG == scanAux.CHARG) &&
+                                                        (isAdminScan || (f.UCRID === props.dataUser.IDUSR && f.IDPAL === IDPAL)))[0]?.TCANT ?? 0;                                   
+        setScanCurrent(scanAux);                                                    
+    }
+    
     const findCode = (text) => {
         let scancode = text?.split(',')[0]?.match(/([A-Z|a-z|0-9])/g) ?? null;
         scancode = scancode?.join('') ?? null;
@@ -378,75 +399,58 @@ const ScaneoPedido = (props) => {
             setUndSelect(null);
             let producto = {};
             for(const ped of pedido) {
-                for(const unidad of ped.Producto.ProductosUnidads) {
+                producto = JSON.parse(JSON.stringify(ped));
+                for(const unidad of producto.Producto?.ProductosUnidads) {
                     if(unidad.EAN11 != scancode && unidad.EAN11 != scancode?.replace(/^0+/, '')) continue;
-                    producto = ped;
                     producto.unidad_index = unidad;
                     setUndSelect(unidad.MEINH);
                     producto.force = false;
                     producto.TCANT = 0;
                     try {  
                         const unidadBase = producto.UnidadBase?.MEINS || "ST";
+                        producto.noBase = unidad.MEINH !== unidadBase;
+                        if(producto.noBase) {
+                            producto.max_paquete = {};
+                        }
                         if(producto.UnidadBase.XCHPF === 'X') { // Con lote
                             producto.maxQuantityLote = {};
-                            producto.maxQuantityLote[producto.CHARG] = parseInt(producto.ProdConLote.CLABS)-parseInt(producto.RESERVADOS ?? 0);
-                            if(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1) {
-                                producto.CANTP = pedido.reduce((prev, it) => it.MATNR===producto.MATNR && it.CHARG == producto.CHARG ? (prev+parseInt(it.CANTP)):prev,0);
-                                producto.maxQuantityLote[producto.CHARG] -= parseInt(producto.ESCANEADO ?? 0)
+                            producto.lotes = [];
+                            // 
+                            if(isAdminScan) { // ejecutamos solo la primera vez para el primer lote de la lista y que funcione el default
+                                producto.CANTP =  pedido.reduce((prev, it) => it.MATNR===producto.MATNR && it.CHARG == producto.CHARG ? (prev+parseInt(it.CANTP)):prev,0);
+                            }
+                            for(const pAux of pedido) {
+                                if(ped.MATNR === pAux.MATNR) {
+                                    producto.maxQuantityLote[pAux.CHARG] = parseInt(pAux.ProdConLote.CLABS)-parseInt(pAux.RESERVADOS ?? 0);
+                                    if(isAdminScan) {
+                                        producto.maxQuantityLote[pAux.CHARG] -= parseInt(pAux.ESCANEADO ?? 0)
+                                    }
+                                    if(producto.noBase) 
+                                        producto.max_paquete[pAux.CHARG] = Math.floor(producto.maxQuantityLote[pAux.CHARG]/unidad.UMREZ);
+
+                                    producto.lotes.push({ // Esto debe contener todos los lotes del artículo solicitado
+                                        label: pAux.CHARG,
+                                        value: pAux.CHARG,
+                                        subLabel: pAux.ProdConLote.FVENC+" - (Cant. "+producto.maxQuantityLote[pAux.CHARG]+")"
+                                    });
+                                }
                             }
 
-                            if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
-                                producto.noBase = true;
-                                producto.max_paquete = {};
-                                producto.max_paquete[producto.CHARG] = Math.floor(producto.maxQuantityLote[producto.CHARG]/unidad.UMREZ);
-                            } else {
-                                producto.noBase = false;
-                            }
-                            producto.lotes = [{
-                                label: producto.CHARG,
-                                value: producto.CHARG,
-                                subLabel: producto.ProdConLote.FVENC+" - (Cant. "+producto.maxQuantityLote[producto.CHARG]+")"
-                            }];
                         } else {
                             producto.maxQuantity = parseInt(producto.ProdSinLote?.LABST ?? 0)-parseInt(producto.RESERVADOS ?? 0);
-                            if(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1) {
+                            if(isAdminScan) {
                                 producto.CANTP = pedido.reduce((prev, it) => it.MATNR===producto.MATNR ? (prev+parseInt(it.CANTP)):prev,0);
                                 producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0)
                             }
-                            if(unidad.MEINH !== unidadBase) { // ST ES UNIDAD
-                                producto.noBase = true;
+                            if(producto.noBase) {
                                 producto.max_paquete = Math.floor(producto.maxQuantity/unidad.UMREZ);
-                            } else {
-                                producto.noBase = false;
                             }
                         }
                         producto.IDPAL = IDPAL;
+
                         producto.ubicaciones = getUbicaciones(producto);
 
                         return setScanCurrent({...producto});
-                        
-                        // No podemos sumar porque necesita la ubicación ajuro.
-                        /*if(producto.UnidadBase.XCHPF !== 'X') { 
-                            if(producto.noBase) { // No es es la BASE si no otra unidad
-                                producto.TCANT = producto.max_paquete == 0 ? producto.maxQuantity:parseInt(producto.unidad_index.UMREZ);
-                            } else {
-                                producto.TCANT = producto.maxQuantity > 0 ? 1:0;
-                            }
-                            if(producto.TCANT >= parseInt(producto.maxQuantity)) {
-                                RNBeep.beep(false);
-                                ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
-                            }
-                        } else {
-                            if(producto.noBase) { // No es es la BASE si no otra unidad
-                                producto.TCANT = producto.max_paquete[producto.CHARG] == 0 ? producto.maxQuantityLote[producto.CHARG]:parseInt(producto.unidad_index.UMREZ);
-                            } else {
-                                producto.TCANT = producto.maxQuantityLote[producto.CHARG] > 0 ? 1:0;
-                            }
-                            if(producto.TCANT >= parseInt(producto.maxQuantityLote[producto.CHARG])) {
-                                RNBeep.beep(false);
-                                ToastAndroid.show("Has alcanzado la cantidad máxima", ToastAndroid.LONG);
-                            }
-                        }*/
                     } catch (e) {
                         console.log(e);
                     }
@@ -488,6 +492,8 @@ const ScaneoPedido = (props) => {
                                 producto.maxQuantity -= parseInt(producto.ESCANEADO ?? 0);
                         }*/
                     }
+                    producto.CANTP = pedido.reduce((prev, it) => (it.MATNR==producto.MATNR && it.CHARG == producto.CHARG) &&
+                                                                    (isAdminScan || it.UASIG === props.dataUser.IDUSR) ? (parseInt(prev)+parseInt(it.CANTP)):prev,0);
                     producto.ubicaciones = getUbicaciones(producto, find.UCRID, true);
                     producto.TCANT = find.TCANT;
                     producto.IDTRI = find.IDTRI;
@@ -699,7 +705,7 @@ const ScaneoPedido = (props) => {
         console.log("Get ubi update");
         if(producto.ArticulosBodegas) {
             for(const ubi of producto.ArticulosBodegas) {
-                const escaneados = props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && !force ? 
+                const escaneados = isAdminScan && !force ? 
                     trasladoItems.reduce((prev, tra) => tra.MATNR === producto.MATNR && tra.CHARG === producto.CHARG &&
                         tra.IDADW === ubi.IDADW && (tra.IDPAL !== IDPAL || tra.UCRID !== ucrid) ? (prev+tra.TCANT):prev, 0):0;
                 let cantDisp = parseInt(ubi.QUANT ?? 0)-parseInt(ubi.RESERVADOS ?? 0)-parseInt(escaneados);
@@ -729,9 +735,9 @@ const ScaneoPedido = (props) => {
             });
         }
         return ubicaciones;
-    }, [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined]);
+    }, [isAdminScan ? trasladoItems:undefined]);
 
-    //const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 ? trasladoItems:undefined]);
+    //const getUbicaciones = useCallback((producto, ucrid, force=false) => getUbi(producto, ucrid, force), [isAdminScan ? trasladoItems:undefined]);
     
     const getCantUnidades = (producto) => {
         let cantidad = parseInt(producto.TCANT);
@@ -749,22 +755,26 @@ const ScaneoPedido = (props) => {
     /* Funciones Scan */
     
     /* Componente Información */
-    const DialogoInfo = () => 
+    const DialogoInfo = useCallback(() => 
         <Dialog visible={showInfo} onDismiss={() => setShowInfo(false)}>
             <DialogHeader title={traslado.TRCON}/>
             <DialogContent>
                 <Text style={styles.title2}>Paleta ID: {IDPAL}</Text>
                 <Text>
-                    <Text style={styles.title2}>Creado Por: </Text>
+                    <Text style={styles.title2}>Creado por: </Text>
                     <Text style={styles.subtitle}>{`${traslado.CreadoPor?.USNAM||""} ${traslado.CreadoPor?.USLAS||""}`}</Text>
                 </Text>
                 {traslado.ActualizadoPor ? <Text>
-                    <Text style={styles.title2}>Actualizado Por: </Text>
+                    <Text style={styles.title2}>Actualizado por: </Text>
                     <Text style={styles.subtitle}>{`${traslado.ActualizadoPor?.USNAM||""} ${traslado.ActualizadoPor?.USLAS||""}`}</Text>
                 </Text>:''}
                 <Text style={{textAlign: 'justify'}}>
-                    <Text style={styles.title2}>Fecha: </Text>
+                    <Text style={styles.title2}>Fecha creación: </Text>
                     <Text style={styles.subtitle}>{traslado.DATEC.split("T")[0]+" "+traslado.DATEC.split("T")[1].substring(0,5)}</Text>
+                </Text>
+                <Text style={{textAlign: 'justify'}}>
+                    <Text style={styles.title2}>Fecha contable: </Text>
+                    <Text style={styles.subtitle}>{traslado.DATEU.split("T")[0]+" "+traslado.DATEU.split("T")[1].substring(0,5)}</Text>
                 </Text>
                 <Text style={{textAlign: 'justify'}}>
                     <Text style={styles.title2}>Origen: </Text>
@@ -790,9 +800,9 @@ const ScaneoPedido = (props) => {
                 />
             </DialogActions>
         </Dialog>
-    ;
+    , [showInfo, traslado]);
 
-    const DialogoButtons = () =>
+    const DialogoButtons = useCallback(() =>
         <Dialog visible={openSheet} onDismiss={() => setOpenSheet(false)} style={{width: '100%'}}>
             <DialogContent>
                 <VStack spacing={10} mt={20}>
@@ -804,7 +814,7 @@ const ScaneoPedido = (props) => {
                         title="Finalizar Escaneo"
                         containerStyle={{marginTop: 10}}/>
                     }
-                    {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && traslado.TRSTS === 1 && trasladoItems.length &&
+                    {props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && isAdminScan && traslado.TRSTS === 1 && trasladoItems.length &&
                     <Button
                         variant="outlined"
                         color="#000"
@@ -818,9 +828,9 @@ const ScaneoPedido = (props) => {
                 </VStack>
             </DialogContent>
         </Dialog>
-    ;
+    , [openSheet, cronometro, traslado.TRSTS, trasladoItems.length]);
 
-    const DialogoComentario = () =>
+    const DialogoComentario = useCallback(() =>
         <Dialog visible={comentario !== -2}>
             <DialogHeader title="Agrega un comentario"/>
             <DialogContent>
@@ -859,7 +869,52 @@ const ScaneoPedido = (props) => {
                 </HStack>
             </DialogActions>
         </Dialog>
-    ;
+    , [comentario, loadingSave]);
+
+    const DialogoSearch = useCallback(() => {
+        return <Dialog visible={search.open}>
+            <DialogHeader title="Buscar artículo"/>
+            <DialogContent>
+                <TextInput placeholder="Codigo de artículo o descripción" 
+                    autoFocus
+                    ref={inputSearch}
+                    maxLength={100}
+                    onChangeText={(text) => inputSearch.current ? inputSearch.current.value = text:''}
+                />
+            </DialogContent>
+            <DialogActions>
+                <HStack spacing={10}>
+                    <Button
+                        variant="outlined"
+                        color="#000"
+                        onPress={() => setOpenSearch({
+                            open: false,
+                            text: null
+                        })}
+                        title="Cancelar"/>
+                    <Button
+                        loading={loadingSave}
+                        disabled={loadingSave}
+                        color={Global.colorMundoTotal}
+                        onPress={() => {
+                            if(inputSearch.current?.value?.length) {
+                                setOpenSearch({
+                                    open: false,
+                                    text: inputSearch.current?.value
+                                })
+                            } else {
+                                setOpenSearch({
+                                    open: false,
+                                    text: null
+                                })
+                            }
+
+                        }}
+                        title="Buscar"/>
+                </HStack>
+            </DialogActions>
+        </Dialog>;
+    }, [loadingSave, search]);
     /* Componente Información */
 
     const getMedidas = (medida) => {
@@ -872,15 +927,16 @@ const ScaneoPedido = (props) => {
 
     /* Componente de lista */
     const RowProducts = useCallback((item, index) => {
+        const isScan = 
+            (isAdminScan && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW) ||
+            (scanCurrent.force && scanCurrent.IDTRI === item.IDTRI && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW) || 
+            (!scanCurrent.force && rackSel !== null && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && IDPAL === item.IDPAL
+                && scanCurrent.ubicaciones[rackSel].UBI === item.IDADW && props.dataUser.IDUSR === item.UCRID);
+
         return <Pressable onPress={() => item.COMNT ? Alert.alert("Comentario", item.COMNT):''} key={index}>
             <HStack
                 spacing={4}
-                style={[styles.items,(
-                    (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW) ||
-                    (scanCurrent.IDTRI === item.IDTRI && rackSel !== null && scanCurrent.ubicaciones[rackSel]?.UBI === item.IDADW && scanCurrent.force) || 
-                    (rackSel !== null && scanCurrent.MATNR === item.MATNR && scanCurrent.CHARG === item.CHARG && IDPAL === item.IDPAL
-                        && scanCurrent.ubicaciones[rackSel].UBI === item.IDADW && props.dataUser.IDUSR === item.UCRID && !scanCurrent.force) 
-                    ? {backgroundColor: '#5dff803d'}:{}), {width: '100%'}]}
+                style={[styles.items,(isScan ? {backgroundColor: '#5dff803d'}:{}), {width: '100%'}]}
             >
                 <VStack w="55%">
                     <Text style={styles.title2} numberOfLines={2}>{item.MAKTG || item.Producto.MAKTG || ""}</Text>
@@ -894,12 +950,14 @@ const ScaneoPedido = (props) => {
                     <Text style={styles.subtitle} numberOfLines={1}>{getMedidas(item.UnidadBase?.GROES)} ({(parseFloat(item.UnidadBase?.VOLUM ?? 0)*parseFloat(item.TCANT)).toFixed(2)} m3)</Text>
                </VStack>
 
-               {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
+               {traslado.TRSTS === 1 && (isAdminScan || (cronometro.FINIC && !cronometro.FFEND)) ? <VStack w="25%" style={{justifyContent: 'space-between'}}>
                     <Text style={styles.small3}>Cantidad: {item.TCANT}</Text>
                     <Button onPress={() => setComentario(index)} color={Global.colorMundoTotal}
                         variant="outlined" title="Comentario" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
                     <Button onPress={() => editarProducto(item)} buttonStyle={{padding: 0}} containerStyle={{padding: 0}} contentContainerStyle={{padding: 0}}
                         variant="outlined" title="Editar" compact={true} loading={loadingSave} style={{marginBottom: 5, padding: 0}} titleStyle={{fontSize: 11}}/>
+                    <Button onPress={() => setReubicar(index)}  buttonStyle={{padding: 0}} containerStyle={{padding: 0}} contentContainerStyle={{padding: 0}}
+                        variant="outlined" title="Reubicar" compact={true} loading={loadingSave} titleStyle={{fontSize: 8}}/>
                 </VStack>:
                 <VStack w="30%">
                     <Text style={styles.subtitle}>Cantidad:</Text>
@@ -908,12 +966,12 @@ const ScaneoPedido = (props) => {
                     {item.CHARG && <Text style={styles.lote}>{item.CHARG}</Text>}
                     {/* <Text style={styles.subtitle}>{getCantUnidades(item)}</Text> */}
                 </VStack>}
-                {traslado.TRSTS === 1 && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || (cronometro.FINIC && !cronometro.FFEND)) ?
+                {traslado.TRSTS === 1 && (isAdminScan || (cronometro.FINIC && !cronometro.FFEND)) ?
                     <IconButton icon={p2=p2 => <AntDesign name="delete" {...p2}/> } onPress={() => deleteItem(item)} style={{alignSelf: 'center'}}/>:''
                 }
             </HStack>
         </Pressable>
-    }, [loadingSave, (scanCurrent?.MATNR || scanCurrent?.IDTRI || scanCurrent.CHARG), rackSel, cronometro?.FFEND, traslado.TRSTS]);
+    }, [loadingSave, scanCurrent, rackSel, cronometro?.FFEND, traslado.TRSTS, trasladoItems]);
 
     //const memoRows = useCallback((item, index) => RowProducts(item, index), [trasladoItems, scanCurrent, loadingSave, traslado, rackSel, cronometro?.FFEND])
     /* Componente de lista */
@@ -1188,6 +1246,49 @@ const ScaneoPedido = (props) => {
         if(fabRef?.current)
             fabRef.current.handleScroll(event);
     }
+
+    const updateSimpleProduct = (index, idpallet) => {
+        let prods = JSON.parse(JSON.stringify(trasladoItems));
+
+        let datos = {
+            id: prods[index].IDTRI,
+            update: {
+                IDPAL: idpallet
+            }
+        };
+        setLoadingSave(true);
+        fetchIvan(props.ipSelect).put('/crudTrasladoItems', datos, props.token.token)
+        .then(({data}) => {
+            console.log("Productos actualizado: ", data.data);
+
+            prods[index].ActualizadoPor = props.dataUser;
+            prods[index].IDPAL = idpallet;
+
+            if(scanCurrent.IDTRI === prods[index].IDTRI) {
+                setScanCurrent({...scanCurrent, ActualizadoPor: prods.dataUser, IDPAL: idpallet});
+            }
+            
+            setTrasladoItems(prods);
+            ToastAndroid.show(
+                "Producto actualizado con éxito",
+                ToastAndroid.LONG
+            );
+            setReubicar(-1);
+        })
+        .catch(({status, error}) => {
+            console.log(error);
+            if(error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1) {
+                setMsgConex("¡Ups! Parece que no hay conexión a internet");
+            }
+            return ToastAndroid.show(
+                error?.text || error?.message || (error && typeof(error) !== 'object' && error.indexOf("request failed") !== -1 ? "Por favor chequea la conexión a internet":"Error interno, contacte a administrador"),
+                ToastAndroid.LONG
+            );
+        })
+        .finally(() => {
+            setLoadingSave(false);
+        });
+    }
     return (
         <Provider>
             <Stack spacing={0} m={2} mb={-4}>
@@ -1199,10 +1300,11 @@ const ScaneoPedido = (props) => {
                         <Crono cronometro={cronometro}/>
                         <Text style={[styles.subtitle]} onPress={() => setShowInfo(!showInfo)}><Entypo name="info-with-circle" size={18} color={Global.colorMundoTotal}/> Información</Text>
                     </HStack>
-                    <Text style={[styles.title1, {marginTop: 0}]}>{Global.displayName}</Text>
+                    <Text style={[styles.title1, {marginTop: 0, alignItems: 'center'}]}>{traslado.TRCON}</Text>
+                    <Text style={[styles.subtitle, {marginTop: 0, textAlign: 'center'}]}>(Paleta: {IDPAL.substr(-3).padStart(3, '0')})</Text>
 
                     {traslado.TRSTS === 1 ? 
-                        cronometro.FINIC && (props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || !cronometro.FFEND) ?
+                        cronometro.FINIC && (isAdminScan || !cronometro.FFEND) ?
                         <View> 
                             <VStack spacing={-8}>
                                 <TextInput placeholder="Pulsa y escanea o tipea el código de barras" 
@@ -1284,7 +1386,7 @@ const ScaneoPedido = (props) => {
                                                 title="Ubicación"
                                                 buttonStyle={{minWidth: 120, height: 'auto'}}
                                                 titleStyle={{fontSize: 11}}
-                                                disabled={scanCurrent.force}
+                                                disabled={scanCurrent.force ? true:false}
                                             />
                                         </VStack>
                                     </HStack>
@@ -1296,9 +1398,10 @@ const ScaneoPedido = (props) => {
                                                 searchable={false}
                                                 data={scanCurrent.lotes}
                                                 value={scanCurrent.CHARG}
-                                                setValue={() => console.log("Selecciona lote")}
+                                                setValue={changeSelectLote}
                                                 title="Lotes"
                                                 buttonStyle={{minWidth: 120}}
+                                                disabled={scanCurrent.force ? true:false}
                                             />
                                         </VStack>}
                                         <VStack mt={-3} spacing={2} style={{justifyContent: 'flex-end'}}>
@@ -1356,13 +1459,17 @@ const ScaneoPedido = (props) => {
                     <Stack style={styles.escaneados}>
                         <HStack spacing={2} style={{justifyContent: 'space-between', alignItems: 'center'}}>
                             <Text style={styles.title2}>Productos escaneados ({trasladoItems?.filter(f => f.TCANT > 0).length}):</Text>
-                            {(props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 && props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
-                            (cronometro.FINIC && !cronometro.FFEND) ? 
-                                <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSheet(true)} 
-                                    disabled={loading || loadingSave} loading={loading || loadingSave} 
-                                    leading={<Entypo name="menu" size={24}/>}/>:
-                                ''
-                            }
+                            <HStack>
+                                <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSearch(search.text?.length ? {open: false, text: null}:{open: true, text: ''})} 
+                                    leading={search.text === null ? <Fontisto name="search" size={20}/>:<MaterialIcons name="cancel" size={20} color="red"/>}/>
+                                {(isAdminScan && props.dataUser.USSCO.split(',').indexOf('TRASLADOS_UPD') !== -1 && traslado.TRSTS === 1 && trasladoItems.length) || 
+                                (cronometro.FINIC && !cronometro.FFEND) ? 
+                                    <Button compact={true} variant="text" color={Global.colorMundoTotal} onPress={() => setOpenSheet(true)} 
+                                        disabled={loading || loadingSave} loading={loading || loadingSave} 
+                                        leading={<Entypo name="menu" size={24}/>}/>:
+                                    ''
+                                }
+                            </HStack>
                         </HStack>
                         <VStack border={0} p={2} spacing={4}>
                             <HStack style={{justifyContent: 'space-between', alignItems: 'center'}}>
@@ -1373,7 +1480,10 @@ const ScaneoPedido = (props) => {
                             </HStack>
                         </VStack>
                         <ListaPerform 
-                            items={props.dataUser.USSCO.split(',').indexOf('ADMIN_SCAN') !== -1 || cronometro?.FINIC || traslado.TRSTS > 1 ? trasladoItems:[]} 
+                            items={isAdminScan || cronometro?.FINIC || traslado.TRSTS > 1 ? 
+                                (search.text !== null && search.text !== '' ? 
+                                    trasladoItems.filter(f => f.MATNR === search.text || f.MAKTG?.indexOf(search.text.toUpperCase()) !== -1 || f.UnidadBase?.EAN11 === search.text)
+                                    :trasladoItems):[]} 
                             renderItems={RowProducts} 
                             heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
                             height={160}
@@ -1389,6 +1499,10 @@ const ScaneoPedido = (props) => {
             <FabScrollTop scrollPrincipal={scrollPrincipal} ref={fabRef}/>
             <DialogoButtons/>
             <DialogoComentario/>
+            <DialogoSearch/>
+            {reubicar !== -1 && 
+                <DialogoReubicar traslado={traslado} onClose={() => setReubicar(-1)} IDPAL={IDPAL} reubicar={reubicar} Paletas={props.route.params.Paletas}
+                    updateSimpleProduct={updateSimpleProduct} loadingSave={loadingSave} item={trasladoItems[reubicar]}/>} 
         </Provider>
     )
 }
@@ -1517,3 +1631,64 @@ function getPrural(texto) {
             return texto.split(" ")[0]
     }
 }
+
+const DialogoReubicar = (props) => {
+    const { traslado, item, onClose, loadingSave, IDPAL, reubicar, updateSimpleProduct, Paletas } = props;
+    const [paletish, setPaletish] = useState(item.IDPAL);
+
+    console.log("Traslado", Paletas, traslado.Paletas);
+
+    const listaPaletas = useMemo(() => {
+        let pAux = [];
+        for(const pal of Paletas) {
+            for(const pt of pal.PaleticaTras) {
+                if(pt.IDTRA === traslado.IDTRA) {
+                    pAux.push({
+                        label: "Paleta: "+pal.IDPAL.substr(-3).padStart(3, '0'),
+                        value: pal.IDPAL
+                    });
+                }
+            }
+        }
+        return pAux;
+    }, [Paletas, traslado]);
+
+    console.log(listaPaletas)
+
+    const updateProduct = () => {
+        if(paletish === item.IDPAL) return onClose();
+        updateSimpleProduct(reubicar, paletish)
+    }
+
+    return (
+        <Dialog visible={true} style={{zIndex: 10}}>
+            <DialogHeader title="Reubica de paleta el artículo"/>
+            <DialogContent>
+                <SelectInput
+                    searchable={false}
+                    data={listaPaletas}
+                    value={paletish}
+                    setValue={setPaletish}
+                    title="Paletas"
+                    buttonStyle={{minWidth: 120, height: 'auto'}}
+                    titleStyle={{fontSize: 11}}
+                    disabled={loadingSave || !listaPaletas.length ? true:false}/>
+            </DialogContent>
+            <DialogActions>
+                <HStack spacing={10}>
+                    <Button
+                        variant="outlined"
+                        color="#000"
+                        onPress={onClose}
+                        title="Cancelar"/>
+                    <Button
+                        loading={loadingSave}
+                        disabled={loadingSave}
+                        color={Global.colorMundoTotal}
+                        onPress={() => updateProduct()}
+                        title="Ok"/>
+                </HStack>
+            </DialogActions>
+        </Dialog>
+    );
+};

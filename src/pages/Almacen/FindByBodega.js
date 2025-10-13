@@ -129,11 +129,11 @@ const FindProducts = (props) => {
                 for(let space of bodega.data) {
                     if(space.IDDWA == codigo) {
                         setEstructura({
-                            nivel: space.FLOOR,
-                            pasillo: space.AISLE,
+                            nivel: space.FLOOR.toString(),
+                            pasillo: space.AISLE.toString(),
                             columna: space.COLUM.toString(),
                             rack: space.RACKS.toString(),
-                            paleta: bodega.extra.Niveles[space.FLOOR].Pasillos[space.AISLE].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
+                            paleta: bodega.extra.Niveles[space.FLOOR.toString()].Pasillos[space.AISLE.toString()].Columnas[space.COLUM.toString()].Racks[space.RACKS.toString()].Paletas.map((d) => d.PALETA).indexOf(space.PALET.toString())
                         });
                         find = true;
                         break;
