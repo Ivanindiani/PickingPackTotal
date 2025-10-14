@@ -1482,7 +1482,8 @@ const ScaneoPedido = (props) => {
                         <ListaPerform 
                             items={isAdminScan || cronometro?.FINIC || traslado.TRSTS > 1 ? 
                                 (search.text !== null && search.text !== '' ? 
-                                    trasladoItems.filter(f => f.MATNR === search.text || f.MAKTG?.indexOf(search.text.toUpperCase()) !== -1 || f.UnidadBase?.EAN11 === search.text)
+                                    trasladoItems.filter(f => f.MATNR === search.text || f.MAKTG?.indexOf(search.text.toUpperCase()) !== -1 || f.UnidadBase?.EAN11 === search.text 
+                                    || f.CHARG?.indexOf(search.text.toUpperCase()) !== -1)
                                     :trasladoItems):[]} 
                             renderItems={RowProducts} 
                             heightRemove={traslado.TRSTS === 1 ? (scanCurrent?.MATNR  ? 145:300):180}
